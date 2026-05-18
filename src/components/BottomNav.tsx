@@ -2,23 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Home, Sparkles, Mic, Library } from "@/components/Icon";
 
 const tabs = [
-  { href: "/", label: "홈", icon: "🏠", activeIcon: "🏠" },
-  { href: "/create", label: "만들기", icon: "✨", activeIcon: "✨" },
-  { href: "/record", label: "목소리", icon: "🎙️", activeIcon: "🎙️" },
-  { href: "/mypage", label: "내 서재", icon: "📖", activeIcon: "📖" },
+  { href: "/", label: "홈", Icon: Home },
+  { href: "/create", label: "만들기", Icon: Sparkles },
+  { href: "/record", label: "목소리", Icon: Mic },
+  { href: "/mypage", label: "내 서재", Icon: Library },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
-  // 플레이어 화면에서는 숨김
   if (pathname.startsWith("/player")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50">
-      <div className="max-w-lg mx-auto flex justify-around items-center h-16">
+    <nav className="fixed bottom-0 left-0 right-0 glass border-t border-border z-50">
+      <div className="max-w-lg mx-auto flex justify-around items-stretch h-[68px] pb-[env(safe-area-inset-bottom)]">
         {tabs.map((tab) => {
           const isActive =
             tab.href === "/"
@@ -28,12 +28,20 @@ export default function BottomNav() {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex flex-col items-center gap-0.5 px-4 py-1 transition-all ${
-                isActive ? "text-primary scale-105" : "text-muted"
+              className={`group relative flex flex-col items-center justify-center gap-1 flex-1 transition-colors ${
+                isActive ? "text-primary" : "text-muted hover:text-foreground"
               }`}
             >
-              <span className="text-xl">{isActive ? tab.activeIcon : tab.icon}</span>
-              <span className="text-[10px] font-semibold">{tab.label}</span>
+              <span
+                aria-hidden
+                className={`absolute top-0 h-[2px] w-8 rounded-full transition-all ${
+                  isActive ? "bg-primary opacity-100" : "opacity-0"
+                }`}
+              />
+              <tab.Icon size={22} filled={isActive} strokeWidth={isActive ? 2 : 1.75} />
+              <span className={`text-[10px] tracking-tight ${isActive ? "font-semibold" : "font-medium"}`}>
+                {tab.label}
+              </span>
             </Link>
           );
         })}

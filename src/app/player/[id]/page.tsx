@@ -4,6 +4,8 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getStoryById } from "@/data/stories";
 import { defaultVoices, getVoiceById } from "@/data/voices";
+import { ChevronDown, Moon, Play, Pause } from "@/components/Icon";
+import { StoryCover } from "@/components/StoryCover";
 
 export default function PlayerPage() {
   return (
@@ -36,7 +38,6 @@ function PlayerContent() {
 
   const paragraphs = story?.content.split("\n\n") || [];
 
-  // TTS 오디오 생성
   const generateAndPlay = async () => {
     if (!story) return;
     setLoading(true);
@@ -68,7 +69,6 @@ function PlayerContent() {
 
       audio.ontimeupdate = () => {
         setProgress(audio.currentTime);
-        // 문단 하이라이트
         if (audio.duration > 0) {
           const pct = audio.currentTime / audio.duration;
           const idx = Math.floor(pct * paragraphs.length);
@@ -138,7 +138,6 @@ function PlayerContent() {
     }, minutes * 60 * 1000);
   };
 
-  // Cleanup
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
@@ -165,55 +164,58 @@ function PlayerContent() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Blurred background */}
       <div className="absolute inset-0 z-0">
-        <img
-          src={story.thumbnailUrl}
-          alt=""
-          className="w-full h-full object-cover scale-110 blur-3xl opacity-30"
+        <StoryCover
+          story={story}
+          showTitle={false}
+          className="w-full h-full scale-125 blur-3xl opacity-60"
         />
         <div className="absolute inset-0 bg-background/70" />
       </div>
 
       <div className="relative z-10 flex flex-col min-h-screen max-w-lg mx-auto w-full">
-        {/* Top bar */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <button
             onClick={() => {
               audioRef.current?.pause();
               router.back();
             }}
-            className="w-10 h-10 rounded-full bg-white/60 backdrop-blur flex items-center justify-center text-lg hover:bg-white transition"
+            className="w-10 h-10 rounded-full bg-surface/70 backdrop-blur border border-border flex items-center justify-center text-foreground/80 hover:bg-surface transition"
+            aria-label="닫기"
           >
-            ↓
+            <ChevronDown size={20} />
           </button>
           <div className="text-center">
-            <p className="text-[10px] text-muted">지금 재생 중</p>
-            <p className="text-xs font-semibold">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted font-semibold">
+              Now Playing
+            </p>
+            <p className="text-xs font-semibold tracking-tight mt-0.5">
               {voice?.emoji} {voice?.name || "기본 목소리"}
             </p>
           </div>
           <button
             onClick={() => setShowSleepMenu(!showSleepMenu)}
-            className={`w-10 h-10 rounded-full backdrop-blur flex items-center justify-center text-sm hover:bg-white transition ${
-              sleepTimer ? "bg-secondary text-white" : "bg-white/60"
+            className={`w-10 h-10 rounded-full border backdrop-blur flex items-center justify-center transition ${
+              sleepTimer
+                ? "bg-secondary text-white border-secondary"
+                : "bg-surface/70 border-border text-foreground/80 hover:bg-surface"
             }`}
+            aria-label="수면 타이머"
           >
-            🌙
+            <Moon size={18} filled={!!sleepTimer} />
           </button>
         </div>
 
-        {/* Sleep timer menu */}
         {showSleepMenu && (
-          <div className="mx-5 mb-3 bg-white rounded-xl shadow-lg p-3 flex gap-2">
+          <div className="mx-5 mb-3 card shadow-md p-3 flex gap-2">
             {[15, 30, 60].map((min) => (
               <button
                 key={min}
                 onClick={() => startSleepTimer(min)}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition tabular-nums ${
                   sleepTimer === min
                     ? "bg-secondary text-white"
-                    : "bg-gray-100 hover:bg-secondary-light"
+                    : "bg-surface-soft text-foreground/80 hover:bg-secondary-light"
                 }`}
               >
                 {min}분
@@ -226,7 +228,7 @@ function PlayerContent() {
                   setSleepTimer(null);
                   setShowSleepMenu(false);
                 }}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold bg-gray-100 hover:bg-red-50 text-red-400"
+                className="flex-1 py-2 rounded-lg text-sm font-semibold bg-surface-soft hover:bg-danger/10 text-danger"
               >
                 해제
               </button>
@@ -234,28 +236,23 @@ function PlayerContent() {
           </div>
         )}
 
-        {/* Cover art */}
         <div className="flex-shrink-0 px-16 py-4">
-          <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-white/50">
-            <img
-              src={story.thumbnailUrl}
-              alt={story.title}
-              className="w-full h-full object-cover"
-            />
+          <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-white/60">
+            <StoryCover story={story} className="w-full h-full" />
           </div>
         </div>
 
-        {/* Title */}
         <div className="text-center px-5 mb-3">
-          <h1 className="text-xl font-extrabold mb-1">{story.title}</h1>
+          <h1 className="text-xl font-extrabold mb-1 tracking-tight">
+            {story.title}
+          </h1>
           <p className="text-sm text-muted">
             {story.morals.join(" · ")} · {story.ageMin}~{story.ageMax}세
           </p>
         </div>
 
-        {/* Text highlight */}
         <div className="flex-1 px-5 mb-3 max-h-[180px] overflow-y-auto scrollbar-hide">
-          <div className="bg-white/60 backdrop-blur rounded-2xl p-4">
+          <div className="bg-surface/70 backdrop-blur border border-border rounded-2xl p-4">
             {paragraphs.map((p, i) => (
               <p
                 key={i}
@@ -264,7 +261,7 @@ function PlayerContent() {
                     ? "text-primary font-semibold"
                     : i < currentParagraph
                     ? "text-muted"
-                    : "text-gray-400"
+                    : "text-foreground/30"
                 }`}
               >
                 {p}
@@ -273,10 +270,9 @@ function PlayerContent() {
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="px-5 mb-3">
           <div
-            className="w-full h-1.5 bg-gray-200 rounded-full cursor-pointer relative"
+            className="w-full h-1.5 bg-border rounded-full cursor-pointer relative"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const pct = (e.clientX - rect.left) / rect.width;
@@ -292,19 +288,19 @@ function PlayerContent() {
               style={{ left: `calc(${progressPct}% - 8px)` }}
             />
           </div>
-          <div className="flex justify-between mt-1.5 text-[11px] text-muted">
+          <div className="flex justify-between mt-1.5 text-[11px] text-muted tabular-nums">
             <span>{formatTime(progress)}</span>
-            <span>{duration > 0 ? formatTime(duration) : `~${story.durationMin}:00`}</span>
+            <span>
+              {duration > 0 ? formatTime(duration) : `~${story.durationMin}:00`}
+            </span>
           </div>
         </div>
 
-        {/* Controls */}
         <div className="px-5 pb-8">
-          {/* Speed + voice change */}
-          <div className="flex justify-center gap-3 mb-4">
+          <div className="flex justify-center gap-2 mb-5">
             <button
               onClick={changeSpeed}
-              className="text-xs font-bold text-muted bg-white/60 backdrop-blur px-3 py-1.5 rounded-full"
+              className="text-xs font-bold text-foreground/80 bg-surface/70 backdrop-blur border border-border px-3 py-1.5 rounded-full tabular-nums hover:bg-surface transition"
             >
               {speed}x
             </button>
@@ -313,17 +309,16 @@ function PlayerContent() {
                 audioRef.current?.pause();
                 router.push(`/voices?storyId=${story.id}`);
               }}
-              className="text-xs font-bold text-muted bg-white/60 backdrop-blur px-3 py-1.5 rounded-full"
+              className="text-xs font-bold text-foreground/80 bg-surface/70 backdrop-blur border border-border px-3 py-1.5 rounded-full hover:bg-surface transition"
             >
               {voice?.emoji} 목소리 변경
             </button>
           </div>
 
-          {/* Main controls */}
           <div className="flex items-center justify-center gap-8">
             <button
               onClick={() => seek(-15)}
-              className="w-12 h-12 rounded-full bg-white/60 backdrop-blur flex items-center justify-center text-sm font-bold text-muted hover:bg-white transition"
+              className="w-12 h-12 rounded-full bg-surface/70 backdrop-blur border border-border flex items-center justify-center text-xs font-bold text-foreground/80 hover:bg-surface transition tabular-nums"
             >
               -15
             </button>
@@ -331,20 +326,21 @@ function PlayerContent() {
             <button
               onClick={togglePlay}
               disabled={loading}
-              className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl shadow-lg shadow-primary/30 hover:bg-primary-dark transition active:scale-95 disabled:opacity-60"
+              className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 hover:bg-primary-dark transition active:scale-95 disabled:opacity-60"
+              aria-label={isPlaying ? "일시정지" : "재생"}
             >
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : isPlaying ? (
-                "⏸"
+                <Pause size={26} />
               ) : (
-                "▶"
+                <Play size={26} />
               )}
             </button>
 
             <button
               onClick={() => seek(15)}
-              className="w-12 h-12 rounded-full bg-white/60 backdrop-blur flex items-center justify-center text-sm font-bold text-muted hover:bg-white transition"
+              className="w-12 h-12 rounded-full bg-surface/70 backdrop-blur border border-border flex items-center justify-center text-xs font-bold text-foreground/80 hover:bg-surface transition tabular-nums"
             >
               +15
             </button>

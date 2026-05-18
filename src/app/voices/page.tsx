@@ -1,9 +1,15 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { defaultVoices } from "@/data/voices";
+import {
+  ClonedVoice,
+  getClonedVoices,
+  removeClonedVoice,
+} from "@/lib/clonedVoices";
 import BottomNav from "@/components/BottomNav";
+import { ChevronLeft, ChevronRight, Mic, Play, Trash } from "@/components/Icon";
 
 export default function VoiceSelectPage() {
   return (
@@ -19,6 +25,11 @@ function VoiceSelectContent() {
   const storyId = searchParams.get("storyId");
   const [selected, setSelected] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<string | null>(null);
+  const [clonedVoices, setClonedVoices] = useState<ClonedVoice[]>([]);
+
+  useEffect(() => {
+    setClonedVoices(getClonedVoices());
+  }, []);
 
   const handlePreview = async (voiceId: string) => {
     setPreviewing(voiceId);
@@ -40,10 +51,19 @@ function VoiceSelectContent() {
           URL.revokeObjectURL(url);
           setPreviewing(null);
         };
+      } else {
+        setPreviewing(null);
       }
     } catch {
       setPreviewing(null);
     }
+  };
+
+  const handleDeleteCloned = (id: string) => {
+    if (!confirm("이 목소리를 삭제할까요?")) return;
+    removeClonedVoice(id);
+    setClonedVoices(getClonedVoices());
+    if (selected === id) setSelected(null);
   };
 
   const handleConfirm = () => {
@@ -57,23 +77,26 @@ function VoiceSelectContent() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-gray-50">
+      <header className="sticky top-0 z-40 glass border-b border-border">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition text-lg"
+            className="w-10 h-10 rounded-full hover:bg-surface flex items-center justify-center text-muted hover:text-foreground transition"
+            aria-label="뒤로"
           >
-            ←
+            <ChevronLeft size={20} />
           </button>
-          <h1 className="font-bold text-sm">목소리 선택</h1>
+          <h1 className="font-bold text-sm tracking-tight">목소리 선택</h1>
           <div className="w-10" />
         </div>
       </header>
 
       <div className="max-w-lg mx-auto px-5 py-6">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🎧</div>
-          <h2 className="text-xl font-extrabold mb-2">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-muted font-semibold mb-2">
+            Voice
+          </p>
+          <h2 className="text-xl font-extrabold mb-2 tracking-tight">
             어떤 목소리로 들려줄까요?
           </h2>
           <p className="text-sm text-muted">
@@ -81,78 +104,77 @@ function VoiceSelectContent() {
           </p>
         </div>
 
-        {/* 내 목소리 (cloned) */}
-        <div className="mb-4">
-          <button
-            onClick={() => router.push("/record")}
-            className="w-full bg-white rounded-2xl p-4 border-2 border-dashed border-gray-200 hover:border-primary transition flex items-center gap-4"
-          >
-            <div className="w-14 h-14 rounded-full bg-primary-light flex items-center justify-center text-2xl flex-shrink-0">
-              🎙️
+        {clonedVoices.length > 0 && (
+          <section className="mb-7">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3 pl-1">
+              내가 녹음한 목소리
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {clonedVoices.map((voice) => (
+                <VoiceRow
+                  key={voice.id}
+                  voiceId={voice.id}
+                  name={voice.name}
+                  description={voice.description}
+                  emoji={voice.emoji}
+                  tone="primary"
+                  isSelected={selected === voice.id}
+                  isPreviewing={previewing === voice.id}
+                  onSelect={() => setSelected(voice.id)}
+                  onPreview={() => handlePreview(voice.id)}
+                  onDelete={() => handleDeleteCloned(voice.id)}
+                />
+              ))}
             </div>
-            <div className="text-left flex-1">
-              <p className="font-bold text-sm">내 목소리로 녹음하기</p>
-              <p className="text-xs text-muted mt-0.5">
-                30초 녹음으로 나만의 목소리를 만들어요
-              </p>
-            </div>
-            <span className="text-muted text-sm">→</span>
-          </button>
-        </div>
+          </section>
+        )}
 
-        {/* 기본 보이스 목록 */}
-        <p className="text-xs text-muted font-semibold mb-3">
-          🔊 기본 제공 목소리
-        </p>
-        <div className="flex flex-col gap-3 mb-8">
-          {defaultVoices.map((voice) => (
-            <button
-              key={voice.id}
-              onClick={() => setSelected(voice.id)}
-              className={`w-full bg-white rounded-2xl p-4 border-2 transition flex items-center gap-4 ${
-                selected === voice.id
-                  ? "border-primary shadow-md shadow-primary/10"
-                  : "border-transparent shadow-sm hover:shadow-md"
-              }`}
-            >
-              <div
-                className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl flex-shrink-0 ${
-                  selected === voice.id
-                    ? "bg-primary text-white"
-                    : "bg-gray-100"
-                }`}
-              >
-                {voice.emoji}
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-bold text-sm">{voice.name}</p>
-                <p className="text-xs text-muted mt-0.5">
-                  {voice.description}
-                </p>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePreview(voice.id);
-                }}
-                disabled={previewing === voice.id}
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm flex-shrink-0 transition ${
-                  previewing === voice.id
-                    ? "bg-primary text-white animate-pulse"
-                    : "bg-gray-100 hover:bg-primary-light text-muted hover:text-primary"
-                }`}
-              >
-                {previewing === voice.id ? "♪" : "▶"}
-              </button>
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={() => router.push("/record")}
+          className="w-full bg-surface rounded-2xl p-4 border border-dashed border-border-strong hover:border-primary hover:bg-primary-light/40 transition flex items-center gap-4 mb-7 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-primary-light text-primary flex items-center justify-center flex-shrink-0">
+            <Mic size={20} filled />
+          </div>
+          <div className="text-left flex-1">
+            <p className="font-bold text-sm">
+              {clonedVoices.length > 0
+                ? "새 목소리 추가 녹음하기"
+                : "내 목소리로 녹음하기"}
+            </p>
+            <p className="text-xs text-muted mt-0.5">
+              30초 녹음으로 나만의 목소리를 만들어요
+            </p>
+          </div>
+          <ChevronRight size={18} className="text-muted group-hover:text-primary transition" />
+        </button>
 
-        {/* Confirm */}
+        <section className="mb-8">
+          <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3 pl-1">
+            기본 제공 목소리
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {defaultVoices.map((voice) => (
+              <VoiceRow
+                key={voice.id}
+                voiceId={voice.id}
+                name={voice.name}
+                description={voice.description}
+                emoji={voice.emoji}
+                tone="neutral"
+                isSelected={selected === voice.id}
+                isPreviewing={previewing === voice.id}
+                onSelect={() => setSelected(voice.id)}
+                onPreview={() => handlePreview(voice.id)}
+              />
+            ))}
+          </div>
+        </section>
+
         <button
           onClick={handleConfirm}
           disabled={!selected}
-          className="w-full py-4 rounded-2xl bg-primary text-white font-bold text-base hover:bg-primary-dark transition shadow-lg shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-4 rounded-2xl bg-primary text-white font-bold text-base hover:bg-primary-dark transition shadow-lg shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
         >
           이 목소리로 듣기
         </button>
@@ -160,5 +182,88 @@ function VoiceSelectContent() {
 
       <BottomNav />
     </>
+  );
+}
+
+function VoiceRow({
+  name,
+  description,
+  emoji,
+  tone,
+  isSelected,
+  isPreviewing,
+  onSelect,
+  onPreview,
+  onDelete,
+}: {
+  voiceId: string;
+  name: string;
+  description: string;
+  emoji: string;
+  tone: "primary" | "neutral";
+  isSelected: boolean;
+  isPreviewing: boolean;
+  onSelect: () => void;
+  onPreview: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <div
+      onClick={onSelect}
+      className={`w-full card card-interactive p-4 flex items-center gap-3.5 cursor-pointer ${
+        isSelected ? "!border-primary ring-1 ring-primary/30" : ""
+      }`}
+    >
+      <div
+        className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 transition ${
+          isSelected
+            ? "bg-primary text-white"
+            : tone === "primary"
+            ? "bg-primary-light"
+            : "bg-surface-soft"
+        }`}
+      >
+        {emoji}
+      </div>
+      <div className="text-left flex-1 min-w-0">
+        <p className="font-bold text-sm truncate">{name}</p>
+        <p className="text-xs text-muted mt-0.5 truncate">{description}</p>
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onPreview();
+        }}
+        disabled={isPreviewing}
+        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition ${
+          isPreviewing
+            ? "bg-primary text-white"
+            : "bg-surface-soft text-muted hover:text-primary hover:bg-primary-light"
+        }`}
+        aria-label="미리듣기"
+      >
+        {isPreviewing ? (
+          <span className="inline-flex items-end gap-[2px] h-3">
+            <span className="eq-bar" />
+            <span className="eq-bar" />
+            <span className="eq-bar" />
+          </span>
+        ) : (
+          <Play size={14} />
+        )}
+      </button>
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition flex-shrink-0"
+          aria-label="삭제"
+        >
+          <Trash size={16} />
+        </button>
+      )}
+    </div>
   );
 }

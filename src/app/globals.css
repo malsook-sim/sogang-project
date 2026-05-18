@@ -1,27 +1,46 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Pretendard";
-  src: url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css");
-}
-
 :root {
-  --background: #FFF9F5;
-  --foreground: #2D2D2D;
-  --primary: #E8734A;
-  --primary-light: #FFF0EB;
-  --primary-dark: #C85A35;
-  --secondary: #7C6BF0;
-  --secondary-light: #F0EEFF;
-  --accent: #FFD93D;
-  --accent-light: #FFF8E1;
+  /* Warm ivory background, near-black foreground */
+  --background: #F6F2EC;
+  --surface: #FFFFFF;
+  --surface-soft: #FBF8F3;
+  --foreground: #1C1812;
+
+  /* Refined terracotta */
+  --primary: #B85339;
+  --primary-light: #F7ECE5;
+  --primary-dark: #913E27;
+
+  /* Deep plum (literary, premium) */
+  --secondary: #4A3F6B;
+  --secondary-light: #ECE7F2;
+
+  /* Warm gold accent */
+  --accent: #C9974A;
+  --accent-light: #F8EFDD;
+
   --card-bg: #FFFFFF;
-  --success: #4ADE80;
-  --muted: #94A3B8;
+  --success: #5E9A6A;
+  --danger: #B84A4A;
+  --muted: #8A7E72;
+  --border: #E8E0D5;
+  --border-strong: #DCD2C4;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --shadow-sm: 0 1px 2px rgba(28, 24, 18, 0.04), 0 1px 1px rgba(28, 24, 18, 0.03);
+  --shadow-md: 0 4px 12px rgba(28, 24, 18, 0.06), 0 2px 4px rgba(28, 24, 18, 0.04);
+  --shadow-lg: 0 12px 32px rgba(28, 24, 18, 0.08), 0 4px 8px rgba(28, 24, 18, 0.04);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
@@ -32,15 +51,43 @@
   --color-accent-light: var(--accent-light);
   --color-card-bg: var(--card-bg);
   --color-success: var(--success);
+  --color-danger: var(--danger);
   --color-muted: var(--muted);
-  --font-sans: var(--font-geist-sans);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --font-sans: "Pretendard Variable", "Pretendard", var(--font-geist-sans), system-ui, sans-serif;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 body {
-  background: var(--background);
+  font-feature-settings: "ss06", "ss07", "tnum";
+}
+
+::selection {
+  background: rgba(184, 83, 57, 0.18);
   color: var(--foreground);
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid rgba(184, 83, 57, 0.45);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 /* Hide scrollbar for carousels */
@@ -50,4 +97,78 @@ body {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Subtle glass surface used by sticky headers */
+.glass {
+  background: color-mix(in oklch, var(--background) 78%, transparent);
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+}
+
+/* Premium card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-interactive {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+.card-interactive:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
+.card-interactive:active {
+  transform: scale(0.995);
+}
+
+/* Soft gradients */
+.bg-hero-warm {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(184, 83, 57, 0.10), transparent 60%),
+    radial-gradient(120% 80% at 100% 100%, rgba(74, 63, 107, 0.10), transparent 60%),
+    var(--background);
+}
+
+.bg-hero-primary {
+  background: linear-gradient(135deg, #B85339 0%, #913E27 100%);
+}
+
+.bg-hero-secondary {
+  background: linear-gradient(135deg, #5B4F80 0%, #3E335A 100%);
+}
+
+/* Animated equalizer (for preview button) */
+@keyframes eq-bar {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+.eq-bar {
+  display: inline-block;
+  width: 2px;
+  height: 12px;
+  background: currentColor;
+  border-radius: 1px;
+  transform-origin: bottom;
+  animation: eq-bar 900ms ease-in-out infinite;
+}
+.eq-bar:nth-child(2) { animation-delay: 150ms; }
+.eq-bar:nth-child(3) { animation-delay: 300ms; }
+
+/* Recording pulse ring */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: pulse-ring 1.4s ease-out infinite;
+  z-index: -1;
 }
