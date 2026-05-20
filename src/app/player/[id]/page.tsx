@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { Story } from "@/data/stories";
 import { defaultVoices, englishVoices, getVoiceById } from "@/data/voices";
 import { bgmTracks } from "@/data/bgm";
-import { ChevronDown, Moon, Play, Pause } from "@/components/Icon";
+import { ChevronDown, Moon, Play, Pause, Home } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 
 export default function PlayerPage() {
@@ -597,6 +597,18 @@ function PlayerContent() {
               목소리를 만들고 있어요...
             </p>
           )}
+
+          <button
+            onClick={() => {
+              audioRef.current?.pause();
+              bgmRef.current?.pause();
+              router.push("/");
+            }}
+            className="w-full mt-5 py-2.5 rounded-full text-sm font-semibold text-muted hover:text-foreground hover:bg-surface/70 transition flex items-center justify-center gap-1.5"
+          >
+            <Home size={15} />
+            동화 목록으로
+          </button>
         </div>
       </div>
     </div>
