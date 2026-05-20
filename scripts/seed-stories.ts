@@ -27,7 +27,17 @@ async function main() {
   const newRaw = await readFile(join(root, "db", "new-stories.json"), "utf8");
   const newStories = JSON.parse(newRaw) as SeedStory[];
 
-  const all: SeedStory[] = [...(baseStories as SeedStory[]), ...newStories];
+  const engRaw = await readFile(
+    join(root, "db", "english-stories.json"),
+    "utf8"
+  );
+  const englishStories = JSON.parse(engRaw) as SeedStory[];
+
+  const all: SeedStory[] = [
+    ...(baseStories as SeedStory[]),
+    ...newStories,
+    ...englishStories,
+  ];
 
   const conn = await mysql.createConnection(rawUrl);
   await conn.query("DELETE FROM stories");

@@ -140,6 +140,13 @@ export const Trash = (props: IconProps) => (
   </Base>
 );
 
+export const Pencil = (props: IconProps) => (
+  <Base {...props}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
+  </Base>
+);
+
 export const Lock = (props: IconProps) => (
   <Base {...props}>
     <rect x="4" y="10" width="16" height="11" rx="2" />

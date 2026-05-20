@@ -13,11 +13,12 @@ import {
   Sparkles,
   ChevronRight,
   Trash,
+  Pencil,
 } from "@/components/Icon";
 import { useMyVoices } from "@/lib/useMyVoices";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useBookmarks, toggleBookmark } from "@/lib/bookmarks";
-import { useMyStories, removeMyStory } from "@/lib/myStories";
+import { useMyStories, removeMyStory, renameMyStory } from "@/lib/myStories";
 import { type Story } from "@/data/stories";
 import { useCatalog } from "@/lib/useCatalog";
 
@@ -38,6 +39,23 @@ export default function MyPage() {
   const handleDeleteVoice = async (id: string) => {
     await fetch(`/api/voices/${id}`, { method: "DELETE" });
     refreshVoices();
+  };
+
+  const handleRenameVoice = async (id: string, current: string) => {
+    const name = window.prompt("목소리 이름을 바꿔주세요", current);
+    if (!name || !name.trim()) return;
+    await fetch(`/api/voices/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim() }),
+    });
+    refreshVoices();
+  };
+
+  const handleRenameStory = (id: string, current: string) => {
+    const title = window.prompt("동화 제목을 바꿔주세요", current);
+    if (!title || !title.trim()) return;
+    renameMyStory(id, title.trim());
   };
 
   return (
@@ -124,6 +142,13 @@ export default function MyPage() {
                       내가 녹음한 목소리
                     </p>
                   </div>
+                  <button
+                    onClick={() => handleRenameVoice(v.id, v.name)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:text-primary hover:bg-primary-light transition"
+                    aria-label="이름 변경"
+                  >
+                    <Pencil size={15} />
+                  </button>
                   <button
                     onClick={() => handleDeleteVoice(v.id)}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition"
@@ -251,6 +276,13 @@ export default function MyPage() {
                       </p>
                     </div>
                   </Link>
+                  <button
+                    onClick={() => handleRenameStory(story.id, story.title)}
+                    className="absolute top-2 left-2 w-8 h-8 rounded-full bg-foreground/65 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary transition"
+                    aria-label="제목 변경"
+                  >
+                    <Pencil size={14} />
+                  </button>
                   <button
                     onClick={() => removeMyStory(story.id)}
                     className="absolute top-2 right-2 w-8 h-8 rounded-full bg-foreground/65 backdrop-blur-sm text-white flex items-center justify-center hover:bg-danger transition"

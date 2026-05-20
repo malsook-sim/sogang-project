@@ -18,6 +18,7 @@ export const categories = [
   { id: "bedtime", label: "잠자리동화", emoji: "🌙" },
   { id: "adventure", label: "모험", emoji: "⚔️" },
   { id: "nature", label: "자연·동물", emoji: "🌿" },
+  { id: "english", label: "영어동화", emoji: "🔤" },
 ];
 
 export const stories: Story[] = [

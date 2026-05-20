@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Lock, Mic, Refresh, ChevronRight } from "@/components/Icon";
+import { useMyVoices } from "@/lib/useMyVoices";
 
 const scripts = [
   "옛날 옛날에 작은 마을이 있었어요.",
@@ -12,8 +13,11 @@ const scripts = [
   "그래서 모두 함께 행복하게 살았답니다.",
 ];
 
+const CONSENT_KEY = "mvk.recordConsent";
+
 type RecordingState = "idle" | "recording" | "done";
 type SubmitState = "ready" | "submitting" | "success" | "error";
+type Mode = "list" | "consent" | "recording";
 
 function pickMimeType(): string {
   const candidates = [
@@ -23,7 +27,10 @@ function pickMimeType(): string {
     "audio/ogg;codecs=opus",
   ];
   for (const mime of candidates) {
-    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(mime)) {
+    if (
+      typeof MediaRecorder !== "undefined" &&
+      MediaRecorder.isTypeSupported(mime)
+    ) {
       return mime;
     }
   }
@@ -32,12 +39,13 @@ function pickMimeType(): string {
 
 export default function RecordPage() {
   const router = useRouter();
-  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const { voices, refresh: refreshVoices } = useMyVoices();
+  const [mode, setMode] = useState<Mode>("list");
   const [currentScript, setCurrentScript] = useState(0);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [completedScripts, setCompletedScripts] = useState<number[]>([]);
-  const [recordings, setRecordings] = useState<(Blob | null)[]>(
-    () => Array(scripts.length).fill(null)
+  const [recordings, setRecordings] = useState<(Blob | null)[]>(() =>
+    Array(scripts.length).fill(null)
   );
   const [seconds, setSeconds] = useState(0);
   const [submitState, setSubmitState] = useState<SubmitState>("ready");
@@ -148,6 +156,42 @@ export default function RecordPage() {
     });
   };
 
+  const resetRecording = () => {
+    setCurrentScript(0);
+    setRecordingState("idle");
+    setCompletedScripts([]);
+    setRecordings(Array(scripts.length).fill(null));
+    setSeconds(0);
+    setSubmitState("ready");
+    setErrorMsg(null);
+    setVoiceName("내 목소리");
+  };
+
+  const startNewRecording = () => {
+    resetRecording();
+    let consented = false;
+    try {
+      consented = localStorage.getItem(CONSENT_KEY) === "1";
+    } catch {
+      consented = false;
+    }
+    setMode(consented ? "recording" : "consent");
+  };
+
+  const agreeConsent = () => {
+    try {
+      localStorage.setItem(CONSENT_KEY, "1");
+    } catch {
+      // localStorage 사용 불가 시에도 진행
+    }
+    setMode("recording");
+  };
+
+  const backToList = () => {
+    setMode("list");
+    refreshVoices();
+  };
+
   const submitForCloning = async () => {
     setSubmitState("submitting");
     setErrorMsg(null);
@@ -167,7 +211,6 @@ export default function RecordPage() {
         throw new Error(data.error || "목소리를 만들지 못했어요.");
       }
       setSubmitState("success");
-      setTimeout(() => router.push("/voices"), 1200);
     } catch (err) {
       setSubmitState("error");
       setErrorMsg(err instanceof Error ? err.message : "알 수 없는 오류");
@@ -179,7 +222,7 @@ export default function RecordPage() {
       <header className="sticky top-0 z-40 glass border-b border-border">
         <div className="max-w-lg lg:max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <button
-            onClick={() => router.back()}
+            onClick={() => (mode === "list" ? router.back() : setMode("list"))}
             className="w-10 h-10 rounded-full hover:bg-surface flex items-center justify-center text-muted hover:text-foreground transition"
             aria-label="뒤로"
           >
@@ -191,56 +234,107 @@ export default function RecordPage() {
       </header>
 
       <div className="max-w-lg lg:max-w-2xl mx-auto px-5 py-6">
-        {!privacyAgreed && (
-          <div className="mb-6">
-            <div className="card p-6">
-              <div className="text-center mb-5">
-                <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-primary-light text-primary flex items-center justify-center">
-                  <Lock size={24} />
-                </div>
-                <h2 className="text-lg font-extrabold mb-1 tracking-tight">
-                  목소리 데이터 수집 동의
-                </h2>
-                <p className="text-sm text-muted leading-relaxed">
-                  녹음된 목소리는 AI 음성 합성에만 사용되며,<br />
-                  제3자에게 제공되지 않습니다.
+        {mode === "list" && (
+          <>
+            <div className="text-center mb-7">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-primary-light text-primary flex items-center justify-center">
+                <Mic size={24} filled />
+              </div>
+              <h2 className="text-xl font-extrabold mb-1.5 tracking-tight">
+                내 목소리
+              </h2>
+              <p className="text-sm text-muted leading-relaxed">
+                녹음한 목소리로 동화를 들려줄 수 있어요
+              </p>
+            </div>
+
+            {voices.length > 0 ? (
+              <div className="space-y-2.5 mb-5">
+                {voices.map((v) => (
+                  <div
+                    key={v.id}
+                    className="card p-4 flex items-center gap-3.5"
+                  >
+                    <div className="w-11 h-11 rounded-full bg-primary-light flex items-center justify-center text-xl">
+                      {v.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{v.name}</p>
+                      <p className="text-xs text-muted">내가 녹음한 목소리</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="card p-8 text-center mb-5 border-dashed">
+                <p className="text-sm text-foreground/70 font-medium">
+                  아직 녹음한 목소리가 없어요
+                </p>
+                <p className="text-xs text-muted mt-1">
+                  새로 녹음해서 나만의 목소리를 만들어 보세요
                 </p>
               </div>
-              <div className="bg-surface-soft border border-border rounded-xl p-4 mb-5 text-xs text-foreground/70 leading-relaxed max-h-36 overflow-y-auto space-y-2.5">
-                <div>
-                  <p className="font-bold text-foreground mb-0.5">수집 항목</p>
-                  <p>· 음성 녹음 파일 (WebM / MP4)</p>
-                </div>
-                <div>
-                  <p className="font-bold text-foreground mb-0.5">이용 목적</p>
-                  <p>· AI 음성 복제 및 동화 낭독 서비스 제공</p>
-                </div>
-                <div>
-                  <p className="font-bold text-foreground mb-0.5">보관 기간</p>
-                  <p>· 회원 탈퇴 또는 삭제 요청 시 즉시 파기</p>
-                </div>
-                <div>
-                  <p className="font-bold text-foreground mb-0.5">제3자 제공</p>
-                  <p>· ElevenLabs (음성 합성 처리, 암호화 전송)</p>
-                </div>
+            )}
+
+            <button
+              onClick={startNewRecording}
+              className="w-full py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+            >
+              <Mic size={18} filled />
+              새로 녹음하기
+            </button>
+          </>
+        )}
+
+        {mode === "consent" && (
+          <div className="card p-6">
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-primary-light text-primary flex items-center justify-center">
+                <Lock size={24} />
               </div>
-              <button
-                onClick={() => setPrivacyAgreed(true)}
-                className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20"
-              >
-                동의하고 녹음 시작
-              </button>
-              <button
-                onClick={() => router.back()}
-                className="w-full py-2 mt-2 text-sm text-muted hover:text-foreground transition"
-              >
-                다음에 할게요
-              </button>
+              <h2 className="text-lg font-extrabold mb-1 tracking-tight">
+                목소리 데이터 수집 동의
+              </h2>
+              <p className="text-sm text-muted leading-relaxed">
+                녹음된 목소리는 AI 음성 합성에만 사용되며,
+                <br />
+                제3자에게 제공되지 않습니다.
+              </p>
             </div>
+            <div className="bg-surface-soft border border-border rounded-xl p-4 mb-5 text-xs text-foreground/70 leading-relaxed max-h-36 overflow-y-auto space-y-2.5">
+              <div>
+                <p className="font-bold text-foreground mb-0.5">수집 항목</p>
+                <p>· 음성 녹음 파일 (WebM / MP4)</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground mb-0.5">이용 목적</p>
+                <p>· AI 음성 복제 및 동화 낭독 서비스 제공</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground mb-0.5">보관 기간</p>
+                <p>· 회원 탈퇴 또는 삭제 요청 시 즉시 파기</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground mb-0.5">제3자 제공</p>
+                <p>· ElevenLabs (음성 합성 처리, 암호화 전송)</p>
+              </div>
+            </div>
+            <button
+              onClick={agreeConsent}
+              className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20"
+            >
+              동의하고 녹음 시작
+            </button>
+            <button
+              onClick={() => setMode("list")}
+              className="w-full py-2 mt-2 text-sm text-muted hover:text-foreground transition"
+            >
+              다음에 할게요
+            </button>
           </div>
         )}
 
-        {privacyAgreed && (
+        {mode === "recording" && (
           <>
             <div className="flex gap-1.5 mb-8">
               {scripts.map((_, i) => (
@@ -343,7 +437,11 @@ export default function RecordPage() {
                             ? "bg-danger text-white shadow-danger/30 pulse-ring"
                             : "bg-primary text-white shadow-primary/30"
                         }`}
-                        aria-label={recordingState === "recording" ? "녹음 멈추기" : "녹음 시작"}
+                        aria-label={
+                          recordingState === "recording"
+                            ? "녹음 멈추기"
+                            : "녹음 시작"
+                        }
                       >
                         {recordingState === "recording" ? (
                           <span className="w-5 h-5 bg-white rounded-sm" />
@@ -377,7 +475,8 @@ export default function RecordPage() {
                       목소리 만드는 중...
                     </h2>
                     <p className="text-sm text-muted leading-relaxed mb-6">
-                      내 목소리를 만들고 있어요.<br />
+                      내 목소리를 만들고 있어요.
+                      <br />
                       잠시만 기다려주세요 (약 10~30초)
                     </p>
                     <div className="card p-4">
@@ -407,10 +506,10 @@ export default function RecordPage() {
                       이제 이 목소리로 동화를 들려줄 수 있어요.
                     </p>
                     <button
-                      onClick={() => router.push("/voices")}
+                      onClick={backToList}
                       className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20"
                     >
-                      목소리 고르러 가기 →
+                      내 목소리 목록 보기
                     </button>
                   </>
                 )}
@@ -433,30 +532,11 @@ export default function RecordPage() {
                       다시 해보기
                     </button>
                     <button
-                      onClick={() => router.push("/voices")}
+                      onClick={backToList}
                       className="w-full py-3 rounded-xl border border-border font-semibold text-sm hover:bg-surface transition"
                     >
-                      홈으로 돌아가기
+                      목록으로 돌아가기
                     </button>
-                  </>
-                )}
-
-                {submitState === "ready" && (
-                  <>
-                    <h2 className="text-xl font-extrabold mb-2 tracking-tight">
-                      거의 다 됐어요
-                    </h2>
-                    <div className="mb-6 text-left">
-                      <label className="text-xs text-muted font-semibold block mb-2">
-                        목소리 이름
-                      </label>
-                      <input
-                        value={voiceName}
-                        onChange={(e) => setVoiceName(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-sm focus:outline-none focus:border-primary transition"
-                        placeholder="예: 엄마 목소리"
-                      />
-                    </div>
                   </>
                 )}
               </div>
@@ -464,7 +544,6 @@ export default function RecordPage() {
           </>
         )}
       </div>
-
     </>
   );
 }

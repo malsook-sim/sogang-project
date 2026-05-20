@@ -79,6 +79,25 @@ export async function saveMyStory(
   }
 }
 
+export async function renameMyStory(id: string, title: string): Promise<void> {
+  const prev = stories;
+  // 낙관적 업데이트
+  stories = stories.map((s) => (s.id === id ? { ...s, title } : s));
+  emit();
+
+  try {
+    const res = await fetch(`/api/my-stories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    if (!res.ok) throw new Error("rename failed");
+  } catch {
+    stories = prev;
+    emit();
+  }
+}
+
 export async function removeMyStory(id: string): Promise<void> {
   const prev = stories;
   // 낙관적 업데이트
