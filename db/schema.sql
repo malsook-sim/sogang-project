@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS voices (
   elevenlabs_voice_id VARCHAR(100)    NOT NULL,
   name                VARCHAR(100)    NOT NULL,
   emoji               VARCHAR(16)     NOT NULL DEFAULT '🎙️',
+  description         VARCHAR(255)    NOT NULL DEFAULT '',
   created_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_voices_user (user_id),

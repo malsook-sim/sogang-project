@@ -22,6 +22,15 @@ import { useMyStories, removeMyStory, renameMyStory } from "@/lib/myStories";
 import { type Story } from "@/data/stories";
 import { useCatalog } from "@/lib/useCatalog";
 
+// 녹음 일시 표기 (예: 2026.5.20 15:24)
+function formatRecordedAt(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${p(
+    d.getHours()
+  )}:${p(d.getMinutes())}`;
+}
+
 export default function MyPage() {
   const { user, loading: authLoading } = useCurrentUser();
   const { voices, refresh: refreshVoices } = useMyVoices();
@@ -48,6 +57,20 @@ export default function MyPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name.trim() }),
+    });
+    refreshVoices();
+  };
+
+  const handleEditDescription = async (id: string, current: string) => {
+    const description = window.prompt(
+      "이 목소리에 대한 설명을 적어주세요",
+      current || ""
+    );
+    if (description === null) return;
+    await fetch(`/api/voices/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: description.trim() }),
     });
     refreshVoices();
   };
@@ -138,8 +161,18 @@ export default function MyPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{v.name}</p>
-                    <p className="text-xs text-muted truncate">
-                      내가 녹음한 목소리
+                    <button
+                      onClick={() => handleEditDescription(v.id, v.description)}
+                      className="block max-w-full text-xs truncate text-left transition hover:text-primary"
+                    >
+                      {v.description ? (
+                        <span className="text-muted">{v.description}</span>
+                      ) : (
+                        <span className="text-muted/60">＋ 설명 추가하기</span>
+                      )}
+                    </button>
+                    <p className="text-[11px] text-muted/70 mt-0.5">
+                      {formatRecordedAt(v.createdAt)} 녹음
                     </p>
                   </div>
                   <button

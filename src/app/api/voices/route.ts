@@ -8,7 +8,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ voices: [] });
 
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT elevenlabs_voice_id, name, emoji, UNIX_TIMESTAMP(created_at) AS created_at
+    `SELECT elevenlabs_voice_id, name, emoji, description,
+            UNIX_TIMESTAMP(created_at) AS created_at
      FROM voices WHERE user_id = ? ORDER BY created_at DESC`,
     [user.id]
   );
@@ -17,6 +18,7 @@ export async function GET() {
     id: r.elevenlabs_voice_id,
     name: r.name,
     emoji: r.emoji,
+    description: r.description ?? "",
     createdAt: Number(r.created_at) * 1000,
   }));
 

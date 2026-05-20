@@ -41,6 +41,10 @@ export async function POST(req: NextRequest) {
   }
 
   const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+  console.log(
+    `[voices/clone] files=${files.length} totalBytes=${totalBytes} ` +
+      `types=${files.map((f) => f.type).join(",")}`
+  );
   if (totalBytes < 50_000) {
     return NextResponse.json(
       { error: "녹음 길이가 너무 짧아요. 30초 이상 녹음해주세요." },
@@ -63,10 +67,25 @@ export async function POST(req: NextRequest) {
 
   if (!res.ok) {
     const detail = await res.text();
-    return NextResponse.json(
-      { error: "목소리를 만들지 못했어요.", status: res.status, detail },
-      { status: res.status }
+    console.error(
+      "[voices/clone] ElevenLabs add 실패:",
+      res.status,
+      detail
     );
+    let msg = "목소리를 만들지 못했어요. 잠시 후 다시 시도해주세요.";
+    const lowered = detail.toLowerCase();
+    if (lowered.includes("voice_limit") || lowered.includes("voice limit")) {
+      msg =
+        "보관할 수 있는 목소리 개수가 가득 찼어요. 기존 목소리를 지우고 다시 해주세요.";
+    } else if (
+      lowered.includes("instant_voice_cloning") ||
+      lowered.includes("can_not_use")
+    ) {
+      msg = "현재 계정에서는 목소리 복제를 사용할 수 없어요.";
+    } else if (res.status === 401) {
+      msg = "음성 서비스 인증에 실패했어요. 잠시 후 다시 시도해주세요.";
+    }
+    return NextResponse.json({ error: msg }, { status: res.status });
   }
 
   const data = (await res.json()) as { voice_id: string };

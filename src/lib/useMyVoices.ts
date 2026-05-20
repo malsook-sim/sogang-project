@@ -4,6 +4,7 @@ export interface MyVoice {
   id: string; // ElevenLabs voice id
   name: string;
   emoji: string;
+  description: string;
   createdAt: number;
 }
 

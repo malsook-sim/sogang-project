@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Pencil,
   Play,
+  Trash,
 } from "@/components/Icon";
 import { useMyVoices } from "@/lib/useMyVoices";
 
@@ -29,6 +30,15 @@ const scriptPool = [
 
 function pickRandomScripts(): string[] {
   return [...scriptPool].sort(() => Math.random() - 0.5).slice(0, 3);
+}
+
+// 녹음 일시 표기 (예: 2026.5.20 15:24)
+function formatRecordedAt(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${p(
+    d.getHours()
+  )}:${p(d.getMinutes())}`;
 }
 
 const CONSENT_KEY = "mvk.recordConsent";
@@ -223,6 +233,17 @@ export default function RecordPage() {
     }
   };
 
+  // 녹음된 목소리 삭제
+  const handleDeleteVoice = async (id: string) => {
+    if (!confirm("이 목소리를 삭제할까요?")) return;
+    try {
+      await fetch(`/api/voices/${id}`, { method: "DELETE" });
+      refreshVoices();
+    } catch {
+      // 무시
+    }
+  };
+
   const resetRecording = () => {
     setCurrentScript(0);
     setRecordingState("idle");
@@ -362,7 +383,7 @@ export default function RecordPage() {
                             {v.name}
                           </p>
                           <p className="text-xs text-muted">
-                            내가 녹음한 목소리
+                            {formatRecordedAt(v.createdAt)} 녹음
                           </p>
                         </div>
                         <button
@@ -374,6 +395,13 @@ export default function RecordPage() {
                           aria-label="이름 수정"
                         >
                           <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVoice(v.id)}
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition flex-shrink-0"
+                          aria-label="삭제"
+                        >
+                          <Trash size={16} />
                         </button>
                       </>
                     )}

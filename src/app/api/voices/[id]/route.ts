@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -12,14 +13,31 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const { name } = await req.json();
-  if (!name || !String(name).trim()) {
-    return NextResponse.json({ error: "이름을 입력해 주세요." }, { status: 400 });
+  const body = await req.json();
+
+  // name / description 중 들어온 것만 수정
+  const sets: string[] = [];
+  const vals: (string | number)[] = [];
+  if (typeof body.name === "string" && body.name.trim()) {
+    sets.push("name = ?");
+    vals.push(body.name.trim().slice(0, 100));
+  }
+  if (typeof body.description === "string") {
+    sets.push("description = ?");
+    vals.push(body.description.trim().slice(0, 255));
+  }
+  if (sets.length === 0) {
+    return NextResponse.json(
+      { error: "변경할 내용이 없어요." },
+      { status: 400 }
+    );
   }
 
+  vals.push(user.id, id);
   await db.query(
-    "UPDATE voices SET name = ? WHERE user_id = ? AND elevenlabs_voice_id = ?",
-    [String(name).trim().slice(0, 100), user.id, id]
+    `UPDATE voices SET ${sets.join(", ")}
+     WHERE user_id = ? AND elevenlabs_voice_id = ?`,
+    vals
   );
 
   return NextResponse.json({ ok: true });
@@ -35,6 +53,29 @@ export async function DELETE(
   }
 
   const { id } = await params;
+
+  // 이 사용자의 목소리인지 확인
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT id FROM voices WHERE user_id = ? AND elevenlabs_voice_id = ? LIMIT 1",
+    [user.id, id]
+  );
+  if (rows.length === 0) {
+    return NextResponse.json({ ok: true });
+  }
+
+  // ElevenLabs 에서도 삭제해 목소리 슬롯을 비움
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (apiKey) {
+    try {
+      await fetch(`https://api.elevenlabs.io/v1/voices/${id}`, {
+        method: "DELETE",
+        headers: { "xi-api-key": apiKey },
+      });
+    } catch {
+      // ElevenLabs 삭제 실패해도 DB 레코드는 정리
+    }
+  }
+
   await db.query(
     "DELETE FROM voices WHERE user_id = ? AND elevenlabs_voice_id = ?",
     [user.id, id]
