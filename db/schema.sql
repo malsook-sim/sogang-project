@@ -73,6 +73,21 @@ CREATE TABLE IF NOT EXISTS stories (
   category     VARCHAR(32)       NOT NULL,
   duration_min SMALLINT UNSIGNED NOT NULL DEFAULT 1,
   sort_order   INT               NOT NULL DEFAULT 0,
+  play_count   INT UNSIGNED      NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   KEY idx_stories_category (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 동화 재생 이력 (이어 듣기용) — story_id 는 카탈로그 id 또는 user_stories id(my-)
+CREATE TABLE IF NOT EXISTS play_history (
+  user_id      BIGINT UNSIGNED NOT NULL,
+  story_id     VARCHAR(64)     NOT NULL,
+  progress_sec INT UNSIGNED    NOT NULL DEFAULT 0,
+  duration_sec INT UNSIGNED    NOT NULL DEFAULT 0,
+  updated_at   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+                 ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, story_id),
+  KEY idx_play_history_updated (user_id, updated_at),
+  CONSTRAINT fk_play_history_user FOREIGN KEY (user_id)
+    REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

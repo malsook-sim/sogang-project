@@ -10,6 +10,7 @@ export interface Story {
   isPremium: boolean;
   category: string;
   durationMin: number;
+  playCount?: number;
 }
 
 export const categories = [

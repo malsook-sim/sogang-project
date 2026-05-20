@@ -9,10 +9,10 @@ export interface Voice {
 // 동화 낭독에 어울리는 한국어 보이스
 export const defaultVoices: Voice[] = [
   {
-    id: "ZjAPD4f11zlnEnZpKDgo",
-    name: "다정한 엄마",
-    description: "포근하고 다정한 엄마 목소리로 읽어줘요",
-    emoji: "👩",
+    id: "Lb7qkOn5hF8p7qfCDH8q",
+    name: "포근한 엄마",
+    description: "엄마가 들려주듯 포근하고 다정한 목소리예요",
+    emoji: "🤱",
     type: "premade",
   },
   {
@@ -41,13 +41,6 @@ export const defaultVoices: Voice[] = [
     name: "차분한 목소리",
     description: "차분하고 안정적인 목소리로 편안하게 읽어줘요",
     emoji: "🌙",
-    type: "premade",
-  },
-  {
-    id: "Lb7qkOn5hF8p7qfCDH8q",
-    name: "포근한 엄마",
-    description: "엄마가 들려주듯 포근하고 다정한 목소리예요",
-    emoji: "🤱",
     type: "premade",
   },
   {

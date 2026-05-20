@@ -19,7 +19,9 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/mypage";
 
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>(
+    searchParams.get("mode") === "signup" ? "signup" : "login"
+  );
   const [childName, setChildName] = useState("");
   const [childAge, setChildAge] = useState("5");
   const [error, setError] = useState("");

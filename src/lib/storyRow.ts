@@ -26,6 +26,7 @@ export function rowToCatalogStory(r: RowDataPacket): Story {
     isPremium: Boolean(r.is_premium),
     category: r.category,
     durationMin: r.duration_min,
+    playCount: r.play_count ?? 0,
   };
 }
 

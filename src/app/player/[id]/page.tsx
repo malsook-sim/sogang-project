@@ -39,11 +39,32 @@ function PlayerContent() {
   const [currentParagraph, setCurrentParagraph] = useState(0);
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
+  const [sleepRemaining, setSleepRemaining] = useState(0);
   const [showSubtitle, setShowSubtitle] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
-  const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sleepEndsAtRef = useRef(0);
+  const resumeRef = useRef(0); // 이어 들을 위치 (초)
+  const lastSaveRef = useRef(0); // 마지막으로 저장한 재생 위치
+  const countedRef = useRef(false); // 재생수 중복 카운트 방지
+
+  // 재생 위치를 서버에 저장 (이어 듣기용)
+  const saveProgress = (opts?: { ended?: boolean }) => {
+    const audio = audioRef.current;
+    if (!audio || !audio.duration) return;
+    fetch("/api/play-progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        storyId: idParam,
+        progressSec: opts?.ended ? audio.duration : audio.currentTime,
+        durationSec: audio.duration,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  };
 
   const paragraphs = story?.content.split("\n\n") || [];
   const koParagraphs = story?.contentKo?.split("\n\n") ?? [];
@@ -75,6 +96,14 @@ function PlayerContent() {
 
       audio.onloadedmetadata = () => {
         setDuration(audio.duration);
+        // 저장된 위치가 있으면 이어 듣기
+        const resume = resumeRef.current;
+        if (resume > 5 && audio.duration > 0 && resume < audio.duration * 0.95) {
+          audio.currentTime = resume;
+          setProgress(resume);
+          lastSaveRef.current = resume;
+        }
+        resumeRef.current = 0;
       };
 
       audio.ontimeupdate = () => {
@@ -84,16 +113,32 @@ function PlayerContent() {
           const idx = Math.floor(pct * paragraphs.length);
           setCurrentParagraph(Math.min(idx, paragraphs.length - 1));
         }
+        // 10초마다 진행 위치 저장
+        if (Math.abs(audio.currentTime - lastSaveRef.current) > 10) {
+          lastSaveRef.current = audio.currentTime;
+          saveProgress();
+        }
       };
 
       audio.onended = () => {
         setIsPlaying(false);
         setProgress(0);
         setCurrentParagraph(0);
+        saveProgress({ ended: true });
       };
 
       await audio.play();
       setIsPlaying(true);
+
+      // 재생수는 동화당 한 번만 카운트
+      if (!countedRef.current) {
+        countedRef.current = true;
+        fetch("/api/play-progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storyId: idParam, count: true }),
+        }).catch(() => {});
+      }
     } catch {
       alert("음성 생성에 실패했어요. 다시 시도해주세요.");
     } finally {
@@ -111,6 +156,7 @@ function PlayerContent() {
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
+      saveProgress();
     } else {
       audio.play();
       setIsPlaying(true);
@@ -137,15 +183,49 @@ function PlayerContent() {
     if (audioRef.current) audioRef.current.playbackRate = next;
   };
 
+  const clearSleepTimer = () => {
+    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
+    sleepTimerRef.current = null;
+    setSleepTimer(null);
+    setSleepRemaining(0);
+  };
+
+  // 타이머 만료 — 볼륨을 서서히 줄이며 멈춤 (스르르 잠들도록)
+  const fadeOutAndStop = () => {
+    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
+    sleepTimerRef.current = null;
+    setSleepTimer(null);
+    setSleepRemaining(0);
+    const audio = audioRef.current;
+    if (!audio) return;
+    const startVol = audio.volume;
+    let step = 0;
+    const fade = setInterval(() => {
+      step += 1;
+      audio.volume = Math.max(0, startVol * (1 - step / 20));
+      if (step >= 20) {
+        clearInterval(fade);
+        audio.pause();
+        audio.volume = startVol; // 다음 재생을 위해 복원
+        setIsPlaying(false);
+      }
+    }, 150);
+  };
+
   const startSleepTimer = (minutes: number) => {
-    if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
+    clearSleepTimer();
     setSleepTimer(minutes);
+    setSleepRemaining(minutes * 60);
     setShowSleepMenu(false);
-    sleepTimerRef.current = setTimeout(() => {
-      audioRef.current?.pause();
-      setIsPlaying(false);
-      setSleepTimer(null);
-    }, minutes * 60 * 1000);
+    sleepEndsAtRef.current = Date.now() + minutes * 60 * 1000;
+    sleepTimerRef.current = setInterval(() => {
+      const left = Math.round((sleepEndsAtRef.current - Date.now()) / 1000);
+      if (left <= 0) {
+        fadeOutAndStop();
+      } else {
+        setSleepRemaining(left);
+      }
+    }, 1000);
   };
 
   useEffect(() => {
@@ -166,12 +246,27 @@ function PlayerContent() {
     };
   }, [idParam]);
 
+  // 저장된 재생 위치 불러오기 (이어 듣기)
+  useEffect(() => {
+    fetch("/api/play-progress")
+      .then((r) => (r.ok ? r.json() : { history: [] }))
+      .then((d) => {
+        const row = (d.history || []).find(
+          (h: { storyId: string }) => h.storyId === idParam
+        );
+        if (row) resumeRef.current = row.progressSec;
+      })
+      .catch(() => {});
+  }, [idParam]);
+
   useEffect(() => {
     return () => {
+      saveProgress();
       audioRef.current?.pause();
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
-      if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
+      if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!storyResolved) {
@@ -231,44 +326,53 @@ function PlayerContent() {
           </div>
           <button
             onClick={() => setShowSleepMenu(!showSleepMenu)}
-            className={`w-10 h-10 rounded-full border backdrop-blur flex items-center justify-center transition ${
+            className={`h-10 px-3 rounded-full border backdrop-blur flex items-center gap-1.5 text-xs font-bold tabular-nums transition ${
               sleepTimer
                 ? "bg-secondary text-white border-secondary"
                 : "bg-surface/70 border-border text-foreground/80 hover:bg-surface"
             }`}
             aria-label="잠자기 타이머"
           >
-            <Moon size={18} filled={!!sleepTimer} />
+            <Moon size={15} filled={!!sleepTimer} />
+            {sleepTimer ? formatTime(sleepRemaining) : "잠자기"}
           </button>
         </div>
 
         {showSleepMenu && (
-          <div className="mx-5 mb-3 card shadow-md p-3 flex gap-2">
-            {[15, 30, 60].map((min) => (
-              <button
-                key={min}
-                onClick={() => startSleepTimer(min)}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition tabular-nums ${
-                  sleepTimer === min
-                    ? "bg-secondary text-white"
-                    : "bg-surface-soft text-foreground/80 hover:bg-secondary-light"
-                }`}
-              >
-                {min}분
-              </button>
-            ))}
-            {sleepTimer && (
-              <button
-                onClick={() => {
-                  if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
-                  setSleepTimer(null);
-                  setShowSleepMenu(false);
-                }}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold bg-surface-soft hover:bg-danger/10 text-danger"
-              >
-                끄기
-              </button>
-            )}
+          <div className="mx-5 mb-3 card shadow-md p-3.5">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Moon size={14} className="text-secondary" />
+              <p className="text-sm font-bold">잠자기 타이머</p>
+            </div>
+            <p className="text-[11px] text-muted mb-2.5">
+              정한 시간이 지나면 동화가 스르르 멈춰요
+            </p>
+            <div className="flex gap-2">
+              {[15, 30, 60].map((min) => (
+                <button
+                  key={min}
+                  onClick={() => startSleepTimer(min)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition tabular-nums ${
+                    sleepTimer === min
+                      ? "bg-secondary text-white"
+                      : "bg-surface-soft text-foreground/80 hover:bg-secondary-light"
+                  }`}
+                >
+                  {min}분
+                </button>
+              ))}
+              {sleepTimer && (
+                <button
+                  onClick={() => {
+                    clearSleepTimer();
+                    setShowSleepMenu(false);
+                  }}
+                  className="flex-1 py-2 rounded-lg text-sm font-semibold bg-surface-soft hover:bg-danger/10 text-danger"
+                >
+                  끄기
+                </button>
+              )}
+            </div>
           </div>
         )}
 

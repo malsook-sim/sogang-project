@@ -4,6 +4,9 @@ import { jwtVerify } from "jose";
 const COOKIE = "mvk_session";
 const secret = new TextEncoder().encode(process.env.SESSION_SECRET);
 
+// 로그인 없이 볼 수 있는 화면 (소개 랜딩 + 로그인/가입)
+const PUBLIC_PATHS = ["/landing", "/login"];
+
 async function hasValidSession(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get(COOKIE)?.value;
   if (!token) return false;
@@ -18,23 +21,22 @@ async function hasValidSession(req: NextRequest): Promise<boolean> {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const authed = await hasValidSession(req);
+  const isPublic = PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
 
-  // 로그인 필요한 화면
-  const isProtected =
-    pathname.startsWith("/create") || pathname.startsWith("/record");
-
-  if (isProtected && !authed) {
+  // 로그아웃 상태 — 서비스 소개 랜딩 페이지로 보냄
+  if (!authed && !isPublic) {
     const url = req.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/landing";
     url.search = "";
-    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  // 이미 로그인한 사용자는 로그인 화면으로 안 보냄
-  if (pathname === "/login" && authed) {
+  // 로그인 상태 — 랜딩/로그인 화면은 건너뜀
+  if (authed && isPublic) {
     const url = req.nextUrl.clone();
-    url.pathname = "/mypage";
+    url.pathname = pathname.startsWith("/login") ? "/mypage" : "/";
     url.search = "";
     return NextResponse.redirect(url);
   }
@@ -43,5 +45,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/create", "/create/:path*", "/record", "/record/:path*", "/login"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.).*)"],
 };

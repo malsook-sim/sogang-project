@@ -32,7 +32,7 @@ export async function GET(
   // 기본 카탈로그 동화
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT id, title, content, content_ko, age_min, age_max, morals,
-            is_premium, category, duration_min
+            is_premium, category, duration_min, play_count
      FROM stories WHERE id = ? LIMIT 1`,
     [id]
   );

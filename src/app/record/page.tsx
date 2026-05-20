@@ -33,7 +33,7 @@ const scriptPool = [
 ];
 
 function pickRandomScripts(): string[] {
-  return [...scriptPool].sort(() => Math.random() - 0.5).slice(0, 5);
+  return [...scriptPool].sort(() => Math.random() - 0.5).slice(0, 8);
 }
 
 const CONSENT_KEY = "mvk.recordConsent";
@@ -65,7 +65,7 @@ export default function RecordPage() {
   const { voices, refresh: refreshVoices } = useMyVoices();
   const [mode, setMode] = useState<Mode>("list");
   const [scripts, setScripts] = useState<string[]>(() =>
-    scriptPool.slice(0, 5)
+    scriptPool.slice(0, 8)
   );
   const [currentScript, setCurrentScript] = useState(0);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
