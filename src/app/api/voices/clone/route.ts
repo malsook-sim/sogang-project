@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
 
   const incoming = await req.formData();
   const name = (incoming.get("name") as string | null) ?? "내 목소리";
+  const emoji = (incoming.get("emoji") as string | null) ?? "🎙️";
   const description =
     (incoming.get("description") as string | null) ??
     "마이보이스키즈에서 녹음한 보호자 목소리";
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   await db.query<ResultSetHeader>(
     "INSERT INTO voices (user_id, elevenlabs_voice_id, name, emoji) VALUES (?, ?, ?, ?)",
-    [user.id, data.voice_id, name, "🎙️"]
+    [user.id, data.voice_id, name, emoji]
   );
 
   return NextResponse.json({ voiceId: data.voice_id, name });

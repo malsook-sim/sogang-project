@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { Story } from "@/data/stories";
 import { defaultVoices, englishVoices, getVoiceById } from "@/data/voices";
+import { bgmTracks } from "@/data/bgm";
 import { ChevronDown, Moon, Play, Pause } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 
@@ -40,12 +41,15 @@ function PlayerContent() {
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
   const [sleepRemaining, setSleepRemaining] = useState(0);
+  const [bgmId, setBgmId] = useState<string | null>(null);
+  const [showBgmMenu, setShowBgmMenu] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sleepEndsAtRef = useRef(0);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
   const resumeRef = useRef(0); // 이어 들을 위치 (초)
   const lastSaveRef = useRef(0); // 마지막으로 저장한 재생 위치
   const countedRef = useRef(false); // 재생수 중복 카운트 방지
@@ -183,6 +187,27 @@ function PlayerContent() {
     if (audioRef.current) audioRef.current.playbackRate = next;
   };
 
+  const selectBgm = (id: string) => {
+    const track = bgmTracks.find((t) => t.id === id);
+    if (!track) return;
+    if (bgmRef.current) bgmRef.current.pause();
+    const bgm = new Audio(track.file);
+    bgm.loop = true;
+    bgm.volume = 0.18;
+    bgmRef.current = bgm;
+    setBgmId(id);
+    setShowBgmMenu(false);
+  };
+
+  const turnOffBgm = () => {
+    if (bgmRef.current) {
+      bgmRef.current.pause();
+      bgmRef.current = null;
+    }
+    setBgmId(null);
+    setShowBgmMenu(false);
+  };
+
   const clearSleepTimer = () => {
     if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
     sleepTimerRef.current = null;
@@ -259,10 +284,19 @@ function PlayerContent() {
       .catch(() => {});
   }, [idParam]);
 
+  // 배경음악을 내레이션 재생 상태에 맞춰 켜고 끔
+  useEffect(() => {
+    const bgm = bgmRef.current;
+    if (!bgm) return;
+    if (isPlaying) bgm.play().catch(() => {});
+    else bgm.pause();
+  }, [isPlaying, bgmId]);
+
   useEffect(() => {
     return () => {
       saveProgress();
       audioRef.current?.pause();
+      bgmRef.current?.pause();
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
       if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
     };
@@ -458,12 +492,59 @@ function PlayerContent() {
         </div>
 
         <div className="px-5 pb-8">
-          <div className="flex justify-center gap-2 mb-5">
+          {showBgmMenu && (
+            <div className="card shadow-md p-3.5 mb-4">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-sm">🎵</span>
+                <p className="text-sm font-bold">배경음악</p>
+              </div>
+              <p className="text-[11px] text-muted mb-2.5">
+                동화에 잔잔한 음악을 깔아줘요
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {bgmTracks.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => selectBgm(t.id)}
+                    className={`py-2 rounded-lg text-sm font-semibold transition ${
+                      bgmId === t.id
+                        ? "bg-secondary text-white"
+                        : "bg-surface-soft text-foreground/80 hover:bg-secondary-light"
+                    }`}
+                  >
+                    {t.emoji} {t.label}
+                  </button>
+                ))}
+              </div>
+              {bgmId && (
+                <button
+                  onClick={turnOffBgm}
+                  className="w-full mt-2 py-2 rounded-lg text-sm font-semibold bg-surface-soft hover:bg-danger/10 text-danger"
+                >
+                  배경음악 끄기
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-center gap-2 mb-5 flex-wrap">
             <button
               onClick={changeSpeed}
               className="text-xs font-bold text-foreground/80 bg-surface/70 backdrop-blur border border-border px-3 py-1.5 rounded-full tabular-nums hover:bg-surface transition"
             >
               {speed}x
+            </button>
+            <button
+              onClick={() => setShowBgmMenu(!showBgmMenu)}
+              className={`text-xs font-bold border px-3 py-1.5 rounded-full transition ${
+                bgmId
+                  ? "bg-secondary text-white border-secondary"
+                  : "text-foreground/80 bg-surface/70 backdrop-blur border-border hover:bg-surface"
+              }`}
+            >
+              {bgmId
+                ? `${bgmTracks.find((t) => t.id === bgmId)?.emoji} 배경음악`
+                : "🎵 배경음악"}
             </button>
             <button
               onClick={() => {

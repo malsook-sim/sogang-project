@@ -8,13 +8,20 @@ import { useMyStories } from "@/lib/myStories";
 import { Search, User } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 
-// 나이대 필터 — 동화의 ageMin~ageMax 범위와 겹치면 해당 나이대로 분류
+// 나이대 필터 — 동화 권장연령의 중간값으로 한 묶음에만 속하게 분류
 const ageGroups = [
-  { id: "all", label: "전체 나이", emoji: "👶", lo: 0, hi: 99 },
-  { id: "3-4", label: "3~4세", emoji: "🍼", lo: 3, hi: 4 },
-  { id: "5-6", label: "5~6세", emoji: "🧸", lo: 5, hi: 6 },
-  { id: "7+", label: "7세 이상", emoji: "🎒", lo: 7, hi: 99 },
+  { id: "all", label: "전체 나이", emoji: "👶" },
+  { id: "young", label: "3~5세", emoji: "🍼" },
+  { id: "mid", label: "5~7세", emoji: "🧸" },
+  { id: "old", label: "6~8세", emoji: "🎒" },
 ];
+
+function ageBandOf(story: Story): "young" | "mid" | "old" {
+  const mid = (story.ageMin + story.ageMax) / 2;
+  if (mid <= 4.5) return "young";
+  if (mid <= 6.5) return "mid";
+  return "old";
+}
 
 interface PlayRow {
   storyId: string;
@@ -54,8 +61,6 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const ageGroup = ageGroups.find((g) => g.id === activeAge) ?? ageGroups[0];
-
   const filtered = catalog
     .filter((story) => {
       const matchesCategory =
@@ -65,7 +70,7 @@ export default function HomePage() {
         story.title.includes(searchQuery) ||
         story.morals.some((m) => m.includes(searchQuery));
       const matchesAge =
-        story.ageMin <= ageGroup.hi && story.ageMax >= ageGroup.lo;
+        activeAge === "all" || ageBandOf(story) === activeAge;
       return matchesCategory && matchesSearch && matchesAge;
     })
     // 어린 나이대 동화부터 보이도록 정렬

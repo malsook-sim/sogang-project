@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import mysql from "mysql2/promise";
+import type { RowDataPacket } from "mysql2";
 import { stories as baseStories } from "../src/data/stories";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -19,6 +20,19 @@ interface SeedStory {
   category: string;
   durationMin: number;
 }
+
+// 동화별 권장 연령 — 나이대 필터가 골고루 나뉘도록 분류
+// (3~5세 / 5~7세 / 6~8세 세 묶음)
+const AGE_OVERRIDES: Record<string, [number, number]> = {
+  "1": [3, 5], "6": [3, 5], "8": [3, 5], "9": [3, 5], "18": [3, 5],
+  "19": [3, 5], "20": [3, 5], "21": [3, 5], "25": [3, 5], "26": [3, 5],
+  "27": [3, 5], "32": [3, 5], "33": [3, 5],
+  "2": [5, 7], "3": [5, 7], "4": [5, 7], "11": [5, 7], "12": [5, 7],
+  "15": [5, 7], "16": [5, 7], "24": [5, 7], "28": [5, 7], "30": [5, 7],
+  "34": [5, 7],
+  "5": [6, 8], "7": [6, 8], "10": [6, 8], "13": [6, 8], "14": [6, 8],
+  "17": [6, 8], "22": [6, 8], "23": [6, 8], "29": [6, 8], "31": [6, 8],
+};
 
 async function main() {
   const env = await readFile(join(root, ".env.local"), "utf8");
@@ -54,7 +68,25 @@ async function main() {
     ...englishStories,
   ];
 
+  // 권장 연령 재분류 적용
+  for (const s of all) {
+    const o = AGE_OVERRIDES[s.id];
+    if (o) {
+      s.ageMin = o[0];
+      s.ageMax = o[1];
+    }
+  }
+
   const conn = await mysql.createConnection(rawUrl);
+
+  // 기존 재생수는 보존
+  const [prevRows] = await conn.query<RowDataPacket[]>(
+    "SELECT id, play_count FROM stories"
+  );
+  const prevPlayCount = new Map(
+    prevRows.map((r) => [String(r.id), Number(r.play_count)])
+  );
+
   await conn.query("DELETE FROM stories");
 
   for (const s of all) {
@@ -77,6 +109,16 @@ async function main() {
         Number(s.id),
       ]
     );
+  }
+
+  // 재생수 복원
+  for (const [id, pc] of prevPlayCount) {
+    if (pc > 0) {
+      await conn.query("UPDATE stories SET play_count = ? WHERE id = ?", [
+        pc,
+        id,
+      ]);
+    }
   }
 
   console.log(`동화 ${all.length}편 시드 완료`);

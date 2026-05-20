@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:setup": "node scripts/setup-db.mjs",
-    "db:seed": "tsx scripts/seed-stories.ts"
+    "db:seed": "tsx scripts/seed-stories.ts",
+    "gen:bgm": "tsx scripts/gen-bgm.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

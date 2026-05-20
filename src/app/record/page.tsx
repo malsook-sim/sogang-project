@@ -2,45 +2,51 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Lock, Mic, Refresh, ChevronRight } from "@/components/Icon";
+import {
+  ChevronLeft,
+  Lock,
+  Mic,
+  Refresh,
+  ChevronRight,
+  Pencil,
+  Play,
+} from "@/components/Icon";
 import { useMyVoices } from "@/lib/useMyVoices";
 
+// 한 번에 읽을 짧은 지문 — 3개만 읽어도 복제에 충분하도록 적당히 길게
 const scriptPool = [
-  "옛날 옛날에 작은 마을이 있었어요.",
-  "하늘은 높고 파란 가을이었답니다.",
-  "토끼가 깡충깡충 뛰어서 숲속으로 갔어요.",
-  "엄마가 따뜻한 목소리로 말했어요. 사랑한다, 우리 아가.",
-  "그래서 모두 함께 행복하게 살았답니다.",
-  "깊은 산속에 작은 오두막 한 채가 있었어요.",
-  "별빛이 강물 위에서 반짝반짝 빛났어요.",
-  "아기 곰은 엄마 손을 꼭 잡고 걸어갔어요.",
-  "\"안녕? 너는 누구니?\" 다람쥐가 물었어요.",
-  "바람이 살랑살랑 불어와 꽃잎을 흔들었어요.",
-  "용감한 소녀는 한 걸음 한 걸음 앞으로 나아갔어요.",
-  "달님이 환하게 웃으며 아이들을 지켜보았어요.",
-  "작은 새가 노래를 부르자 온 숲이 즐거워졌어요.",
-  "할머니는 따뜻한 이야기를 들려주셨어요.",
-  "눈이 펑펑 내리던 어느 겨울밤이었어요.",
-  "그때 정말 신기한 일이 벌어졌답니다.",
-  "친구들은 손을 잡고 빙글빙글 춤을 추었어요.",
-  "\"정말 고마워!\" 아이는 환하게 미소 지었어요.",
-  "푸른 바다 너머로 멋진 섬이 보였어요.",
-  "졸린 아기 여우는 스르르 잠이 들었어요.",
-  "따뜻한 봄날, 새싹이 쏙쏙 돋아났어요.",
-  "모두가 힘을 모으자 무거운 바위가 움직였어요.",
-  "무지개가 하늘에 곱게 걸렸어요.",
-  "그날 밤 아이는 행복한 꿈을 꾸었답니다.",
+  "옛날 옛날 깊은 산속에 작고 아늑한 오두막 한 채가 있었어요. 그곳에는 마음씨 착한 할머니와 귀여운 강아지가 함께 살았답니다.",
+  "햇살이 따뜻한 어느 봄날 아침이었어요. 들판에는 노란 꽃들이 활짝 피어났고, 작은 나비들이 춤을 추듯 사뿐사뿐 날아다녔지요.",
+  "아기 곰은 엄마 손을 꼭 잡고 숲길을 걸어갔어요. 나무 사이로 새들이 즐겁게 노래를 불렀고, 시냇물은 졸졸졸 맑은 소리를 냈답니다.",
+  "별빛이 반짝이는 고요한 밤이 찾아왔어요. 달님은 창문 너머로 아이들을 가만히 지켜보며 포근하고 달콤한 잠을 선물해 주었답니다.",
+  "용감한 소녀는 깊게 숨을 들이쉬고 한 걸음씩 앞으로 나아갔어요. 조금 무섭기도 했지만, 포기하지 않으면 분명 길이 보일 거라 믿었거든요.",
+  "토끼는 깡충깡충 신나게 언덕을 올라갔어요. 언덕 위에서 내려다본 마을은 작고 평화로웠고, 바람은 살랑살랑 부드럽게 불어왔지요.",
+  "엄마는 다정한 목소리로 아이에게 속삭였어요. 오늘도 정말 잘했어 우리 아가, 사랑한단다, 하고 이마에 살며시 입을 맞추었답니다.",
+  "작은 씨앗 하나가 흙 속에서 쏙 고개를 내밀었어요. 따뜻한 햇살과 시원한 빗방울을 먹고 씨앗은 무럭무럭 자라나기 시작했답니다.",
+  "친구들은 손을 잡고 둥글게 모여 빙글빙글 춤을 추었어요. 모두의 환한 웃음소리가 온 들판에 퍼져 하루가 더없이 즐거웠지요.",
+  "하얀 눈이 소복소복 내려앉은 겨울밤이었어요. 아이는 따뜻한 이불 속에서 오늘 있었던 일을 떠올리며 행복한 미소를 지었답니다.",
 ];
 
 function pickRandomScripts(): string[] {
-  return [...scriptPool].sort(() => Math.random() - 0.5).slice(0, 8);
+  return [...scriptPool].sort(() => Math.random() - 0.5).slice(0, 3);
 }
 
 const CONSENT_KEY = "mvk.recordConsent";
 
+// 녹음 대상자 테마 — 목소리 이름·이모지 기본값을 정함
+const VOICE_THEMES = [
+  { id: "mom", label: "엄마", emoji: "👩", name: "엄마 목소리" },
+  { id: "dad", label: "아빠", emoji: "👨", name: "아빠 목소리" },
+  { id: "grandma", label: "할머니", emoji: "👵", name: "할머니 목소리" },
+  { id: "grandpa", label: "할아버지", emoji: "👴", name: "할아버지 목소리" },
+  { id: "bro", label: "오빠", emoji: "👦", name: "오빠 목소리" },
+  { id: "sis", label: "언니", emoji: "👧", name: "언니 목소리" },
+  { id: "etc", label: "기타", emoji: "🎙️", name: "내 목소리" },
+];
+
 type RecordingState = "idle" | "recording" | "done";
 type SubmitState = "ready" | "submitting" | "success" | "error";
-type Mode = "list" | "consent" | "recording";
+type Mode = "list" | "theme" | "consent" | "recording";
 
 function pickMimeType(): string {
   const candidates = [
@@ -65,7 +71,7 @@ export default function RecordPage() {
   const { voices, refresh: refreshVoices } = useMyVoices();
   const [mode, setMode] = useState<Mode>("list");
   const [scripts, setScripts] = useState<string[]>(() =>
-    scriptPool.slice(0, 8)
+    scriptPool.slice(0, 3)
   );
   const [currentScript, setCurrentScript] = useState(0);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
@@ -77,8 +83,13 @@ export default function RecordPage() {
   const [submitState, setSubmitState] = useState<SubmitState>("ready");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [voiceName, setVoiceName] = useState("내 목소리");
+  const [voiceEmoji, setVoiceEmoji] = useState("🎙️");
+  const [themeId, setThemeId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
 
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const previewRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -90,6 +101,7 @@ export default function RecordPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      previewRef.current?.pause();
     };
   }, []);
 
@@ -182,6 +194,35 @@ export default function RecordPage() {
     });
   };
 
+  // 방금 녹음한 내 목소리 들어보기
+  const playRecording = () => {
+    const blob = recordings[currentScript];
+    if (!blob) return;
+    if (previewRef.current) previewRef.current.pause();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    previewRef.current = audio;
+    audio.onended = () => URL.revokeObjectURL(url);
+    audio.play().catch(() => {});
+  };
+
+  // 녹음된 목소리 이름 바꾸기
+  const saveRename = async (id: string) => {
+    const name = editName.trim();
+    if (!name) return;
+    setEditingId(null);
+    try {
+      await fetch(`/api/voices/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      refreshVoices();
+    } catch {
+      // 무시
+    }
+  };
+
   const resetRecording = () => {
     setCurrentScript(0);
     setRecordingState("idle");
@@ -191,11 +232,18 @@ export default function RecordPage() {
     setSubmitState("ready");
     setErrorMsg(null);
     setVoiceName("내 목소리");
+    setVoiceEmoji("🎙️");
+    setThemeId(null);
   };
 
   const startNewRecording = () => {
     setScripts(pickRandomScripts());
     resetRecording();
+    setMode("theme");
+  };
+
+  const proceedFromTheme = () => {
+    if (!themeId) return;
     let consented = false;
     try {
       consented = localStorage.getItem(CONSENT_KEY) === "1";
@@ -225,6 +273,7 @@ export default function RecordPage() {
     try {
       const form = new FormData();
       form.append("name", voiceName || "내 목소리");
+      form.append("emoji", voiceEmoji);
       const ext = mimeRef.current.includes("mp4") ? "mp4" : "webm";
       recordings.forEach((blob, i) => {
         if (blob) form.append("files", blob, `sample-${i + 1}.${ext}`);
@@ -282,13 +331,52 @@ export default function RecordPage() {
                     key={v.id}
                     className="card p-4 flex items-center gap-3.5"
                   >
-                    <div className="w-11 h-11 rounded-full bg-primary-light flex items-center justify-center text-xl">
+                    <div className="w-11 h-11 rounded-full bg-primary-light flex items-center justify-center text-xl flex-shrink-0">
                       {v.emoji}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate">{v.name}</p>
-                      <p className="text-xs text-muted">내가 녹음한 목소리</p>
-                    </div>
+                    {editingId === v.id ? (
+                      <div className="flex-1 flex items-center gap-2 min-w-0">
+                        <input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          autoFocus
+                          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-primary bg-surface text-sm focus:outline-none"
+                        />
+                        <button
+                          onClick={() => saveRename(v.id)}
+                          className="text-xs font-bold text-primary px-2 py-1.5 flex-shrink-0"
+                        >
+                          저장
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="text-xs text-muted px-1 py-1.5 flex-shrink-0"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate">
+                            {v.name}
+                          </p>
+                          <p className="text-xs text-muted">
+                            내가 녹음한 목소리
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingId(v.id);
+                            setEditName(v.name);
+                          }}
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-primary hover:bg-primary-light transition flex-shrink-0"
+                          aria-label="이름 수정"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -311,6 +399,49 @@ export default function RecordPage() {
               새로 녹음하기
             </button>
           </>
+        )}
+
+        {mode === "theme" && (
+          <div>
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-primary-light text-primary flex items-center justify-center">
+                <Mic size={24} filled />
+              </div>
+              <h2 className="text-lg font-extrabold mb-1 tracking-tight">
+                누구 목소리인가요?
+              </h2>
+              <p className="text-sm text-muted">
+                녹음할 목소리의 주인공을 골라주세요
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5 mb-6">
+              {VOICE_THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setThemeId(t.id);
+                    setVoiceName(t.name);
+                    setVoiceEmoji(t.emoji);
+                  }}
+                  className={`card p-4 flex flex-col items-center gap-1.5 transition ${
+                    themeId === t.id
+                      ? "!border-primary ring-2 ring-primary/25"
+                      : "hover:border-border-strong"
+                  }`}
+                >
+                  <span className="text-3xl">{t.emoji}</span>
+                  <span className="text-xs font-bold">{t.label}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={proceedFromTheme}
+              disabled={!themeId}
+              className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              다음
+            </button>
+          </div>
         )}
 
         {mode === "consent" && (
@@ -433,27 +564,36 @@ export default function RecordPage() {
 
                 <div className="flex flex-col items-center gap-4">
                   {recordingState === "done" ? (
-                    <div className="flex gap-3 w-full">
+                    <div className="w-full">
                       <button
-                        onClick={handleRetry}
-                        className="flex-1 py-3.5 rounded-xl border border-border text-sm font-semibold hover:bg-surface transition flex items-center justify-center gap-1.5"
+                        onClick={playRecording}
+                        className="w-full py-3 mb-3 rounded-xl bg-secondary-light text-secondary text-sm font-bold hover:bg-secondary hover:text-white transition flex items-center justify-center gap-1.5"
                       >
-                        <Refresh size={16} />
-                        다시 녹음
+                        <Play size={15} />
+                        녹음 들어보기
                       </button>
-                      <button
-                        onClick={handleNext}
-                        className="flex-1 py-3.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20 flex items-center justify-center gap-1.5"
-                      >
-                        {currentScript < scripts.length - 1 ? (
-                          <>
-                            다음 문장
-                            <ChevronRight size={16} />
-                          </>
-                        ) : (
-                          "완료"
-                        )}
-                      </button>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleRetry}
+                          className="flex-1 py-3.5 rounded-xl border border-border text-sm font-semibold hover:bg-surface transition flex items-center justify-center gap-1.5"
+                        >
+                          <Refresh size={16} />
+                          다시 녹음
+                        </button>
+                        <button
+                          onClick={handleNext}
+                          className="flex-1 py-3.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20 flex items-center justify-center gap-1.5"
+                        >
+                          {currentScript < scripts.length - 1 ? (
+                            <>
+                              다음 문장
+                              <ChevronRight size={16} />
+                            </>
+                          ) : (
+                            "완료"
+                          )}
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="relative">
@@ -508,8 +648,8 @@ export default function RecordPage() {
                     </p>
                     <div className="card p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-primary-light text-primary rounded-full flex items-center justify-center">
-                          <Mic size={20} filled />
+                        <div className="w-11 h-11 bg-primary-light rounded-full flex items-center justify-center text-xl">
+                          {voiceEmoji}
                         </div>
                         <div className="text-left flex-1">
                           <p className="font-bold text-sm">{voiceName}</p>
