@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { getStoryById } from "@/data/stories";
+import type { Story } from "@/data/stories";
 import { defaultVoices, getVoiceById } from "@/data/voices";
 import { ChevronDown, Moon, Play, Pause } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
@@ -19,7 +19,9 @@ function PlayerContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const story = getStoryById(params.id as string);
+  const idParam = params.id as string;
+  const [story, setStory] = useState<Story | null>(null);
+  const [storyResolved, setStoryResolved] = useState(false);
   const voiceId = searchParams.get("voiceId") || defaultVoices[0].id;
   const voice = getVoiceById(voiceId);
 
@@ -139,12 +141,38 @@ function PlayerContent() {
   };
 
   useEffect(() => {
+    let active = true;
+    fetch(`/api/stories/${idParam}`)
+      .then((r) => (r.ok ? r.json() : { story: null }))
+      .then((d) => {
+        if (active) {
+          setStory(d.story ?? null);
+          setStoryResolved(true);
+        }
+      })
+      .catch(() => {
+        if (active) setStoryResolved(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [idParam]);
+
+  useEffect(() => {
     return () => {
       audioRef.current?.pause();
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
       if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
     };
   }, []);
+
+  if (!storyResolved) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted text-sm">동화를 불러오는 중...</p>
+      </div>
+    );
+  }
 
   if (!story) {
     return (
@@ -187,7 +215,7 @@ function PlayerContent() {
           </button>
           <div className="text-center">
             <p className="text-[10px] uppercase tracking-[0.18em] text-muted font-semibold">
-              Now Playing
+              지금 듣는 중
             </p>
             <p className="text-xs font-semibold tracking-tight mt-0.5">
               {voice?.emoji} {voice?.name || "기본 목소리"}
@@ -200,7 +228,7 @@ function PlayerContent() {
                 ? "bg-secondary text-white border-secondary"
                 : "bg-surface/70 border-border text-foreground/80 hover:bg-surface"
             }`}
-            aria-label="수면 타이머"
+            aria-label="잠자기 타이머"
           >
             <Moon size={18} filled={!!sleepTimer} />
           </button>
@@ -230,7 +258,7 @@ function PlayerContent() {
                 }}
                 className="flex-1 py-2 rounded-lg text-sm font-semibold bg-surface-soft hover:bg-danger/10 text-danger"
               >
-                해제
+                끄기
               </button>
             )}
           </div>
@@ -311,7 +339,7 @@ function PlayerContent() {
               }}
               className="text-xs font-bold text-foreground/80 bg-surface/70 backdrop-blur border border-border px-3 py-1.5 rounded-full hover:bg-surface transition"
             >
-              {voice?.emoji} 목소리 변경
+              {voice?.emoji} 목소리 바꾸기
             </button>
           </div>
 
@@ -327,7 +355,7 @@ function PlayerContent() {
               onClick={togglePlay}
               disabled={loading}
               className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 hover:bg-primary-dark transition active:scale-95 disabled:opacity-60"
-              aria-label={isPlaying ? "일시정지" : "재생"}
+              aria-label={isPlaying ? "멈추기" : "듣기"}
             >
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />

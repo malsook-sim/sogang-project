@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { ResultSetHeader } from "mysql2";
+import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: "로그인이 필요해요." },
+      { status: 401 }
+    );
+  }
+
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -16,8 +27,10 @@ export async function POST(req: NextRequest) {
   const name = (incoming.get("name") as string | null) ?? "내 목소리";
   const description =
     (incoming.get("description") as string | null) ??
-    "마이보이스스토리에서 녹음한 보호자 목소리";
-  const files = incoming.getAll("files").filter((f): f is File => f instanceof File);
+    "마이보이스키즈에서 녹음한 보호자 목소리";
+  const files = incoming
+    .getAll("files")
+    .filter((f): f is File => f instanceof File);
 
   if (files.length === 0) {
     return NextResponse.json(
@@ -50,11 +63,17 @@ export async function POST(req: NextRequest) {
   if (!res.ok) {
     const detail = await res.text();
     return NextResponse.json(
-      { error: "Voice Cloning 실패", status: res.status, detail },
+      { error: "목소리를 만들지 못했어요.", status: res.status, detail },
       { status: res.status }
     );
   }
 
   const data = (await res.json()) as { voice_id: string };
+
+  await db.query<ResultSetHeader>(
+    "INSERT INTO voices (user_id, elevenlabs_voice_id, name, emoji) VALUES (?, ?, ?, ?)",
+    [user.id, data.voice_id, name, "🎙️"]
+  );
+
   return NextResponse.json({ voiceId: data.voice_id, name });
 }

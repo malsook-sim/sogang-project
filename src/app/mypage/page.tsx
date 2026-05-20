@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import BottomNav from "@/components/BottomNav";
+import { StoryCover } from "@/components/StoryCover";
 import {
   User,
   Mic,
@@ -10,54 +10,146 @@ import {
   Lock,
   FileText,
   Sliders,
+  Sparkles,
   ChevronRight,
+  Trash,
 } from "@/components/Icon";
+import { useMyVoices } from "@/lib/useMyVoices";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useBookmarks, toggleBookmark } from "@/lib/bookmarks";
+import { useMyStories, removeMyStory } from "@/lib/myStories";
+import { type Story } from "@/data/stories";
+import { useCatalog } from "@/lib/useCatalog";
 
 export default function MyPage() {
+  const { user, loading: authLoading } = useCurrentUser();
+  const { voices, refresh: refreshVoices } = useMyVoices();
+  const myStories = useMyStories();
+  const catalog = useCatalog();
+  const saved = useBookmarks()
+    .map((id) => catalog.find((s) => s.id === id))
+    .filter((s): s is Story => Boolean(s));
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.replace("/");
+  };
+
+  const handleDeleteVoice = async (id: string) => {
+    await fetch(`/api/voices/${id}`, { method: "DELETE" });
+    refreshVoices();
+  };
+
   return (
     <>
       <header className="sticky top-0 z-40 glass border-b border-border">
-        <div className="max-w-lg mx-auto px-5 h-14 flex items-center">
+        <div className="max-w-lg lg:max-w-4xl mx-auto px-5 h-14 flex items-center">
           <h1 className="font-bold tracking-tight">내 서재</h1>
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-5 py-6">
-        <div className="card p-5 mb-5">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-primary-light text-primary rounded-2xl flex items-center justify-center">
-              <User size={26} filled />
+      <div className="max-w-lg lg:max-w-4xl mx-auto px-5 py-6">
+        {user ? (
+          <div className="card p-5 mb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-primary-light text-primary rounded-2xl flex items-center justify-center">
+                <User size={26} filled />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-base truncate">{user.email}</p>
+                <p className="text-xs text-muted mt-0.5">
+                  {user.childName
+                    ? `${user.childName} · ${user.childAge ?? "?"}세`
+                    : "아이 정보가 아직 없어요"}
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="font-bold text-base">로그인해 주세요</p>
-              <p className="text-xs text-muted mt-0.5">
-                로그인하면 목소리를 등록할 수 있어요
-              </p>
-            </div>
+            <button
+              onClick={handleLogout}
+              className="w-full mt-4 py-3 rounded-xl border border-border font-semibold text-sm hover:bg-surface transition"
+            >
+              로그아웃
+            </button>
           </div>
-          <button className="w-full mt-4 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-dark transition shadow-sm shadow-primary/20">
-            로그인 / 회원가입
-          </button>
-        </div>
+        ) : (
+          <div className="card p-5 mb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-primary-light text-primary rounded-2xl flex items-center justify-center">
+                <User size={26} filled />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-base">
+                  {authLoading ? "불러오는 중..." : "로그인해 주세요"}
+                </p>
+                <p className="text-xs text-muted mt-0.5">
+                  로그인하면 목소리를 등록할 수 있어요
+                </p>
+              </div>
+            </div>
+            {!authLoading && (
+              <Link
+                href="/login"
+                className="block text-center w-full mt-4 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-dark transition shadow-sm shadow-primary/20"
+              >
+                로그인 / 회원가입
+              </Link>
+            )}
+          </div>
+        )}
 
         <div className="card p-5 mb-5">
           <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
             <Mic size={16} className="text-primary" />
-            등록된 목소리
+            내 목소리
+            {voices.length > 0 && (
+              <span className="text-xs text-muted font-semibold">
+                {voices.length}
+              </span>
+            )}
           </h2>
-          <div className="flex items-center gap-3 p-3 bg-surface-soft border border-border rounded-xl">
-            <div className="w-10 h-10 rounded-full bg-border/50 flex items-center justify-center text-muted">
-              <Mic size={16} />
+
+          {voices.length > 0 ? (
+            <div className="space-y-2">
+              {voices.map((v) => (
+                <div
+                  key={v.id}
+                  className="flex items-center gap-3 p-3 bg-surface-soft border border-border rounded-xl"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-lg">
+                    {v.emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{v.name}</p>
+                    <p className="text-xs text-muted truncate">
+                      내가 녹음한 목소리
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteVoice(v.id)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition"
+                    aria-label="목소리 삭제"
+                  >
+                    <Trash size={16} />
+                  </button>
+                </div>
+              ))}
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground/80">
-                등록된 목소리가 없어요
-              </p>
-              <p className="text-xs text-muted mt-0.5">
-                목소리를 녹음해서 등록해보세요
-              </p>
+          ) : (
+            <div className="flex items-center gap-3 p-3 bg-surface-soft border border-border rounded-xl">
+              <div className="w-10 h-10 rounded-full bg-border/50 flex items-center justify-center text-muted">
+                <Mic size={16} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground/80">
+                  아직 목소리가 없어요
+                </p>
+                <p className="text-xs text-muted mt-0.5">
+                  목소리를 녹음해 보세요
+                </p>
+              </div>
             </div>
-          </div>
+          )}
+
           <Link
             href="/record"
             className="block text-center w-full mt-3 py-2.5 rounded-xl border border-primary text-primary text-sm font-semibold hover:bg-primary-light transition"
@@ -70,18 +162,125 @@ export default function MyPage() {
           <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
             <Heart size={16} className="text-primary" />
             저장한 동화
+            {saved.length > 0 && (
+              <span className="text-xs text-muted font-semibold">
+                {saved.length}
+              </span>
+            )}
           </h2>
-          <div className="text-center py-8">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-surface-soft border border-border flex items-center justify-center text-muted">
-              <Heart size={20} />
+
+          {saved.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {saved.map((story) => (
+                <div key={story.id} className="relative">
+                  <Link
+                    href={`/stories/${story.id}`}
+                    className="block card card-interactive overflow-hidden group"
+                  >
+                    <div className="aspect-square bg-surface-soft overflow-hidden">
+                      <StoryCover
+                        story={story}
+                        className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="p-2.5">
+                      <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
+                        {story.title}
+                      </p>
+                      <p className="text-[10px] text-muted mt-0.5">
+                        {story.ageMin}~{story.ageMax}세
+                      </p>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={() => toggleBookmark(story.id)}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-foreground/65 backdrop-blur-sm text-white flex items-center justify-center hover:bg-danger transition"
+                    aria-label="저장 해제"
+                  >
+                    <Heart size={15} filled />
+                  </button>
+                </div>
+              ))}
             </div>
-            <p className="text-sm text-foreground/75 font-medium">
-              아직 저장한 동화가 없어요
-            </p>
-            <p className="text-xs text-muted mt-1">
-              마음에 드는 동화에 하트를 눌러보세요
-            </p>
-          </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-surface-soft border border-border flex items-center justify-center text-muted">
+                <Heart size={20} />
+              </div>
+              <p className="text-sm text-foreground/75 font-medium">
+                아직 저장한 동화가 없어요
+              </p>
+              <p className="text-xs text-muted mt-1">
+                마음에 드는 동화에 하트를 눌러보세요
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="card p-5 mb-5">
+          <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <Sparkles size={16} className="text-secondary" />
+            내가 만든 동화
+            {myStories.length > 0 && (
+              <span className="text-xs text-muted font-semibold">
+                {myStories.length}
+              </span>
+            )}
+          </h2>
+
+          {myStories.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {myStories.map((story) => (
+                <div key={story.id} className="relative">
+                  <Link
+                    href={`/voices?storyId=${story.id}`}
+                    className="block card card-interactive overflow-hidden group"
+                  >
+                    <div className="aspect-square bg-surface-soft overflow-hidden">
+                      <StoryCover
+                        story={story}
+                        className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="p-2.5">
+                      <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
+                        {story.title}
+                      </p>
+                      <p className="text-[10px] text-muted mt-0.5">
+                        {story.ageMin}~{story.ageMax}세
+                      </p>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={() => removeMyStory(story.id)}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-foreground/65 backdrop-blur-sm text-white flex items-center justify-center hover:bg-danger transition"
+                    aria-label="동화 삭제"
+                  >
+                    <Trash size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-surface-soft border border-border flex items-center justify-center text-muted">
+                <Sparkles size={20} />
+              </div>
+              <p className="text-sm text-foreground/75 font-medium">
+                아직 만든 동화가 없어요
+              </p>
+              <p className="text-xs text-muted mt-1">
+                AI로 우리 아이만의 동화를 만들어보세요
+              </p>
+            </div>
+          )}
+
+          <Link
+            href="/create"
+            className="block text-center w-full mt-3 py-2.5 rounded-xl border border-secondary text-secondary text-sm font-semibold hover:bg-secondary-light transition"
+          >
+            새 동화 만들기
+          </Link>
         </div>
 
         <div className="card overflow-hidden">
@@ -90,7 +289,7 @@ export default function MyPage() {
             설정
           </h2>
           {[
-            { Icon: User, label: "자녀 정보 관리" },
+            { Icon: User, label: "우리 아이 정보" },
             { Icon: Bell, label: "알림 설정" },
             { Icon: Lock, label: "개인정보 처리방침" },
             { Icon: FileText, label: "서비스 이용약관" },
@@ -107,7 +306,6 @@ export default function MyPage() {
         </div>
       </div>
 
-      <BottomNav />
     </>
   );
 }

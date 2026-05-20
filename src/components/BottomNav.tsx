@@ -17,7 +17,7 @@ export default function BottomNav() {
   if (pathname.startsWith("/player")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 glass border-t border-border z-50">
+    <nav className="fixed bottom-0 left-0 right-0 glass border-t border-border z-50 lg:hidden">
       <div className="max-w-lg mx-auto flex justify-around items-stretch h-[68px] pb-[env(safe-area-inset-bottom)]">
         {tabs.map((tab) => {
           const isActive =

@@ -1,14 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { defaultVoices } from "@/data/voices";
-import {
-  ClonedVoice,
-  getClonedVoices,
-  removeClonedVoice,
-} from "@/lib/clonedVoices";
-import BottomNav from "@/components/BottomNav";
+import { useMyVoices } from "@/lib/useMyVoices";
 import { ChevronLeft, ChevronRight, Mic, Play, Trash } from "@/components/Icon";
 
 export default function VoiceSelectPage() {
@@ -25,14 +20,34 @@ function VoiceSelectContent() {
   const storyId = searchParams.get("storyId");
   const [selected, setSelected] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<string | null>(null);
-  const [clonedVoices, setClonedVoices] = useState<ClonedVoice[]>([]);
+  const { voices: clonedVoices, refresh: refreshVoices } = useMyVoices();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const urlRef = useRef<string | null>(null);
+  const reqRef = useRef(0);
 
   useEffect(() => {
-    setClonedVoices(getClonedVoices());
+    return () => {
+      audioRef.current?.pause();
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    };
   }, []);
 
+  const stopPreview = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current);
+      urlRef.current = null;
+    }
+  };
+
   const handlePreview = async (voiceId: string) => {
+    const reqId = ++reqRef.current;
+    stopPreview();
     setPreviewing(voiceId);
+
     try {
       const res = await fetch("/api/tts", {
         method: "POST",
@@ -42,28 +57,41 @@ function VoiceSelectContent() {
           voiceId,
         }),
       });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.play();
-        audio.onended = () => {
-          URL.revokeObjectURL(url);
-          setPreviewing(null);
-        };
-      } else {
-        setPreviewing(null);
+
+      if (!res.ok) {
+        if (reqId === reqRef.current) setPreviewing(null);
+        return;
       }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      // 응답을 기다리는 동안 다른 목소리를 눌렀으면 이 결과는 폐기
+      if (reqId !== reqRef.current) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      urlRef.current = url;
+      audio.onended = () => {
+        if (reqId === reqRef.current) {
+          stopPreview();
+          setPreviewing(null);
+        }
+      };
+      audio.play().catch(() => {});
     } catch {
-      setPreviewing(null);
+      if (reqId === reqRef.current) setPreviewing(null);
     }
   };
 
-  const handleDeleteCloned = (id: string) => {
+  const handleDeleteCloned = async (id: string) => {
     if (!confirm("이 목소리를 삭제할까요?")) return;
-    removeClonedVoice(id);
-    setClonedVoices(getClonedVoices());
+    await fetch(`/api/voices/${id}`, { method: "DELETE" });
     if (selected === id) setSelected(null);
+    refreshVoices();
   };
 
   const handleConfirm = () => {
@@ -78,7 +106,7 @@ function VoiceSelectContent() {
   return (
     <>
       <header className="sticky top-0 z-40 glass border-b border-border">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-lg lg:max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <button
             onClick={() => router.back()}
             className="w-10 h-10 rounded-full hover:bg-surface flex items-center justify-center text-muted hover:text-foreground transition"
@@ -86,12 +114,12 @@ function VoiceSelectContent() {
           >
             <ChevronLeft size={20} />
           </button>
-          <h1 className="font-bold text-sm tracking-tight">목소리 선택</h1>
+          <h1 className="font-bold text-sm tracking-tight">목소리 고르기</h1>
           <div className="w-10" />
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-5 py-6">
+      <div className="max-w-lg lg:max-w-3xl mx-auto px-5 py-6">
         <div className="text-center mb-8">
           <p className="text-[11px] uppercase tracking-[0.18em] text-muted font-semibold mb-2">
             Voice
@@ -100,7 +128,7 @@ function VoiceSelectContent() {
             어떤 목소리로 들려줄까요?
           </h2>
           <p className="text-sm text-muted">
-            미리 듣기를 눌러 목소리를 확인해보세요
+            미리 듣기를 눌러서 목소리를 들어보세요
           </p>
         </div>
 
@@ -109,13 +137,13 @@ function VoiceSelectContent() {
             <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3 pl-1">
               내가 녹음한 목소리
             </p>
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2.5 lg:grid lg:grid-cols-2">
               {clonedVoices.map((voice) => (
                 <VoiceRow
                   key={voice.id}
                   voiceId={voice.id}
                   name={voice.name}
-                  description={voice.description}
+                  description="내가 녹음한 목소리"
                   emoji={voice.emoji}
                   tone="primary"
                   isSelected={selected === voice.id}
@@ -151,7 +179,7 @@ function VoiceSelectContent() {
 
         <section className="mb-8">
           <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3 pl-1">
-            기본 제공 목소리
+            기본 목소리
           </p>
           <div className="flex flex-col gap-2.5">
             {defaultVoices.map((voice) => (
@@ -180,7 +208,6 @@ function VoiceSelectContent() {
         </button>
       </div>
 
-      <BottomNav />
     </>
   );
 }

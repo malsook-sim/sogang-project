@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { stories, categories } from "@/data/stories";
-import BottomNav from "@/components/BottomNav";
+import { categories, type Story } from "@/data/stories";
+import { useCatalog } from "@/lib/useCatalog";
 import { Search, User } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 
@@ -11,8 +11,9 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const catalog = useCatalog();
 
-  const filtered = stories.filter((story) => {
+  const filtered = catalog.filter((story) => {
     const matchesCategory =
       activeCategory === "all" || story.category === activeCategory;
     const matchesSearch =
@@ -41,7 +42,7 @@ export default function HomePage() {
   return (
     <>
       <header className="sticky top-0 z-40 glass">
-        <div className="max-w-lg mx-auto px-5 pt-6 pb-3">
+        <div className="max-w-lg lg:max-w-6xl mx-auto px-5 pt-6 pb-3">
           <div className="flex items-end justify-between mb-5">
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted font-semibold mb-1.5">
@@ -81,7 +82,7 @@ export default function HomePage() {
                 />
                 <input
                   type="text"
-                  placeholder="동화 제목이나 교훈을 검색해보세요"
+                  placeholder="어떤 동화를 찾아볼까요?"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
@@ -113,11 +114,11 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-5 pt-5 pb-4">
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 mb-7">
+      <div className="max-w-lg lg:max-w-6xl mx-auto px-5 pt-5 pb-4">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 mb-7 lg:grid lg:grid-cols-2 lg:gap-5 lg:mx-0 lg:px-0 lg:overflow-visible">
           <Link
             href="/create"
-            className="min-w-[280px] bg-hero-secondary rounded-2xl p-5 text-white relative overflow-hidden card-interactive"
+            className="min-w-[280px] lg:min-w-0 bg-hero-secondary rounded-2xl p-5 lg:p-7 text-white relative overflow-hidden card-interactive"
           >
             <div className="relative z-10">
               <p className="text-[11px] font-semibold tracking-wider uppercase opacity-70 mb-2">
@@ -143,7 +144,7 @@ export default function HomePage() {
           </Link>
           <Link
             href="/record"
-            className="min-w-[280px] bg-hero-primary rounded-2xl p-5 text-white relative overflow-hidden card-interactive"
+            className="min-w-[280px] lg:min-w-0 bg-hero-primary rounded-2xl p-5 lg:p-7 text-white relative overflow-hidden card-interactive"
           >
             <div className="relative z-10">
               <p className="text-[11px] font-semibold tracking-wider uppercase opacity-70 mb-2">
@@ -199,7 +200,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
                 {group.stories.map((story) => (
                   <StoryCard key={story.id} story={story} variant="grid" />
                 ))}
@@ -215,13 +216,12 @@ export default function HomePage() {
               동화를 찾을 수 없어요
             </p>
             <p className="text-muted text-xs mt-1">
-              다른 키워드로 검색해보세요
+              다른 말로 찾아보세요
             </p>
           </div>
         )}
       </div>
 
-      <BottomNav />
     </>
   );
 }
@@ -230,7 +230,7 @@ function StoryCard({
   story,
   variant,
 }: {
-  story: (typeof stories)[0];
+  story: Story;
   variant: "carousel" | "grid";
 }) {
   return (

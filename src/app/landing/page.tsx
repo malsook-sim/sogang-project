@@ -7,10 +7,10 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <section className="bg-hero-warm relative overflow-hidden">
-        <div className="max-w-lg mx-auto px-6 pt-20 pb-16 text-center relative z-10">
+        <div className="max-w-lg lg:max-w-3xl mx-auto px-6 pt-20 pb-16 text-center relative z-10">
           <span className="inline-flex items-center gap-1.5 bg-surface border border-border text-foreground/80 text-[11px] font-semibold tracking-wider uppercase px-3 py-1 rounded-full mb-5">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            보호자 목소리로 듣는 동화
+            엄마 아빠 목소리로 듣는 동화
           </span>
           <h1 className="text-[40px] font-extrabold leading-[1.1] tracking-tight mb-4">
             <span className="text-primary">마이보이스스토리</span>
@@ -30,7 +30,7 @@ export default function LandingPage() {
               지금 시작하기
               <span aria-hidden>→</span>
             </Link>
-            <p className="text-[11px] text-muted">회원가입 없이 체험 가능</p>
+            <p className="text-[11px] text-muted">회원가입 없이 바로 시작</p>
           </div>
         </div>
 
@@ -44,7 +44,7 @@ export default function LandingPage() {
         </svg>
       </section>
 
-      <section className="px-6 py-14 max-w-lg mx-auto w-full">
+      <section className="px-6 py-14 max-w-lg lg:max-w-5xl mx-auto w-full">
         <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted font-semibold mb-2">
           Features
         </p>
@@ -52,30 +52,30 @@ export default function LandingPage() {
           이런 게 가능해요
         </h2>
 
-        <div className="grid gap-3">
+        <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
           {[
             {
               Icon: Mic,
-              title: "목소리 복제",
-              desc: "30초 녹음만으로 부모님 목소리를 AI가 학습해요",
+              title: "내 목소리 만들기",
+              desc: "30초만 녹음하면 엄마 아빠 목소리를 AI가 배워요",
               tone: "primary" as const,
             },
             {
               Icon: Sparkles,
-              title: "AI 동화 생성",
+              title: "AI 동화 만들기",
               desc: "줄거리만 알려주면 우리 아이만의 동화를 만들어요",
               tone: "secondary" as const,
             },
             {
               Icon: Play,
-              title: "실시간 낭독",
-              desc: "부모님 목소리로 동화를 읽어줘요. 기본 성우도 제공",
+              title: "동화 들려주기",
+              desc: "엄마 아빠 목소리로 동화를 읽어줘요. 기본 목소리도 있어요",
               tone: "accent" as const,
             },
             {
               Icon: Moon,
-              title: "수면 타이머",
-              desc: "설정한 시간 뒤 자동으로 멈춰요. 잠자리 동화에 딱.",
+              title: "잠자기 타이머",
+              desc: "정한 시간이 지나면 저절로 멈춰요. 잠자리 동화에 딱.",
               tone: "neutral" as const,
             },
           ].map((feat, i) => {
@@ -110,7 +110,7 @@ export default function LandingPage() {
       </section>
 
       <section className="px-6 py-14 bg-surface border-y border-border">
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg lg:max-w-3xl mx-auto">
           <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted font-semibold mb-2">
             How it works
           </p>
@@ -125,7 +125,7 @@ export default function LandingPage() {
             <div className="flex flex-col gap-8">
               {[
                 { step: "01", title: "목소리 녹음", desc: "간단한 문장 5개를 또박또박 읽어주세요" },
-                { step: "02", title: "동화 선택", desc: "전래동화부터 AI 생성 동화까지 자유롭게" },
+                { step: "02", title: "동화 고르기", desc: "전래동화부터 AI가 만든 동화까지 마음껏" },
                 { step: "03", title: "들려주기", desc: "내 목소리로 동화가 시작돼요" },
               ].map((item) => (
                 <div key={item.step} className="flex items-center gap-5 relative">
@@ -148,7 +148,7 @@ export default function LandingPage() {
           오늘 저녁, 한 편 들려줄까요?
         </h2>
         <p className="text-sm text-muted mb-7 leading-relaxed">
-          회원가입 없이 체험할 수 있어요.
+          회원가입 없이 바로 들어볼 수 있어요.
         </p>
         <Link
           href="/"

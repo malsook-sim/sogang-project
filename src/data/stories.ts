@@ -2,7 +2,7 @@ export interface Story {
   id: string;
   title: string;
   content: string;
-  thumbnailUrl: string;
+  thumbnailUrl?: string;
   ageMin: number;
   ageMax: number;
   morals: string[];
@@ -288,10 +288,6 @@ export const stories: Story[] = [
     durationMin: 3,
   },
 ];
-
-export function getStoryById(id: string): Story | undefined {
-  return stories.find((s) => s.id === id);
-}
 
 export const moralCategories = [
   "용기",

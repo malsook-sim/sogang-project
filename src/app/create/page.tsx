@@ -2,23 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import BottomNav from "@/components/BottomNav";
 import {
   ChevronLeft,
   Sparkles,
   User,
   FileText,
   Refresh,
-  Mic,
+  Play,
 } from "@/components/Icon";
-
-interface GeneratedStory {
-  title: string;
-  content: string;
-  morals: string[];
-  ageMin: number;
-  ageMax: number;
-}
+import { saveMyStory, type GeneratedStory } from "@/lib/myStories";
 
 const plotExamples = [
   "숲속에서 길을 잃은 아이가 동물 친구들의 도움으로 집을 찾아가는 이야기",
@@ -36,11 +28,43 @@ export default function CreateStoryPage() {
   const [result, setResult] = useState<GeneratedStory | null>(null);
   const [source, setSource] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const handleSave = async () => {
+    if (savedId || !result) return;
+    const saved = await saveMyStory(result);
+    if (saved) setSavedId(saved.id);
+    else setError("동화를 저장하지 못했어요. 다시 시도해 주세요.");
+  };
+
+  const handleListen = async () => {
+    if (!result) return;
+    let id = savedId;
+    if (!id) {
+      const saved = await saveMyStory(result);
+      if (!saved) {
+        setError("동화를 저장하지 못했어요. 다시 시도해 주세요.");
+        return;
+      }
+      id = saved.id;
+      setSavedId(id);
+    }
+    router.push(`/voices?storyId=${id}`);
+  };
+
+  const resetForm = () => {
+    setResult(null);
+    setSource("");
+    setPlot("");
+    setExpanded(false);
+    setSavedId(null);
+  };
 
   const handleGenerate = async () => {
     if (plot.trim().length < 5) return;
     setLoading(true);
     setResult(null);
+    setError("");
 
     try {
       const res = await fetch("/api/generate-story", {
@@ -52,9 +76,11 @@ export default function CreateStoryPage() {
       if (data.story) {
         setResult(data.story);
         setSource(data.source);
+      } else {
+        setError(data.error || "동화 생성에 실패했어요. 다시 시도해주세요.");
       }
     } catch {
-      alert("동화 생성에 실패했어요. 다시 시도해주세요.");
+      setError("동화 생성에 실패했어요. 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
@@ -63,7 +89,7 @@ export default function CreateStoryPage() {
   return (
     <>
       <header className="sticky top-0 z-40 glass border-b border-border">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-lg lg:max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <button
             onClick={() => router.back()}
             className="w-10 h-10 rounded-full hover:bg-surface flex items-center justify-center text-muted hover:text-foreground transition"
@@ -76,7 +102,7 @@ export default function CreateStoryPage() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-5 py-6">
+      <div className="max-w-lg lg:max-w-3xl mx-auto px-5 py-6">
         {!result ? (
           <>
             <div className="text-center mb-8">
@@ -150,7 +176,7 @@ export default function CreateStoryPage() {
               <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3 pl-1">
                 이런 줄거리는 어때요?
               </p>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2">
                 {plotExamples.map((example, i) => (
                   <button
                     key={i}
@@ -166,6 +192,17 @@ export default function CreateStoryPage() {
                 ))}
               </div>
             </div>
+
+            {error && (
+              <div className="mb-4 px-4 py-3.5 rounded-xl bg-danger/10 border border-danger/25">
+                <p className="text-[13px] font-bold text-danger mb-0.5">
+                  동화를 만들 수 없어요
+                </p>
+                <p className="text-xs text-danger/85 leading-relaxed">
+                  {error}
+                </p>
+              </div>
+            )}
 
             <button
               onClick={handleGenerate}
@@ -225,22 +262,28 @@ export default function CreateStoryPage() {
                   onClick={() => setExpanded(!expanded)}
                   className="mt-4 text-primary text-sm font-semibold hover:underline"
                 >
-                  {expanded ? "접기 ▲" : "전문 보기 ▼"}
+                  {expanded ? "접기 ▲" : "동화 전체 보기 ▼"}
                 </button>
               )}
             </div>
 
             <div className="flex flex-col gap-2.5">
-              <button className="w-full py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-                <Mic size={18} filled />
-                이 동화를 내 목소리로 듣기
+              <button
+                onClick={handleListen}
+                className="w-full py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+              >
+                <Play size={18} filled />
+                목소리 골라 듣기
               </button>
               <button
-                onClick={() => {
-                  setResult(null);
-                  setPlot("");
-                  setExpanded(false);
-                }}
+                onClick={handleSave}
+                disabled={savedId !== null}
+                className="w-full py-3.5 rounded-2xl border border-primary text-primary font-semibold text-sm hover:bg-primary-light transition disabled:border-border disabled:text-muted disabled:hover:bg-transparent"
+              >
+                {savedId ? "내 서재에 저장했어요" : "이 동화 저장하기"}
+              </button>
+              <button
+                onClick={resetForm}
                 className="w-full py-3.5 rounded-2xl border border-border font-semibold text-sm hover:bg-surface transition flex items-center justify-center gap-1.5"
               >
                 <Refresh size={16} />
@@ -257,7 +300,6 @@ export default function CreateStoryPage() {
         )}
       </div>
 
-      <BottomNav />
     </>
   );
 }

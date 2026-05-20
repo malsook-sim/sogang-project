@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import BottomNav from "@/components/BottomNav";
-import { addClonedVoice } from "@/lib/clonedVoices";
 import { ChevronLeft, Lock, Mic, Refresh, ChevronRight } from "@/components/Icon";
 
 const scripts = [
@@ -166,9 +164,8 @@ export default function RecordPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "복제에 실패했어요.");
+        throw new Error(data.error || "목소리를 만들지 못했어요.");
       }
-      addClonedVoice({ id: data.voiceId, name: data.name });
       setSubmitState("success");
       setTimeout(() => router.push("/voices"), 1200);
     } catch (err) {
@@ -180,7 +177,7 @@ export default function RecordPage() {
   return (
     <>
       <header className="sticky top-0 z-40 glass border-b border-border">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-lg lg:max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <button
             onClick={() => router.back()}
             className="w-10 h-10 rounded-full hover:bg-surface flex items-center justify-center text-muted hover:text-foreground transition"
@@ -193,7 +190,7 @@ export default function RecordPage() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-5 py-6">
+      <div className="max-w-lg lg:max-w-2xl mx-auto px-5 py-6">
         {!privacyAgreed && (
           <div className="mb-6">
             <div className="card p-6">
@@ -346,7 +343,7 @@ export default function RecordPage() {
                             ? "bg-danger text-white shadow-danger/30 pulse-ring"
                             : "bg-primary text-white shadow-primary/30"
                         }`}
-                        aria-label={recordingState === "recording" ? "녹음 중지" : "녹음 시작"}
+                        aria-label={recordingState === "recording" ? "녹음 멈추기" : "녹음 시작"}
                       >
                         {recordingState === "recording" ? (
                           <span className="w-5 h-5 bg-white rounded-sm" />
@@ -364,7 +361,7 @@ export default function RecordPage() {
                   )}
                   {recordingState === "recording" && (
                     <p className="text-xs text-danger font-medium">
-                      녹음 중... 버튼을 눌러 중지
+                      녹음 중... 버튼을 눌러 멈추기
                     </p>
                   )}
                 </div>
@@ -377,10 +374,10 @@ export default function RecordPage() {
                       <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                     <h2 className="text-xl font-extrabold mb-2 tracking-tight">
-                      목소리 분석 중...
+                      목소리 만드는 중...
                     </h2>
                     <p className="text-sm text-muted leading-relaxed mb-6">
-                      ElevenLabs로 목소리를 보내고 있어요.<br />
+                      내 목소리를 만들고 있어요.<br />
                       잠시만 기다려주세요 (약 10~30초)
                     </p>
                     <div className="card p-4">
@@ -390,7 +387,7 @@ export default function RecordPage() {
                         </div>
                         <div className="text-left flex-1">
                           <p className="font-bold text-sm">{voiceName}</p>
-                          <p className="text-xs text-muted">처리 중...</p>
+                          <p className="text-xs text-muted">만드는 중...</p>
                         </div>
                         <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       </div>
@@ -404,7 +401,7 @@ export default function RecordPage() {
                       ✓
                     </div>
                     <h2 className="text-xl font-extrabold mb-2 tracking-tight">
-                      복제 완료!
+                      목소리 완성!
                     </h2>
                     <p className="text-sm text-muted leading-relaxed mb-7">
                       이제 이 목소리로 동화를 들려줄 수 있어요.
@@ -413,7 +410,7 @@ export default function RecordPage() {
                       onClick={() => router.push("/voices")}
                       className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20"
                     >
-                      목소리 선택으로 →
+                      목소리 고르러 가기 →
                     </button>
                   </>
                 )}
@@ -424,7 +421,7 @@ export default function RecordPage() {
                       !
                     </div>
                     <h2 className="text-xl font-extrabold mb-2 tracking-tight">
-                      복제 실패
+                      목소리를 못 만들었어요
                     </h2>
                     <p className="text-sm text-muted leading-relaxed mb-7">
                       {errorMsg || "다시 시도해주세요."}
@@ -433,7 +430,7 @@ export default function RecordPage() {
                       onClick={() => submitForCloning()}
                       className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20 mb-2"
                     >
-                      다시 시도
+                      다시 해보기
                     </button>
                     <button
                       onClick={() => router.push("/voices")}
@@ -451,7 +448,7 @@ export default function RecordPage() {
                     </h2>
                     <div className="mb-6 text-left">
                       <label className="text-xs text-muted font-semibold block mb-2">
-                        보이스 이름
+                        목소리 이름
                       </label>
                       <input
                         value={voiceName}
@@ -468,7 +465,6 @@ export default function RecordPage() {
         )}
       </div>
 
-      <BottomNav />
     </>
   );
 }

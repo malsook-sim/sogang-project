@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 텍스트가 너무 길면 앞부분만 (비용 절약)
-  const trimmed = text.slice(0, 2000);
+  // ElevenLabs 단일 요청 한도 내에서 자름 (긴 동화도 끝까지 재생)
+  const trimmed = text.slice(0, 5000);
 
   const ttsRes = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
