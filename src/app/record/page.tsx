@@ -5,13 +5,36 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Lock, Mic, Refresh, ChevronRight } from "@/components/Icon";
 import { useMyVoices } from "@/lib/useMyVoices";
 
-const scripts = [
+const scriptPool = [
   "옛날 옛날에 작은 마을이 있었어요.",
   "하늘은 높고 파란 가을이었답니다.",
   "토끼가 깡충깡충 뛰어서 숲속으로 갔어요.",
   "엄마가 따뜻한 목소리로 말했어요. 사랑한다, 우리 아가.",
   "그래서 모두 함께 행복하게 살았답니다.",
+  "깊은 산속에 작은 오두막 한 채가 있었어요.",
+  "별빛이 강물 위에서 반짝반짝 빛났어요.",
+  "아기 곰은 엄마 손을 꼭 잡고 걸어갔어요.",
+  "\"안녕? 너는 누구니?\" 다람쥐가 물었어요.",
+  "바람이 살랑살랑 불어와 꽃잎을 흔들었어요.",
+  "용감한 소녀는 한 걸음 한 걸음 앞으로 나아갔어요.",
+  "달님이 환하게 웃으며 아이들을 지켜보았어요.",
+  "작은 새가 노래를 부르자 온 숲이 즐거워졌어요.",
+  "할머니는 따뜻한 이야기를 들려주셨어요.",
+  "눈이 펑펑 내리던 어느 겨울밤이었어요.",
+  "그때 정말 신기한 일이 벌어졌답니다.",
+  "친구들은 손을 잡고 빙글빙글 춤을 추었어요.",
+  "\"정말 고마워!\" 아이는 환하게 미소 지었어요.",
+  "푸른 바다 너머로 멋진 섬이 보였어요.",
+  "졸린 아기 여우는 스르르 잠이 들었어요.",
+  "따뜻한 봄날, 새싹이 쏙쏙 돋아났어요.",
+  "모두가 힘을 모으자 무거운 바위가 움직였어요.",
+  "무지개가 하늘에 곱게 걸렸어요.",
+  "그날 밤 아이는 행복한 꿈을 꾸었답니다.",
 ];
+
+function pickRandomScripts(): string[] {
+  return [...scriptPool].sort(() => Math.random() - 0.5).slice(0, 5);
+}
 
 const CONSENT_KEY = "mvk.recordConsent";
 
@@ -41,6 +64,9 @@ export default function RecordPage() {
   const router = useRouter();
   const { voices, refresh: refreshVoices } = useMyVoices();
   const [mode, setMode] = useState<Mode>("list");
+  const [scripts, setScripts] = useState<string[]>(() =>
+    scriptPool.slice(0, 5)
+  );
   const [currentScript, setCurrentScript] = useState(0);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [completedScripts, setCompletedScripts] = useState<number[]>([]);
@@ -168,6 +194,7 @@ export default function RecordPage() {
   };
 
   const startNewRecording = () => {
+    setScripts(pickRandomScripts());
     resetRecording();
     let consented = false;
     try {

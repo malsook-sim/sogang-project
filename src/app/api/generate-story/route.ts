@@ -118,7 +118,8 @@ async function generateWithGemini(apiKey: string, prompt: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { plot, childName, childAge } = await req.json();
+  const { plot, childName, childAge, language } = await req.json();
+  const isEn = language === "en";
 
   if (!plot || plot.trim().length < 5) {
     return NextResponse.json(
@@ -140,7 +141,33 @@ export async function POST(req: NextRequest) {
 
   const apiKey = process.env.GEMINI_API_KEY;
 
-  const prompt = `당신은 아이를 위한 동화 작가입니다. 아래 조건에 맞는 따뜻한 동화를 만들어주세요.
+  const prompt = isEn
+    ? `You are a children's storybook author. Write a warm fairy tale in English that matches the conditions below.
+
+Conditions:
+- Target age: ${childAge || "4-6"} years old
+${childName ? `- Main character's name: ${childName}` : ""}
+- Plot idea from the parent (it may be written in Korean): ${plot}
+- Length: about 1200-2200 characters, richly filled (never too short)
+- A clear beginning, middle, and end with 4-6 vivid scenes
+- Plenty of dialogue, emotion, and gentle description
+- Style: simple, warm English suitable for reading aloud to a young child
+- Separate paragraphs with a blank line
+- Never include violent, scary, or inappropriate content
+- Weave a gentle moral in naturally
+- The title must fit the story and be fresh each time
+- Also provide a natural Korean translation in "contentKo" for young Korean children, with the SAME paragraph structure as "content" (same number of \\n\\n-separated paragraphs, each aligned 1:1)
+
+Reply with ONLY this JSON, nothing else:
+{
+  "title": "story title",
+  "content": "story body (paragraphs separated by \\n\\n)",
+  "contentKo": "Korean translation, same paragraph structure as content",
+  "morals": ["moral1", "moral2"],
+  "ageMin": start age as a number,
+  "ageMax": end age as a number
+}`
+    : `당신은 아이를 위한 동화 작가입니다. 아래 조건에 맞는 따뜻한 동화를 만들어주세요.
 
 조건:
 - 대상 연령: ${childAge || "4~6"}세
@@ -173,7 +200,44 @@ ${childName ? `- 주인공 이름: ${childName}` : ""}
     }
   }
 
-  // Fallback: Gemini 가 계속 실패할 때의 임시 동화 (제목 무작위, 1000자 이상)
+  // Fallback: Gemini 가 계속 실패할 때의 임시 동화
+  if (isEn) {
+    const nameStr = childName || "the little one";
+    const enTitles = [
+      `${nameStr}'s Sparkling Adventure`,
+      `${nameStr} Finds Some Courage`,
+      `${nameStr} and the Kind Friends`,
+      `${nameStr}'s Little Miracle`,
+      `${nameStr}'s Wonderful Day`,
+    ];
+    const enStory = {
+      title: enTitles[Math.floor(Math.random() * enTitles.length)],
+      content: `Once upon a time, in a small and cozy village, there lived a child named ${nameStr}. ${nameStr} was full of curiosity and had a very warm heart.
+
+One bright morning, soft sunlight peeked through the window and tickled ${nameStr}'s cheek. ${nameStr} stretched with a big smile, wondering what the day would bring.
+
+${plot}
+
+When ${nameStr} heard about it, a little heart went thump-thump. "Can I really do this?" ${nameStr} felt a bit worried, but slowly nodded.
+
+Along the way, small troubles appeared one by one. But each time, ${nameStr} took a deep breath and stepped forward, one little step at a time. "If I don't give up, I will surely find a way."
+
+On the path, ${nameStr} met kind and friendly faces. They held ${nameStr}'s hand, laughed together, and cheered each other on. Knowing you are not alone felt very warm.
+
+As the sun began to set, ${nameStr} finally did it! A big, bright courage filled that little heart. The friends clapped their hands with joy.
+
+Back home, ${nameStr} snuggled into a soft, warm blanket. Thinking back on the day, ${nameStr}'s heart felt cozy and happy. "It was scary, but I am so glad I tried until the end."
+
+A gentle voice whispered, "My dear ${nameStr}, you were wonderful today. I love you."
+
+${nameStr} smiled a happy smile and drifted off to dreamland. What other sparkling day might be waiting tomorrow?`,
+      morals: ["courage", "patience"],
+      ageMin: Number(childAge) || 4,
+      ageMax: (Number(childAge) || 4) + 2,
+    };
+    return NextResponse.json({ story: enStory, source: "fallback" });
+  }
+
   const childNameStr = childName || "아이";
   const fallbackTitles = [
     `${childNameStr}의 반짝이는 모험`,

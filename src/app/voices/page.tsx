@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { defaultVoices } from "@/data/voices";
+import { voicesForLang } from "@/data/voices";
 import { useMyVoices } from "@/lib/useMyVoices";
-import { ChevronLeft, ChevronRight, Mic, Play, Trash } from "@/components/Icon";
+import { ChevronLeft, ChevronRight, Mic, Play, Stop, Trash } from "@/components/Icon";
 
 export default function VoiceSelectPage() {
   return (
@@ -18,6 +18,8 @@ function VoiceSelectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const storyId = searchParams.get("storyId");
+  const lang = searchParams.get("lang") === "en" ? "en" : "ko";
+  const baseVoices = voicesForLang(lang);
   const [selected, setSelected] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const { voices: clonedVoices, refresh: refreshVoices } = useMyVoices();
@@ -43,6 +45,13 @@ function VoiceSelectContent() {
     }
   };
 
+  // 재생 중이거나 불러오는 중인 미리듣기를 멈춤 (진행 중인 요청도 폐기)
+  const cancelPreview = () => {
+    reqRef.current++;
+    stopPreview();
+    setPreviewing(null);
+  };
+
   const handlePreview = async (voiceId: string) => {
     const reqId = ++reqRef.current;
     stopPreview();
@@ -53,7 +62,10 @@ function VoiceSelectContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: "옛날 옛날에, 작은 마을에 마음씨 착한 아이가 살았어요.",
+          text:
+            lang === "en"
+              ? "Once upon a time, in a little village, there lived a kind and curious child."
+              : "옛날 옛날에, 작은 마을에 마음씨 착한 아이가 살았어요.",
           voiceId,
         }),
       });
@@ -150,6 +162,7 @@ function VoiceSelectContent() {
                   isPreviewing={previewing === voice.id}
                   onSelect={() => setSelected(voice.id)}
                   onPreview={() => handlePreview(voice.id)}
+                  onStop={cancelPreview}
                   onDelete={() => handleDeleteCloned(voice.id)}
                 />
               ))}
@@ -179,10 +192,10 @@ function VoiceSelectContent() {
 
         <section className="mb-8">
           <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3 pl-1">
-            기본 목소리
+            {lang === "en" ? "영어 동화 목소리" : "기본 목소리"}
           </p>
           <div className="flex flex-col gap-2.5">
-            {defaultVoices.map((voice) => (
+            {baseVoices.map((voice) => (
               <VoiceRow
                 key={voice.id}
                 voiceId={voice.id}
@@ -194,6 +207,7 @@ function VoiceSelectContent() {
                 isPreviewing={previewing === voice.id}
                 onSelect={() => setSelected(voice.id)}
                 onPreview={() => handlePreview(voice.id)}
+                onStop={cancelPreview}
               />
             ))}
           </div>
@@ -221,6 +235,7 @@ function VoiceRow({
   isPreviewing,
   onSelect,
   onPreview,
+  onStop,
   onDelete,
 }: {
   voiceId: string;
@@ -232,6 +247,7 @@ function VoiceRow({
   isPreviewing: boolean;
   onSelect: () => void;
   onPreview: () => void;
+  onStop: () => void;
   onDelete?: () => void;
 }) {
   return (
@@ -259,25 +275,17 @@ function VoiceRow({
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onPreview();
+          if (isPreviewing) onStop();
+          else onPreview();
         }}
-        disabled={isPreviewing}
         className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition ${
           isPreviewing
-            ? "bg-primary text-white"
+            ? "bg-primary text-white shadow-md shadow-primary/30"
             : "bg-surface-soft text-muted hover:text-primary hover:bg-primary-light"
         }`}
-        aria-label="미리듣기"
+        aria-label={isPreviewing ? "정지" : "미리듣기"}
       >
-        {isPreviewing ? (
-          <span className="inline-flex items-end gap-[2px] h-3">
-            <span className="eq-bar" />
-            <span className="eq-bar" />
-            <span className="eq-bar" />
-          </span>
-        ) : (
-          <Play size={14} />
-        )}
+        {isPreviewing ? <Stop size={13} /> : <Play size={14} />}
       </button>
       {onDelete && (
         <button

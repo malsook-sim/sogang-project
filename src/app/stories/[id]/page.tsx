@@ -144,7 +144,9 @@ export default function StoryDetailPage() {
               바로 듣기
             </Link>
             <Link
-              href={`/voices?storyId=${story.id}`}
+              href={`/voices?storyId=${story.id}&lang=${
+                /[가-힣]/.test(story.content) ? "ko" : "en"
+              }`}
               className="flex-1 flex items-center justify-center gap-2 bg-secondary text-white py-4 rounded-2xl text-sm font-bold hover:opacity-90 transition shadow-lg shadow-secondary/20"
             >
               <Mic size={16} filled />

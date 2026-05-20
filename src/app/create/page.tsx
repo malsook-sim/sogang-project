@@ -30,6 +30,8 @@ export default function CreateStoryPage() {
   const [expanded, setExpanded] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [language, setLanguage] = useState<"ko" | "en">("ko");
+
   const handleSave = async () => {
     if (savedId || !result) return;
     const saved = await saveMyStory(result);
@@ -49,7 +51,7 @@ export default function CreateStoryPage() {
       id = saved.id;
       setSavedId(id);
     }
-    router.push(`/voices?storyId=${id}`);
+    router.push(`/voices?storyId=${id}&lang=${language}`);
   };
 
   const resetForm = () => {
@@ -70,7 +72,7 @@ export default function CreateStoryPage() {
       const res = await fetch("/api/generate-story", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plot, childName, childAge }),
+        body: JSON.stringify({ plot, childName, childAge, language }),
       });
       const data = await res.json();
       if (data.story) {
@@ -156,10 +158,41 @@ export default function CreateStoryPage() {
             </div>
 
             <div className="card p-5 mb-5">
-              <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                <FileText size={16} className="text-muted" />
-                어떤 이야기를 만들까요?
-              </h3>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <FileText size={16} className="text-muted" />
+                  어떤 이야기를 만들까요?
+                </h3>
+                <div className="flex gap-0.5 bg-surface-soft rounded-lg p-0.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setLanguage("ko")}
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition ${
+                      language === "ko"
+                        ? "bg-primary text-white"
+                        : "text-muted"
+                    }`}
+                  >
+                    한국어
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLanguage("en")}
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition ${
+                      language === "en"
+                        ? "bg-primary text-white"
+                        : "text-muted"
+                    }`}
+                  >
+                    English
+                  </button>
+                </div>
+              </div>
+              {language === "en" && (
+                <p className="text-[11px] text-secondary mb-2 font-medium">
+                  줄거리는 한국어로 적어도 영어 동화로 만들어드려요.
+                </p>
+              )}
               <textarea
                 placeholder="줄거리를 자유롭게 적어주세요&#10;예: 숲속에서 길을 잃은 토끼가 친구들의 도움으로 집을 찾아가는 이야기"
                 value={plot}

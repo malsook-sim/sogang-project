@@ -19,8 +19,8 @@ export async function GET(
     if (!dbId) return NextResponse.json({ story: null });
 
     const [rows] = await db.query<RowDataPacket[]>(
-      `SELECT id, title, content, morals, age_min, age_max, duration_min,
-              UNIX_TIMESTAMP(created_at) AS created_at
+      `SELECT id, title, content, content_ko, morals, age_min, age_max,
+              duration_min, UNIX_TIMESTAMP(created_at) AS created_at
        FROM user_stories WHERE id = ? AND user_id = ? LIMIT 1`,
       [dbId, user.id]
     );
@@ -31,8 +31,8 @@ export async function GET(
 
   // 기본 카탈로그 동화
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT id, title, content, age_min, age_max, morals, is_premium,
-            category, duration_min
+    `SELECT id, title, content, content_ko, age_min, age_max, morals,
+            is_premium, category, duration_min
      FROM stories WHERE id = ? LIMIT 1`,
     [id]
   );

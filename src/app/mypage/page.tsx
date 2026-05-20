@@ -258,7 +258,9 @@ export default function MyPage() {
               {myStories.map((story) => (
                 <div key={story.id} className="relative">
                   <Link
-                    href={`/voices?storyId=${story.id}`}
+                    href={`/voices?storyId=${story.id}&lang=${
+                      /[가-힣]/.test(story.content) ? "ko" : "en"
+                    }`}
                     className="block card card-interactive overflow-hidden group"
                   >
                     <div className="aspect-square bg-surface-soft overflow-hidden">

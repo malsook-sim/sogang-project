@@ -4,6 +4,7 @@ import type { Story } from "@/data/stories";
 export interface GeneratedStory {
   title: string;
   content: string;
+  contentKo?: string;
   morals: string[];
   ageMin: number;
   ageMax: number;

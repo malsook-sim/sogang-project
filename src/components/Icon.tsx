@@ -125,6 +125,12 @@ export const Pause = (props: IconProps) => (
   </Base>
 );
 
+export const Stop = (props: IconProps) => (
+  <Base {...props}>
+    <rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor" stroke="none" />
+  </Base>
+);
+
 export const Moon = (props: IconProps) => (
   <Base {...props}>
     <path d="M20 14.5A8 8 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill={props.filled ? "currentColor" : "none"} />

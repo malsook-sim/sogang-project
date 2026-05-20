@@ -11,6 +11,7 @@ interface SeedStory {
   id: string;
   title: string;
   content: string;
+  contentKo?: string;
   ageMin: number;
   ageMax: number;
   morals: string[];
@@ -33,6 +34,20 @@ async function main() {
   );
   const englishStories = JSON.parse(engRaw) as SeedStory[];
 
+  // 영어동화 한글 번역 붙이기
+  const transRaw = await readFile(
+    join(root, "db", "english-translations.json"),
+    "utf8"
+  );
+  const translations = JSON.parse(transRaw) as {
+    id: string;
+    contentKo: string;
+  }[];
+  const transMap = new Map(translations.map((t) => [t.id, t.contentKo]));
+  for (const s of englishStories) {
+    s.contentKo = transMap.get(s.id);
+  }
+
   const all: SeedStory[] = [
     ...(baseStories as SeedStory[]),
     ...newStories,
@@ -45,13 +60,14 @@ async function main() {
   for (const s of all) {
     await conn.query(
       `INSERT INTO stories
-         (id, title, content, age_min, age_max, morals, is_premium,
-          category, duration_min, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, title, content, content_ko, age_min, age_max, morals,
+          is_premium, category, duration_min, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         s.id,
         s.title,
         s.content,
+        s.contentKo ?? null,
         s.ageMin,
         s.ageMax,
         JSON.stringify(s.morals),

@@ -2,6 +2,7 @@ export interface Story {
   id: string;
   title: string;
   content: string;
+  contentKo?: string;
   thumbnailUrl?: string;
   ageMin: number;
   ageMax: number;
@@ -15,10 +16,10 @@ export const categories = [
   { id: "all", label: "전체", emoji: "📚" },
   { id: "classic", label: "전래동화", emoji: "🏯" },
   { id: "world", label: "세계명작", emoji: "🌍" },
+  { id: "english", label: "영어동화", emoji: "🔤" },
   { id: "bedtime", label: "잠자리동화", emoji: "🌙" },
   { id: "adventure", label: "모험", emoji: "⚔️" },
   { id: "nature", label: "자연·동물", emoji: "🌿" },
-  { id: "english", label: "영어동화", emoji: "🔤" },
 ];
 
 export const stories: Story[] = [

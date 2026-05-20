@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { Story } from "@/data/stories";
-import { defaultVoices, getVoiceById } from "@/data/voices";
+import { defaultVoices, englishVoices, getVoiceById } from "@/data/voices";
 import { ChevronDown, Moon, Play, Pause } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 
@@ -22,7 +22,13 @@ function PlayerContent() {
   const idParam = params.id as string;
   const [story, setStory] = useState<Story | null>(null);
   const [storyResolved, setStoryResolved] = useState(false);
-  const voiceId = searchParams.get("voiceId") || defaultVoices[0].id;
+  // 본문에 한글이 없으면 영어 동화로 판단
+  const isEnglish = story
+    ? !/[가-힣]/.test(story.content.slice(0, 200))
+    : false;
+  const voiceId =
+    searchParams.get("voiceId") ||
+    (isEnglish ? englishVoices[0].id : defaultVoices[0].id);
   const voice = getVoiceById(voiceId);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -33,12 +39,14 @@ function PlayerContent() {
   const [currentParagraph, setCurrentParagraph] = useState(0);
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
+  const [showSubtitle, setShowSubtitle] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const paragraphs = story?.content.split("\n\n") || [];
+  const koParagraphs = story?.contentKo?.split("\n\n") ?? [];
 
   const generateAndPlay = async () => {
     if (!story) return;
@@ -279,21 +287,42 @@ function PlayerContent() {
           </p>
         </div>
 
+        {koParagraphs.length > 0 && (
+          <div className="px-5 mb-1.5 flex justify-end">
+            <button
+              onClick={() => setShowSubtitle((v) => !v)}
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition ${
+                showSubtitle
+                  ? "bg-primary text-white border-primary"
+                  : "bg-surface text-muted border-border"
+              }`}
+            >
+              한글 자막 {showSubtitle ? "끄기" : "보기"}
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 px-5 mb-3 max-h-[180px] overflow-y-auto scrollbar-hide">
           <div className="bg-surface/70 backdrop-blur border border-border rounded-2xl p-4">
             {paragraphs.map((p, i) => (
-              <p
-                key={i}
-                className={`text-sm leading-relaxed mb-2 transition-all duration-300 ${
-                  i === currentParagraph
-                    ? "text-primary font-semibold"
-                    : i < currentParagraph
-                    ? "text-muted"
-                    : "text-foreground/30"
-                }`}
-              >
-                {p}
-              </p>
+              <div key={i} className="mb-2.5 last:mb-0">
+                <p
+                  className={`text-sm leading-relaxed transition-all duration-300 ${
+                    i === currentParagraph
+                      ? "text-primary font-semibold"
+                      : i < currentParagraph
+                      ? "text-muted"
+                      : "text-foreground/30"
+                  }`}
+                >
+                  {p}
+                </p>
+                {showSubtitle && koParagraphs[i] && (
+                  <p className="text-xs text-muted/90 leading-relaxed mt-1">
+                    {koParagraphs[i]}
+                  </p>
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -335,7 +364,11 @@ function PlayerContent() {
             <button
               onClick={() => {
                 audioRef.current?.pause();
-                router.push(`/voices?storyId=${story.id}`);
+                router.push(
+                  `/voices?storyId=${story.id}&lang=${
+                    isEnglish ? "en" : "ko"
+                  }`
+                );
               }}
               className="text-xs font-bold text-foreground/80 bg-surface/70 backdrop-blur border border-border px-3 py-1.5 rounded-full hover:bg-surface transition"
             >
