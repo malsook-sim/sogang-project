@@ -1,6 +1,44 @@
 // 교훈 배열에서 키워드 칩과 문장형 요약을 분리
 // (공백 포함 10자 이하 = 키워드 칩, 초과 = 문장형)
 
+// 영어 교훈 키워드 → 한글 표기 매핑 (이미 한글이거나 미매핑이면 원문 유지)
+const TAG_KO: Record<string, string> = {
+  kindness: "친절",
+  sharing: "나눔",
+  courage: "용기",
+  bravery: "용기",
+  honesty: "정직",
+  friendship: "우정",
+  patience: "인내",
+  perseverance: "끈기",
+  love: "사랑",
+  gratitude: "감사",
+  respect: "존중",
+  responsibility: "책임",
+  teamwork: "협동",
+  cooperation: "협동",
+  generosity: "베풂",
+  forgiveness: "용서",
+  humility: "겸손",
+  diligence: "성실",
+  wisdom: "지혜",
+  hope: "희망",
+  trust: "신뢰",
+  empathy: "공감",
+  caring: "배려",
+  helpfulness: "도움",
+  creativity: "창의력",
+  curiosity: "호기심",
+  confidence: "자신감",
+  family: "가족",
+  dream: "꿈",
+  dreams: "꿈",
+};
+
+export function koTag(tag: string): string {
+  return TAG_KO[tag.trim().toLowerCase()] ?? tag;
+}
+
 export function moralKeywords(morals: string[] | undefined, max = 3): string[] {
   if (!morals) return [];
   return morals.filter((m) => m.trim().length > 0 && m.trim().length <= 10).slice(0, max);

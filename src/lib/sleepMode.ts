@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 // 잠자기 타이머 / 밤(수면) 모드 전역 상태
-//  active : 밤 테마 on/off (html.sleep-mode 클래스로 전역 반영)
+//  active : 밤 테마 on/off (html[data-theme="sleep"] 로 전역 반영)
 //  endsAt : 타이머 종료 시각(ms). null = 진행 중 타이머 없음(테마만 유지될 수 있음)
 export interface SleepState {
   active: boolean;
@@ -28,7 +28,12 @@ function todayStr(): string {
 
 function applyClass() {
   if (typeof document === "undefined") return;
-  document.documentElement.classList.toggle("sleep-mode", state.active);
+  // 잠자기 = html[data-theme="sleep"] (globals의 토큰 오버라이드가 앱 전체에 반영)
+  if (state.active) {
+    document.documentElement.setAttribute("data-theme", "sleep");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
 }
 
 function save() {
@@ -48,7 +53,7 @@ function commit(next: SleepState) {
   if (themeChanged && typeof document !== "undefined") {
     const el = document.documentElement;
     el.classList.add("theme-transition");
-    window.setTimeout(() => el.classList.remove("theme-transition"), 1300);
+    window.setTimeout(() => el.classList.remove("theme-transition"), 350);
   }
   save();
   emit();

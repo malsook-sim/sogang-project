@@ -33,12 +33,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="lg:pl-[220px]">
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[220px] bg-surface border-r border-border px-3.5 py-6 z-50">
+      <aside className="app-sidebar hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[220px] bg-surface border-r border-border px-3.5 py-6 z-50">
         <Link href="/" className="block px-3 mb-8">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted font-semibold mb-0.5">
+          <p className="app-logo-label text-[10px] uppercase tracking-[0.2em] text-muted font-semibold mb-0.5">
             MyVoiceStory
           </p>
-          <p className="text-lg font-extrabold text-primary tracking-tight leading-tight">
+          <p className="app-logo-name text-lg font-extrabold text-primary tracking-tight leading-tight">
             마이보이스스토리
           </p>
         </Link>
@@ -53,13 +53,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-semibold transition ${
+                className={`app-nav-item relative flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-semibold transition ${
                   active
-                    ? "bg-primary-light text-[var(--primary-deep)]"
+                    ? "is-active bg-primary-light text-[var(--primary-deep)]"
                     : "text-[var(--text-body)] hover:bg-background"
                 }`}
               >
-                <span className={active ? "text-primary" : ""}>
+                <span className={`nav-icon ${active ? "text-primary" : ""}`}>
                   <item.Icon size={20} filled={active} />
                 </span>
                 {item.label}
@@ -73,9 +73,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           user.childName ? (
             <Link
               href="/mypage"
-              className="mt-auto flex items-center gap-3 p-2.5 rounded-xl border border-border hover:bg-background transition"
+              className="app-profile-card mt-auto flex items-center gap-3 p-2.5 rounded-xl border border-border hover:bg-background transition"
             >
-              <div className="w-9 h-9 rounded-full bg-[var(--star)] text-[var(--night)] flex items-center justify-center font-extrabold text-sm shrink-0">
+              <div className="w-9 h-9 rounded-full bg-[var(--star)] text-[#4A3A12] flex items-center justify-center font-extrabold text-sm shrink-0">
                 {user.childName.trim().charAt(0)}
               </div>
               <div className="min-w-0">

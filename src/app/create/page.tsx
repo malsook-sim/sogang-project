@@ -2,39 +2,14 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Sparkles,
-  User,
-  FileText,
-  Refresh,
-  ChevronDown,
-  Mic,
-  Sliders,
-} from "@/components/Icon";
+import { Sparkles, User, FileText, Refresh } from "@/components/Icon";
 import PageHeader from "@/components/PageHeader";
-import { VoiceAvatar } from "@/components/VoiceAvatar";
 import { saveMyStory } from "@/lib/myStories";
-import { useMyVoices } from "@/lib/useMyVoices";
-import { defaultVoices, englishVoices } from "@/data/voices";
 
-function Check({ size = 15 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M5 12l5 5 9-11"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-// 섹션 제목 아이콘 — 네이비 원형 타일(28px) + 골드 아이콘 (이 화면 시그니처 악센트)
+// 섹션 제목 아이콘 배지 — primary-soft 원 + primary 아이콘 (라이트/다크 토큰 자동 대응)
 function TileIcon({ children }: { children: ReactNode }) {
   return (
-    <span className="w-7 h-7 rounded-full bg-[#2C2A45] flex items-center justify-center shrink-0 text-[#F4C566]">
+    <span className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center shrink-0 text-primary">
       {children}
     </span>
   );
@@ -55,24 +30,22 @@ const MAX_PLOT = 300;
 
 export default function CreateStoryPage() {
   const router = useRouter();
-  const { voices: clonedVoices } = useMyVoices();
 
   const [plot, setPlot] = useState("");
   const [childName, setChildName] = useState("");
   const [childAge, setChildAge] = useState("5");
   const [language, setLanguage] = useState<"ko" | "en">("ko");
   const [storyLength, setStoryLength] = useState<"short" | "normal">("normal");
-  const [selectedVoice, setSelectedVoice] = useState("");
   const [exampleOffset, setExampleOffset] = useState(0);
   const [error, setError] = useState("");
 
   const [hasProfile, setHasProfile] = useState(false);
   const [editProfile, setEditProfile] = useState(false);
-  const [defaultVoiceId, setDefaultVoiceId] = useState<string | null>(null);
 
   const [generating, setGenerating] = useState(false);
   const [stageIndex, setStageIndex] = useState(0);
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -84,31 +57,9 @@ export default function CreateStoryPage() {
           if (u.childAge) setChildAge(String(u.childAge));
           setHasProfile(true);
         }
-        if (u?.defaultVoiceId) setDefaultVoiceId(u.defaultVoiceId);
       })
       .catch(() => {});
   }, []);
-
-  const [voiceMenuOpen, setVoiceMenuOpen] = useState(false);
-  const baseVoices = language === "en" ? englishVoices : defaultVoices;
-  const voiceOptions = [
-    ...clonedVoices.map((v) => ({ id: v.id, name: v.name, emoji: v.emoji, mine: true })),
-    ...baseVoices.map((v) => ({ id: v.id, name: v.name, emoji: v.emoji, mine: false })),
-  ];
-  const selectedOption = voiceOptions.find((o) => o.id === selectedVoice);
-
-  // 선택된 목소리가 없거나 목록에 없으면 기본값으로
-  useEffect(() => {
-    const ids = voiceOptions.map((o) => o.id);
-    if (!selectedVoice || !ids.includes(selectedVoice)) {
-      setSelectedVoice(
-        defaultVoiceId && ids.includes(defaultVoiceId)
-          ? defaultVoiceId
-          : clonedVoices[0]?.id ?? baseVoices[0].id
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceOptions.length, language, defaultVoiceId]);
 
   // 생성 중 페이지 이탈 방지
   useEffect(() => {
@@ -134,16 +85,19 @@ export default function CreateStoryPage() {
     plotPool[(exampleOffset + 3) % plotPool.length],
   ];
 
-  const selectedVoiceName =
-    voiceOptions.find((o) => o.id === selectedVoice)?.name || "내 목소리";
-
   const stages = [
     `${childName || "우리 아이"}를 위한 동화를 쓰고 있어요`,
     "동화에 그림을 그리고 있어요",
-    `${selectedVoiceName} 목소리를 입히고 있어요`,
+    "동화를 예쁘게 마무리하고 있어요",
   ];
 
   const canGenerate = plot.trim().length >= 5;
+
+  // 예시 칩 탭 → 줄거리 채우고 텍스트영역 포커스
+  const fillPlot = (text: string) => {
+    setPlot(text.slice(0, MAX_PLOT));
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  };
 
   const handleGenerate = async () => {
     if (!canGenerate || generating) return;
@@ -173,12 +127,8 @@ export default function CreateStoryPage() {
       const saved = await saveMyStory(data.story);
       if (stageTimer.current) clearInterval(stageTimer.current);
       if (!saved) throw new Error("동화를 저장하지 못했어요.");
-      try {
-        localStorage.setItem("mvk.lastVoiceId", selectedVoice);
-      } catch {
-        // 무시
-      }
-      router.push(`/player/${saved.id}?voiceId=${selectedVoice}`);
+      // 완성되면 상세 화면으로 (목소리는 거기서 고름)
+      router.push(`/stories/${saved.id}`);
     } catch (e) {
       if (stageTimer.current) clearInterval(stageTimer.current);
       setError(e instanceof Error ? e.message : "동화 생성에 실패했어요.");
@@ -193,329 +143,251 @@ export default function CreateStoryPage() {
         subtitle="줄거리만 알려주면 AI가 동화로 만들어드려요"
       />
 
-      <div className="max-w-[1120px] mx-auto px-5 lg:px-8 py-6 lg:grid lg:grid-cols-[60%_40%] lg:gap-6 lg:items-start">
-        {/* 좌: 입력 */}
-        <div>
-          {/* 아이 정보 */}
-          {hasProfile && !editProfile ? (
-            <div className="card relative overflow-hidden pl-5 pr-4 py-3 mb-3.5 flex items-center justify-between gap-3">
-              {/* 좌측 네이비 액센트 바 */}
-              <span
-                className="absolute left-0 top-0 bottom-0 w-1 bg-[#2C2A45]"
-                aria-hidden
-              />
-              {/* 우측 끝 작은 별 장식 (상단 여백 안쪽) */}
-              <svg
-                width="26"
-                height="9"
-                viewBox="0 0 26 9"
-                className="absolute right-2 top-1 pointer-events-none opacity-70"
-                aria-hidden
-              >
-                <path
-                  d="M5 1.5 l0.8 1.7 1.7 0.8 -1.7 0.8 -0.8 1.7 -0.8 -1.7 -1.7 -0.8 1.7 -0.8z"
-                  fill="#F4C566"
-                />
-                <circle cx="20" cy="4" r="1.2" fill="#F4C566" opacity="0.8" />
-              </svg>
-              <p className="text-sm text-foreground">
-                <span className="font-bold">
-                  {childName}
-                  {childAge ? `(${childAge}세)` : ""}
-                </span>
-                의 이야기로 만들어요
-              </p>
-              <button
-                onClick={() => setEditProfile(true)}
-                className="relative text-[13px] font-semibold text-primary hover:underline shrink-0"
-              >
-                변경
-              </button>
-            </div>
-          ) : (
-            <div className="card p-4 mb-3.5">
-              <div className="flex items-center justify-between gap-2 mb-2.5">
-                <h3 className="font-bold text-sm flex items-center gap-2">
-                  <User size={16} className="text-muted" />
-                  아이 정보
-                  <span className="text-muted font-normal text-xs">(선택)</span>
-                </h3>
-                {hasProfile && (
-                  <button
-                    type="button"
-                    onClick={() => setEditProfile(false)}
-                    className="text-[13px] font-semibold text-primary hover:underline shrink-0"
-                  >
-                    완료
-                  </button>
-                )}
-              </div>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  placeholder="이름 (예: 지우)"
-                  value={childName}
-                  onChange={(e) => setChildName(e.target.value)}
-                  className="flex-1 min-w-0 h-11 px-3.5 rounded-[10px] bg-field border border-border text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
-                />
-                <div className="shrink-0 flex items-center h-11 rounded-[10px] bg-field border border-border overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setChildAge(String(Math.max(2, Number(childAge) - 1)))
-                    }
-                    className="w-9 h-full flex items-center justify-center text-muted hover:text-primary text-lg leading-none transition"
-                    aria-label="나이 줄이기"
-                  >
-                    −
-                  </button>
-                  <span className="w-11 text-center text-sm font-semibold tabular-nums">
-                    {childAge}세
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setChildAge(String(Math.min(8, Number(childAge) + 1)))
-                    }
-                    className="w-9 h-full flex items-center justify-center text-muted hover:text-primary text-lg leading-none transition"
-                    aria-label="나이 늘리기"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 줄거리 */}
-          <div className="card p-4 mb-3.5">
-            <div className="flex items-center justify-between gap-2 mb-2.5">
-              <h3 className="font-bold text-sm flex items-center gap-2">
-                <TileIcon>
-                  <FileText size={15} />
-                </TileIcon>
-                어떤 이야기를 만들까요?
-              </h3>
-              <div className="flex gap-0.5 bg-surface-soft rounded-lg p-0.5 shrink-0">
-                {(["ko", "en"] as const).map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => setLanguage(l)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition ${
-                      language === l ? "bg-primary text-white" : "text-muted"
-                    }`}
-                  >
-                    {l === "ko" ? "한국어" : "English"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {language === "en" && (
-              <p className="text-[11px] text-secondary mb-2 font-medium">
-                줄거리는 한국어로 적어도 영어 동화로 만들어드려요.
-              </p>
-            )}
-            <textarea
-              placeholder="줄거리를 자유롭게 적어주세요&#10;예: 숲속에서 길을 잃은 토끼가 친구들의 도움으로 집을 찾아가는 이야기"
-              value={plot}
-              onChange={(e) => setPlot(e.target.value.slice(0, MAX_PLOT))}
-              className="w-full min-h-[160px] px-3.5 py-3 rounded-[10px] bg-field border border-border text-sm leading-relaxed resize-y text-foreground placeholder:text-muted/60 focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
-            />
-            <p className="text-right text-[11px] text-muted mt-1.5 tabular-nums">
-              {plot.length} / {MAX_PLOT}자
-            </p>
-          </div>
-
-          {/* 추천 줄거리 칩 */}
-          <div className="flex flex-wrap gap-2">
-            {examples.map((ex) => (
-              <button
-                key={ex}
-                onClick={() => setPlot(ex.slice(0, MAX_PLOT))}
-                className="group text-left text-[13px] px-3.5 py-2 rounded-full border border-border bg-surface text-[var(--text-body)] hover:bg-[#2C2A45] hover:text-[#FBF9F6] hover:border-[#2C2A45] transition inline-flex items-center gap-1.5"
-              >
-                <Sparkles
-                  size={13}
-                  filled
-                  className="text-[#F4C566] shrink-0"
-                />
-                {ex}
-              </button>
-            ))}
-            <button
-              onClick={() => setExampleOffset((o) => (o + 4) % plotPool.length)}
-              className="text-[13px] px-3.5 py-2 rounded-full border border-dashed border-border-strong text-muted hover:text-primary hover:border-primary transition inline-flex items-center gap-1.5"
+      {/* 단일 컬럼 센터 — 위에서 아래로 한 방향 진행 */}
+      <div className="max-w-[720px] mx-auto px-5 py-6 space-y-4">
+        {/* 1. 아이 프로필 바 */}
+        {hasProfile && !editProfile ? (
+          <div className="card relative overflow-hidden px-4 py-3 flex items-center justify-between gap-3">
+            <svg
+              width="26"
+              height="9"
+              viewBox="0 0 26 9"
+              className="absolute right-2 top-1 pointer-events-none opacity-70"
+              aria-hidden
             >
-              <Refresh size={14} />
-              다른 줄거리
+              <path
+                d="M5 1.5 l0.8 1.7 1.7 0.8 -1.7 0.8 -0.8 1.7 -0.8 -1.7 -1.7 -0.8 1.7 -0.8z"
+                fill="var(--star)"
+              />
+              <circle cx="20" cy="4" r="1.2" fill="var(--star)" opacity="0.8" />
+            </svg>
+            <p className="text-sm text-foreground">
+              <span className="font-bold">
+                {childName}
+                {childAge ? `(${childAge}세)` : ""}
+              </span>
+              의 이야기로 만들어요
+            </p>
+            <button
+              onClick={() => setEditProfile(true)}
+              className="relative text-[13px] font-semibold text-[var(--primary-deep)] hover:underline shrink-0"
+            >
+              변경
             </button>
           </div>
-        </div>
-
-        {/* 우: 설정 + 실행 */}
-        <div className="mt-4 lg:mt-0 lg:sticky lg:top-20 space-y-3.5">
-          {/* 목소리 */}
+        ) : (
           <div className="card p-4">
-            <h3 className="font-bold text-sm mb-2.5 flex items-center gap-2">
-              <TileIcon>
-                <Mic size={15} />
-              </TileIcon>
-              들려줄 목소리
-            </h3>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setVoiceMenuOpen((v) => !v)}
-                className="w-full h-12 pl-2.5 pr-3 rounded-[10px] bg-field border border-border hover:border-border-strong flex items-center gap-2.5 text-left transition"
-              >
-                <VoiceAvatar emoji={selectedOption?.emoji} size={30} />
-                <span className="flex-1 min-w-0 text-sm font-semibold truncate">
-                  {selectedOption?.name || "목소리 선택"}
-                </span>
-                <ChevronDown
-                  size={16}
-                  className={`text-muted transition-transform ${
-                    voiceMenuOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-              {voiceMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setVoiceMenuOpen(false)}
-                  />
-                  <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-surface border border-border rounded-xl shadow-lg py-1.5 max-h-72 overflow-y-auto">
-                    {clonedVoices.length > 0 && (
-                      <p className="px-3 pt-1 pb-1 text-[11px] font-bold text-muted uppercase tracking-wider">
-                        내 목소리
-                      </p>
-                    )}
-                    {[...clonedVoices, ...baseVoices].map((v, idx) => {
-                      const active = selectedVoice === v.id;
-                      const firstBase = idx === clonedVoices.length;
-                      return (
-                        <div key={v.id}>
-                          {firstBase && (
-                            <p className="px-3 pt-2 pb-1 text-[11px] font-bold text-muted uppercase tracking-wider">
-                              기본 목소리
-                            </p>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedVoice(v.id);
-                              setVoiceMenuOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition ${
-                              active ? "bg-primary-light" : "hover:bg-surface-soft"
-                            }`}
-                          >
-                            <VoiceAvatar emoji={v.emoji} size={28} />
-                            <span
-                              className={`flex-1 min-w-0 text-sm truncate ${
-                                active
-                                  ? "font-bold text-primary"
-                                  : "font-medium"
-                              }`}
-                            >
-                              {v.name}
-                            </span>
-                            {active && (
-                              <span className="text-primary shrink-0">
-                                <Check size={15} />
-                              </span>
-                            )}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* 이야기 길이 */}
-          <div className="card p-4">
-            <h3 className="font-bold text-sm mb-2.5 flex items-center gap-2">
-              <TileIcon>
-                <Sliders size={15} />
-              </TileIcon>
-              이야기 길이
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  { id: "short", label: "짧게", sub: "약 3분" },
-                  { id: "normal", label: "보통", sub: "약 5분" },
-                ] as const
-              ).map((opt) => {
-                const active = storyLength === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => setStoryLength(opt.id)}
-                    className={`py-2.5 rounded-xl border text-center transition ${
-                      active
-                        ? "bg-primary-light border-[1.5px] border-primary"
-                        : "bg-surface border-border hover:border-border-strong"
-                    }`}
-                  >
-                    <span className="block text-sm font-bold">{opt.label}</span>
-                    <span className="block text-[11px] text-muted tabular-nums">
-                      {opt.sub}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 실행 버튼 + 안내 (래퍼 카드 없이) */}
-          <div>
-            {generating ? (
-              <>
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <User size={16} className="text-muted" />
+                아이 정보
+                <span className="text-muted font-normal text-xs">(선택)</span>
+              </h3>
+              {hasProfile && (
                 <button
                   type="button"
-                  disabled
-                  className="w-full h-[52px] rounded-[12px] bg-[#2C2A45] text-[#FBF9F6] font-bold text-[14px] flex items-center justify-center gap-2 cursor-wait"
+                  onClick={() => setEditProfile(false)}
+                  className="text-[13px] font-semibold text-[var(--primary-deep)] hover:underline shrink-0"
                 >
-                  <span className="w-5 h-5 shrink-0 border-2 border-white/30 border-t-[#F4C566] rounded-full animate-spin" />
-                  <span className="truncate">{stages[stageIndex]}</span>
+                  완료
                 </button>
-                <p className="text-center text-[12px] text-muted mt-3">
-                  조금만 기다려 주세요…
-                </p>
-              </>
-            ) : (
-              <>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="이름 (예: 지우)"
+                value={childName}
+                onChange={(e) => setChildName(e.target.value)}
+                className="flex-1 min-w-0 h-11 px-3.5 rounded-[10px] bg-field border border-border text-sm text-foreground placeholder:text-[var(--muted-soft)] focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
+              />
+              <div className="shrink-0 flex items-center h-11 rounded-[10px] bg-field border border-border overflow-hidden">
                 <button
-                  onClick={handleGenerate}
-                  disabled={!canGenerate}
-                  className="w-full h-[52px] rounded-[12px] bg-[#2C2A45] hover:bg-[#3D3A5C] disabled:hover:bg-[#2C2A45] text-[#FBF9F6] font-extrabold text-[15px] transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() =>
+                    setChildAge(String(Math.max(2, Number(childAge) - 1)))
+                  }
+                  className="w-9 h-full flex items-center justify-center text-muted hover:text-primary text-lg leading-none transition"
+                  aria-label="나이 줄이기"
                 >
-                  <span className="flex text-[#F4C566]">
+                  −
+                </button>
+                <span className="w-11 text-center text-sm font-semibold tabular-nums">
+                  {childAge}세
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setChildAge(String(Math.min(8, Number(childAge) + 1)))
+                  }
+                  className="w-9 h-full flex items-center justify-center text-muted hover:text-primary text-lg leading-none transition"
+                  aria-label="나이 늘리기"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. 줄거리 입력 카드 — textarea + 글자수 + 예시 칩까지 한 덩어리 */}
+        <div className="card p-4">
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              <TileIcon>
+                <FileText size={15} />
+              </TileIcon>
+              어떤 이야기를 만들까요?
+            </h3>
+            {/* 언어 미니 토글 */}
+            <div className="flex gap-0.5 bg-field border border-border rounded-lg p-0.5 shrink-0">
+              {(["ko", "en"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLanguage(l)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition ${
+                    language === l
+                      ? "bg-primary text-white"
+                      : "text-[var(--muted)] hover:text-foreground"
+                  }`}
+                >
+                  {l === "ko" ? "한국어" : "English"}
+                </button>
+              ))}
+            </div>
+          </div>
+          {language === "en" && (
+            <p className="text-[11px] text-secondary mb-2 font-medium">
+              줄거리는 한국어로 적어도 영어 동화로 만들어드려요.
+            </p>
+          )}
+          <textarea
+            ref={textareaRef}
+            placeholder="줄거리를 자유롭게 적어주세요&#10;예: 숲속에서 길을 잃은 토끼가 친구들의 도움으로 집을 찾아가는 이야기"
+            value={plot}
+            onChange={(e) => setPlot(e.target.value.slice(0, MAX_PLOT))}
+            className="w-full min-h-[150px] px-3.5 py-3 rounded-[10px] bg-field border border-border text-sm leading-relaxed resize-y text-foreground placeholder:text-[var(--muted-soft)] focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
+          />
+          <p className="text-right text-[11px] text-muted mt-1.5 tabular-nums">
+            {plot.length} / {MAX_PLOT}자
+          </p>
+
+          {/* 예시 칩 — 박스로 감싸 아래에, 줄바꿈으로 전부 보이게 (가로 스크롤 X) */}
+          <div className="mt-3 rounded-xl bg-background border border-border p-3">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <p className="text-[11px] font-bold text-muted">
+                이런 이야기는 어때요?
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setExampleOffset((o) => (o + 4) % plotPool.length)
+                }
+                className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted hover:text-primary transition shrink-0"
+              >
+                <Refresh size={13} />
+                다른 줄거리
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {examples.map((ex) => (
+                <button
+                  key={ex}
+                  type="button"
+                  onClick={() => fillPlot(ex)}
+                  className="text-left inline-flex items-start gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border text-[13px] leading-snug text-[var(--text-body)] hover:border-[var(--primary-deep)] transition"
+                >
+                  <Sparkles
+                    size={13}
+                    filled
+                    className="text-[var(--star)] shrink-0 mt-0.5"
+                  />
+                  <span>{ex}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. 이야기 길이 — 카드 없이 라벨 + 세그먼트 컨트롤 한 줄 */}
+        <div className="flex items-center justify-between gap-3 px-1">
+          <span className="text-sm font-bold text-foreground">이야기 길이</span>
+          <div className="flex gap-1 bg-field border border-border rounded-xl p-1 shrink-0">
+            {(
+              [
+                { id: "short", label: "짧게", sub: "약 3분" },
+                { id: "normal", label: "보통", sub: "약 5분" },
+              ] as const
+            ).map((opt) => {
+              const active = storyLength === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setStoryLength(opt.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs transition ${
+                    active
+                      ? "bg-primary text-white font-bold"
+                      : "text-[var(--text-body)] hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                  <span className="tabular-nums opacity-75"> {opt.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4. CTA — 전체 폭, 흐름의 끝 */}
+        <div className="pt-1">
+          {generating ? (
+            <>
+              <button
+                type="button"
+                disabled
+                className="w-full h-14 rounded-[14px] bg-primary text-white font-bold text-[15px] flex items-center justify-center gap-2 cursor-wait opacity-90"
+              >
+                <span className="w-5 h-5 shrink-0 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                <span className="truncate">{stages[stageIndex]}</span>
+              </button>
+              <p className="text-center text-[12px] text-muted mt-2.5">
+                동화를 만들고 있어요 · 30초 정도 걸려요
+              </p>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleGenerate}
+                disabled={!canGenerate}
+                className={`w-full h-14 rounded-[14px] font-extrabold text-[15px] transition flex items-center justify-center gap-2 ${
+                  canGenerate
+                    ? "bg-primary text-white hover:bg-primary-dark"
+                    : "bg-field text-muted cursor-not-allowed"
+                }`}
+              >
+                {canGenerate && (
+                  <span className="flex">
                     <Sparkles size={18} filled />
                   </span>
-                  동화 만들기
-                </button>
-                <p className="text-center text-[12px] text-muted mt-2.5">
-                  {canGenerate
-                    ? "약 30초~1분 정도 걸려요"
-                    : "줄거리를 입력하면 만들 수 있어요"}
-                </p>
-              </>
-            )}
-          </div>
-
-          {error && (
-            <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/25">
-              <p className="text-xs text-danger leading-relaxed">{error}</p>
-            </div>
+                )}
+                동화 만들기
+              </button>
+              <p className="text-center text-[12px] text-muted mt-2.5">
+                {canGenerate
+                  ? "약 30초~1분 정도 걸려요"
+                  : "줄거리를 입력하면 만들 수 있어요"}
+              </p>
+            </>
           )}
         </div>
+
+        {error && (
+          <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/25">
+            <p className="text-xs text-danger leading-relaxed">{error}</p>
+          </div>
+        )}
       </div>
     </>
   );

@@ -8,6 +8,7 @@ import { useMyStories } from "@/lib/myStories";
 import { Search, Bell, Moon, Sparkles, Mic, Home } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 import { StoryCard } from "@/components/StoryCard";
+import SleepModeButton from "@/components/SleepModeButton";
 import { moralKeywords } from "@/lib/morals";
 
 // 나이대 필터 — 동화 권장연령의 중간값으로 한 묶음에만 속하게 분류
@@ -214,6 +215,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
+              <SleepModeButton />
               <button
                 onClick={() => {
                   setSearchOpen(!searchOpen);
@@ -268,50 +270,50 @@ export default function HomePage() {
             </div>
           )}
 
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5">
-            {categories.map((cat) => {
-              const active = activeCategory === cat.id;
-              const isHome = cat.id === "all";
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() =>
-                    setActiveCategory(active && !isHome ? "all" : cat.id)
-                  }
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border inline-flex items-center gap-1 ${
-                    isHome ? "shrink-0" : ""
-                  } ${
-                    active
-                      ? "bg-primary text-white border-primary"
-                      : isHome
-                      ? "bg-primary-light text-primary border-primary/30"
-                      : "bg-surface text-[var(--text-body)] border-border hover:border-border-strong"
-                  }`}
-                >
-                  {isHome && <Home size={13} filled={active} />}
-                  {isHome ? "추천 홈" : cat.label}
-                </button>
-              );
-            })}
-          </div>
+          {/* 카테고리 / 연령 — 2단 배열 (가로 스크롤 대신 줄바꿈). 모바일 스크롤 부담 해소 */}
+          <div className="space-y-2">
+            {/* 1단: 카테고리 */}
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => {
+                const active = activeCategory === cat.id;
+                const isHome = cat.id === "all";
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() =>
+                      setActiveCategory(active && !isHome ? "all" : cat.id)
+                    }
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition border ${
+                      active
+                        ? "bg-primary text-white border-primary"
+                        : "bg-surface text-[var(--text-body)] border-border hover:border-border-strong"
+                    }`}
+                  >
+                    {isHome ? "추천 홈" : cat.label}
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 mt-1.5">
-            {ageGroups.map((g) => {
-              const active = activeAge === g.id;
-              return (
-                <button
-                  key={g.id}
-                  onClick={() => setActiveAge(g.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
-                    active
-                      ? "bg-primary text-white border-primary"
-                      : "bg-surface text-[var(--text-body)] border-border hover:border-border-strong"
-                  }`}
-                >
-                  {g.label}
-                </button>
-              );
-            })}
+            {/* 2단: 연령 */}
+            <div className="flex flex-wrap gap-2">
+              {ageGroups.map((g) => {
+                const active = activeAge === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => setActiveAge(g.id)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition border ${
+                      active
+                        ? "bg-primary text-white border-primary"
+                        : "bg-surface text-[var(--text-body)] border-border hover:border-border-strong"
+                    }`}
+                  >
+                    {g.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </header>
@@ -407,7 +409,7 @@ export default function HomePage() {
               {/* AI Story Maker — 네이비 (주) */}
               <Link
                 href="/create"
-                className="relative overflow-hidden card-interactive h-[104px] rounded-2xl px-3.5 flex items-center gap-3 bg-[var(--night)]"
+                className="promo-ai relative overflow-hidden card-interactive h-[104px] rounded-2xl px-3.5 flex items-center gap-3 bg-[var(--night)] border border-transparent"
               >
                 <span className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
                   <Sparkles size={22} filled className="text-[var(--star)]" />
@@ -439,26 +441,26 @@ export default function HomePage() {
               {/* Voice Clone — 연보라 (부) */}
               <Link
                 href="/record"
-                className="relative overflow-hidden card-interactive h-[104px] rounded-2xl px-3.5 flex items-center gap-3 bg-primary-light"
+                className="group relative overflow-hidden h-[104px] rounded-2xl px-3.5 flex items-center gap-3 bg-primary-light"
               >
                 <span className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <Mic size={22} filled className="text-primary" />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-extrabold text-[#3C3489] leading-tight truncate">
+                  <p className="promo-voice-title text-[15px] font-extrabold text-[#3C3489] leading-tight truncate">
                     내 목소리로 동화 들려주기
                   </p>
                   <p className="text-[12px] text-[var(--text-body)] truncate mt-0.5">
                     30초 녹음이면 충분해요
                   </p>
                 </div>
-                <span className="shrink-0 inline-flex items-center gap-1 text-[13px] font-bold text-primary whitespace-nowrap">
+                <span className="shrink-0 inline-flex items-center gap-1 text-[13px] font-bold text-[#3C3489] group-hover:underline whitespace-nowrap">
                   녹음하러 가기 <span aria-hidden>→</span>
                 </span>
                 {/* 소형 장식: 마이크 24px (우상단, 옅게) */}
                 <Mic
                   size={24}
-                  className="absolute top-2.5 right-3 text-primary opacity-20 pointer-events-none"
+                  className="promo-voice-mark absolute top-2.5 right-3 text-primary opacity-[0.2] pointer-events-none"
                 />
               </Link>
             </div>
@@ -539,9 +541,9 @@ function ContinueCard({ story, pct }: { story: Story; pct: number }) {
         <h3 className="font-bold text-xs mb-1.5 group-hover:text-primary transition-colors truncate">
           {story.title}
         </h3>
-        <div className="h-1 rounded-full bg-primary-light overflow-hidden">
+        <div className="h-1 rounded-full bg-[var(--progress-track)] overflow-hidden">
           <div
-            className="h-full bg-primary rounded-full"
+            className="h-full rounded-full bg-[var(--progress-fill)]"
             style={{ width: `${Math.min(100, pct)}%` }}
           />
         </div>

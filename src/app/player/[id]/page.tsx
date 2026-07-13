@@ -102,9 +102,10 @@ function PlayerContent() {
   const [currentParagraph, setCurrentParagraph] = useState(0);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
   const [activePreset, setActivePreset] = useState<number | null>(null);
-  // 잠자기 타이머/밤 모드는 전역 스토어 사용 (페이지 이동해도 유지)
+  // 잠자기 타이머는 전역 스토어 사용 (페이지 이동해도 유지)
   const sleep = useSleepMode();
-  const nightMode = sleep.active;
+  // 플레이어는 잠자리 청취가 기본 상황이라 앱 테마 토글과 무관하게 항상 밤 팔레트
+  const nightMode = true;
   const sleepRemaining = useSleepRemaining();
   const [bgmId, setBgmId] = useState<string | null>(null);
   const [showBgmMenu, setShowBgmMenu] = useState(false);
@@ -648,7 +649,8 @@ function PlayerContent() {
 
   return (
     <div
-      className="fixed inset-0 flex flex-col overflow-hidden"
+      data-theme="sleep"
+      className="fixed inset-0 flex flex-col overflow-hidden bg-[var(--background)]"
       style={{ ["--cbh" as string]: `${controlBarH}px` } as CSSProperties}
     >
       {/* 배경: 동화 틴트 ↔ 밤 모드 크로스페이드 */}
@@ -943,16 +945,12 @@ function PlayerContent() {
                       paraRefs.current[i] = el;
                     }}
                     onClick={() => seekTo(i / paragraphs.length)}
-                    className={`text-[15px] lg:text-base leading-[1.9] rounded-lg px-2 py-1 cursor-pointer transition-colors duration-300 ${
+                    className={`text-[15px] lg:text-base leading-[1.8] rounded-lg px-2 py-1 cursor-pointer transition-colors duration-300 ${
                       i === currentParagraph
-                        ? nightMode
-                          ? "text-[var(--night-surface)] font-semibold bg-[rgba(110,95,214,0.35)]"
-                          : "text-[var(--primary-deep)] font-semibold bg-primary-light"
-                        : nightMode
-                        ? "text-[#8B86A3]"
+                        ? "text-foreground font-semibold bg-[#8F7FE833]"
                         : i < currentParagraph
-                        ? "text-muted"
-                        : "text-foreground/35"
+                        ? "text-[var(--muted-soft)]"
+                        : "text-[var(--text-body)]"
                     }`}
                   >
                     {p}
@@ -985,20 +983,18 @@ function PlayerContent() {
         <div className="max-w-4xl mx-auto px-5 lg:px-8 pt-3 pb-[calc(env(safe-area-inset-bottom)_+_20px)] lg:pb-4">
           {/* 진행바 */}
           <div
-            className={`w-full h-1.5 rounded-full cursor-pointer relative ${
-              nightMode ? "bg-white/15" : "bg-primary-light"
-            }`}
+            className="w-full h-1.5 rounded-full cursor-pointer relative bg-[#2C2A4C]"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               seekTo((e.clientX - rect.left) / rect.width);
             }}
           >
             <div
-              className="absolute left-0 top-0 h-full bg-primary rounded-full"
+              className="absolute left-0 top-0 h-full bg-[var(--star)] rounded-full"
               style={{ width: `${progressPct}%` }}
             />
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full shadow-md"
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[var(--star)] rounded-full shadow-md"
               style={{ left: `calc(${progressPct}% - 8px)` }}
             />
           </div>

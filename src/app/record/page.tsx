@@ -34,10 +34,10 @@ function pickRandomScripts(): string[] {
   return [...scriptPool].sort(() => Math.random() - 0.5).slice(0, 3);
 }
 
-// 목록 메타용 짧은 날짜 (예: 5.26)
-function shortDate(ms: number): string {
+// 등록일 표기 (예: 5월 26일)
+function longDate(ms: number): string {
   const d = new Date(ms);
-  return `${d.getMonth() + 1}.${d.getDate()}`;
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
 const CONSENT_KEY = "mvk.recordConsent";
@@ -107,6 +107,7 @@ export default function RecordPage() {
   const [voiceName, setVoiceName] = useState("내 목소리");
   const [voiceEmoji, setVoiceEmoji] = useState("🎙️");
   const [themeId, setThemeId] = useState<string | null>(null);
+  const [customRole, setCustomRole] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [previewingId, setPreviewingId] = useState<string | null>(null);
@@ -374,8 +375,21 @@ export default function RecordPage() {
     }
   };
 
-  const handleDeleteVoice = async (id: string) => {
-    if (!confirm("이 목소리를 삭제할까요?")) return;
+  // 이름 중복 방지 자동 넘버링 ("엄마 목소리" 있으면 "엄마 목소리 2")
+  const uniqueVoiceName = (base: string) => {
+    const names = new Set(voices.map((v) => v.name));
+    if (!names.has(base)) return base;
+    let n = 2;
+    while (names.has(`${base} ${n}`)) n++;
+    return `${base} ${n}`;
+  };
+
+  const handleDeleteVoice = async (id: string, usageCount = 0) => {
+    const msg =
+      usageCount > 0
+        ? `이 목소리를 삭제할까요?\n동화 ${usageCount}편이 기본 목소리로 바뀌어요.`
+        : "이 목소리를 삭제할까요?";
+    if (!confirm(msg)) return;
     try {
       await fetch(`/api/voices/${id}`, { method: "DELETE" });
       refreshVoices();
@@ -558,9 +572,9 @@ export default function RecordPage() {
                             )}
                           </div>
                           <p className="text-[11px] text-muted mt-0.5 truncate">
-                            {shortDate(v.createdAt)} 녹음
+                            {longDate(v.createdAt)} 등록
                             {v.usageCount > 0
-                              ? ` · 동화 ${v.usageCount}편에 사용`
+                              ? ` · 동화 ${v.usageCount}편에서 사용 중`
                               : ""}
                           </p>
                         </div>
@@ -568,10 +582,10 @@ export default function RecordPage() {
                         {/* 미리듣기 */}
                         <button
                           onClick={() => handlePreview(v.id)}
-                          className={`w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 transition ${
+                          className={`w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 transition text-[var(--primary-deep)] ${
                             previewingId === v.id
-                              ? "bg-[#2C2A45] text-[#F4C566] pulse-ring"
-                              : "bg-[#2C2A45] text-[#F4C566] hover:bg-[#3D3A5C]"
+                              ? "bg-surface-2 pulse-ring"
+                              : "bg-surface-2 hover:brightness-95"
                           }`}
                           aria-label={previewingId === v.id ? "정지" : "미리듣기"}
                         >
@@ -599,7 +613,15 @@ export default function RecordPage() {
                                 className="fixed inset-0 z-40"
                                 onClick={() => setMenuId(null)}
                               />
-                              <div className="absolute right-0 top-full mt-1 w-40 bg-surface border border-border rounded-xl shadow-lg py-1 z-50">
+                              <div className="absolute right-0 top-full mt-1 w-44 bg-surface border border-border rounded-xl shadow-lg py-1 z-50">
+                                {!v.isDefault && (
+                                  <button
+                                    onClick={() => handleSetDefaultVoice(v.id)}
+                                    className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-surface-soft transition flex items-center gap-2"
+                                  >
+                                    <Check size={14} /> 기본 목소리로 설정
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => {
                                     setEditingId(v.id);
@@ -608,20 +630,21 @@ export default function RecordPage() {
                                   }}
                                   className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-surface-soft transition flex items-center gap-2"
                                 >
-                                  <Pencil size={14} /> 이름 변경
+                                  <Pencil size={14} /> 이름 바꾸기
                                 </button>
-                                {!v.isDefault && (
-                                  <button
-                                    onClick={() => handleSetDefaultVoice(v.id)}
-                                    className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-surface-soft transition"
-                                  >
-                                    기본으로 설정
-                                  </button>
-                                )}
                                 <button
                                   onClick={() => {
                                     setMenuId(null);
-                                    handleDeleteVoice(v.id);
+                                    handlePreview(v.id);
+                                  }}
+                                  className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-surface-soft transition flex items-center gap-2"
+                                >
+                                  <Play size={14} /> 미리 듣기
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setMenuId(null);
+                                    handleDeleteVoice(v.id, v.usageCount);
                                   }}
                                   className="w-full text-left px-3.5 py-2 text-[13px] text-danger hover:bg-danger/10 transition flex items-center gap-2"
                                 >
@@ -635,37 +658,24 @@ export default function RecordPage() {
                     )}
                   </div>
                 ))}
-                {/* 목록 아래 은은한 별 장식 (콘텐츠와 겹치지 않게) */}
-                <div
-                  className="col-span-full flex justify-center items-center gap-6 pt-7 pb-1 pointer-events-none select-none"
-                  aria-hidden
-                >
-                  <svg width="72" height="14" viewBox="0 0 72 14" fill="none">
-                    <path
-                      d="M10 2 l1 2.2 2.2 1 -2.2 1 -1 2.2 -1 -2.2 -2.2 -1 2.2 -1z"
-                      fill="#CEC7EE"
-                      opacity="0.8"
-                    />
-                    <circle cx="36" cy="7" r="1.6" fill="#CEC7EE" opacity="0.55" />
-                    <path
-                      d="M60 3 l0.8 1.8 1.8 0.8 -1.8 0.8 -0.8 1.8 -0.8 -1.8 -1.8 -0.8 1.8 -0.8z"
-                      fill="#CEC7EE"
-                      opacity="0.7"
-                    />
-                  </svg>
-                </div>
               </div>
             ) : (
               <div className="card p-10 text-center border-dashed">
-                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary-light text-primary flex items-center justify-center">
-                  <Mic size={24} filled />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary-light text-primary flex items-center justify-center">
+                  <Mic size={30} filled />
                 </div>
-                <p className="text-sm text-foreground/80 font-semibold">
-                  아직 등록된 목소리가 없어요
+                <p className="text-base text-foreground font-bold">
+                  첫 목소리를 등록해보세요
                 </p>
-                <p className="text-xs text-muted mt-1">
-                  첫 목소리를 녹음해볼까요?
+                <p className="text-[13px] text-muted mt-1.5 leading-relaxed">
+                  엄마·아빠 목소리로 동화를 들려줄 수 있어요
                 </p>
+                <button
+                  onClick={startNewRecording}
+                  className="mt-5 inline-flex items-center gap-1.5 bg-primary text-white font-bold text-sm px-5 h-11 rounded-full hover:bg-primary-dark transition"
+                >
+                  <Mic size={16} filled /> 목소리 등록하기
+                </button>
               </div>
             )}
           </>
@@ -684,7 +694,8 @@ export default function RecordPage() {
                 녹음할 목소리의 주인공을 골라주세요
               </p>
             </div>
-            <div className="grid grid-cols-4 gap-2.5 mb-6">
+            {/* auto-fit 중앙 정렬 (7개면 4+3이 가운데로) */}
+            <div className="flex flex-wrap justify-center gap-2.5 mb-4">
               {RELATIONSHIPS.map((t) => {
                 const selected = themeId === t.id;
                 return (
@@ -692,13 +703,14 @@ export default function RecordPage() {
                     key={t.id}
                     onClick={() => {
                       setThemeId(t.id);
-                      setVoiceName(t.name);
                       setVoiceEmoji(t.emoji);
+                      setVoiceName(t.id === "etc" ? "" : uniqueVoiceName(t.name));
+                      if (t.id !== "etc") setCustomRole("");
                     }}
-                    className={`relative rounded-2xl p-3 flex flex-col items-center gap-2 border transition ${
+                    className={`relative w-[80px] rounded-2xl p-3 flex flex-col items-center gap-2 transition ${
                       selected
-                        ? "bg-primary-light border-[1.5px] border-primary"
-                        : "bg-surface border-border hover:border-border-strong"
+                        ? "bg-primary-light border-2 border-primary"
+                        : "bg-surface border border-border hover:border-border-strong"
                     }`}
                   >
                     {selected && (
@@ -712,13 +724,39 @@ export default function RecordPage() {
                 );
               })}
             </div>
-            <button
-              onClick={proceedFromTheme}
-              disabled={!themeId}
-              className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              다음
-            </button>
+
+            {/* 기타 선택 시 관계 직접 입력 */}
+            {themeId === "etc" && (
+              <input
+                value={customRole}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCustomRole(val);
+                  setVoiceName(
+                    val.trim() ? uniqueVoiceName(`${val.trim()} 목소리`) : ""
+                  );
+                }}
+                placeholder="관계를 입력해주세요 (예: 이모, 삼촌)"
+                maxLength={10}
+                autoFocus
+                className="w-full max-w-[340px] mx-auto block h-11 px-3.5 mb-4 rounded-[10px] bg-field border border-border text-sm text-center focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
+              />
+            )}
+
+            {(!themeId || (themeId === "etc" && !customRole.trim())) && (
+              <p className="text-center text-[12px] text-muted mb-2">
+                누구 목소리인지 골라주세요
+              </p>
+            )}
+            <div className="flex justify-center">
+              <button
+                onClick={proceedFromTheme}
+                disabled={!themeId || (themeId === "etc" && !customRole.trim())}
+                className="w-full max-w-[300px] py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                다음
+              </button>
+            </div>
           </div>
         )}
 

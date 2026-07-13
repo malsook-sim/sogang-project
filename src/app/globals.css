@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  /* Midnight Lavender — cool off-white bg, night-navy ink */
-  --background: #FAF9FC;
-  --surface: #FFFFFF;
+  /* Midnight Lavender — 라이트(기본) 팔레트. 잠자기는 [data-theme="sleep"]에서 값만 교체 */
+  --background: #FBF9F6;    /* --color-bg */
+  --surface: #FFFFFF;       /* --color-surface */
   --surface-soft: #F4F1FB;
+  --surface-2: #F4F1FB;     /* --color-surface-2 (팝업 버튼/칩; 밤=#2B2850) */
   --field: #F7F6FB;         /* 카드 내부 입력 필드 배경 */
   --night-surface: #F8F7FC; /* 밤 카드(#2C2A45) 위 밝은 텍스트/장식 */
-  --foreground: #2C2A45;
+  --foreground: #2C2A45;    /* --color-text */
+  --progress-track: var(--primary-light); /* 진행바 트랙 */
+  --progress-fill: var(--primary);         /* 진행바 채움 (밤=별빛) */
 
   /* Lavender (main) */
   --primary: #6E5FD6;
@@ -53,11 +56,17 @@
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-soft: var(--surface-soft);
+  --color-surface-2: var(--surface-2);
   --color-field: var(--field);
   --color-night-surface: var(--night-surface);
   --color-foreground: var(--foreground);
+  --color-text-body: var(--text-body);
+  --color-star: var(--star);
+  --color-night: var(--night);
+  --color-night-caption: var(--night-caption);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
+  --color-primary-deep: var(--primary-deep);
   --color-primary-dark: var(--primary-dark);
   --color-secondary: var(--secondary);
   --color-secondary-light: var(--secondary-light);
@@ -113,6 +122,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   scrollbar-width: none;
 }
 
+/* 스크롤바 전역 숨김 — 스크롤 기능은 유지, 바만 안 보이게 */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* Sticky header surface — 불투명(콘텐츠 비침 방지) */
 .glass {
   background: var(--background);
@@ -153,34 +171,51 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   background: linear-gradient(135deg, #6B5FA6 0%, #45386A 100%);
 }
 
-/* ===== 전역 밤(수면) 테마 — 플레이어 밤모드 팔레트를 토큰 오버라이드로 추출 =====
-   html.sleep-mode 에서 기본 토큰만 밤 팔레트로 덮으면 토큰을 쓰는 모든 화면
-   (홈/목록/상세 등)이 자동으로 반전된다. */
-html.sleep-mode {
-  --background: #2C2A45;
-  --surface: #3D3A5C;
-  --surface-soft: #454269;
-  --field: #3D3A5C;
-  --card-bg: #3D3A5C;
-  --foreground: #FBF9F6;
-  --muted: #A79FD9;
-  --text-body: #C9C3E8;
-  --border: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.18);
-  --primary-light: rgba(110, 95, 214, 0.30);
-  --primary-deep: #DAD5F2;
-  --secondary-light: rgba(110, 95, 214, 0.30);
-}
-html.sleep-mode body {
-  background: var(--background);
-  color: var(--foreground);
+/* ===== 잠자기(밤) 테마 — [data-theme="sleep"] 토큰 오버라이드 =====
+   변수명은 라이트와 동일, 값만 교체. html에 걸면 앱 전체, 특정 엘리먼트에 걸면
+   그 하위만 밤 팔레트(플레이어가 앱 토글과 무관하게 항상 밤을 쓰는 데 사용). */
+[data-theme="sleep"] {
+  --background: #14132A;    /* night보다 한 단계 더 어둡게(썸네일 안 묻힘) */
+  /* 다크 표면 3단계: bg(#14132A) < surface < control(field/칩), 경계 보이게 border 밝힘 */
+  --surface: #211F42;       /* 카드 — 배경보다 명확히 밝게 */
+  --surface-soft: #2C2A52;
+  --surface-2: #2C2A52;     /* 칩/팝업 버튼 = control */
+  --field: #2C2A52;         /* 입력창 = control (surface보다 한 단계 밝게) */
+  --card-bg: #211F42;
+  --night: #2C2A45;         /* 썸네일 톤은 양 모드 동일 */
+  --night-surface: #EDEBF8;
+  --foreground: #EDEBF8;    /* text */
+  --muted: #918CAD;         /* text-sub */
+  --muted-soft: #6E6890;    /* muted (placeholder) */
+  --text-body: #C5BFE0;
+  --border: #383564;        /* 경계 밝혀서 표면 구분 */
+  --border-strong: #4A4680;
+  --primary: #8F7FE8;       /* 어두운 배경 대비 두 단계 밝힘 */
+  --primary-light: #2B2850; /* primary-soft */
+  --primary-deep: #B7ABF4;
+  --star: #F4C566;          /* 양 모드 동일 */
+  --night-caption: #A79FD9;
+  --progress-track: #2C2A4C;
+  --progress-fill: var(--star); /* 밤엔 진행바가 골드(달빛 차오름) */
 }
 
-/* 밤 테마 토글(진입/해제) 순간에만 1.2s 부드러운 전환을 전 요소에 적용.
-   토글이 끝나면 클래스를 제거하므로 평소 hover/색 변화엔 영향이 없다. */
+/* 프로모 배너 잠자기 변형 — AI 배너는 배경(--night)이 밤 페이지 톤과 겹쳐 테두리로 분리,
+   Voice 배너 제목은 어두운 틴트 위에서 밝은 라벤더로, 마이크 워터마크는 조금 더 진하게 */
+[data-theme="sleep"] .promo-ai {
+  border-color: var(--border);
+}
+[data-theme="sleep"] .promo-voice-title {
+  color: #CFC6F8;
+}
+[data-theme="sleep"] .promo-voice-mark {
+  opacity: 0.22;
+}
+
+/* 테마 전환(진입/해제) 순간에만 0.3s 부드러운 전환. 토글 후 클래스 제거되어
+   평소 hover/색 변화엔 영향 없음. */
 html.theme-transition * {
-  transition: background-color 1.2s ease, color 1.2s ease,
-    border-color 1.2s ease, fill 1.2s ease !important;
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, fill 0.3s ease !important;
 }
 
 /* Midnight Lavender — 로그인/회원가입/온보딩 전용 토큰 (이 스코프 안에서만 적용) */

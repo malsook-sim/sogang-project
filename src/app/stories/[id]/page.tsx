@@ -13,7 +13,7 @@ import { Heart, Play, Pause, Pencil, Trash, Mic } from "@/components/Icon";
 import PageHeader from "@/components/PageHeader";
 import { StoryCover } from "@/components/StoryCover";
 import { VoiceAvatar } from "@/components/VoiceAvatar";
-import { moralKeywords, moralCaption } from "@/lib/morals";
+import { moralKeywords, moralCaption, koTag } from "@/lib/morals";
 import { josa } from "@/lib/josa";
 
 const MAX_CONTENT = 4000;
@@ -57,6 +57,7 @@ export default function StoryDetailPage() {
   const [lastVoiceId, setLastVoiceId] = useState<string | null>(null);
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [scrollPct, setScrollPct] = useState(0);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const previewUrlRef = useRef<string | null>(null);
@@ -87,6 +88,19 @@ export default function StoryDetailPage() {
       bodyRef.current.style.height = bodyRef.current.scrollHeight + "px";
     }
   }, [editing, editContent]);
+
+  // 본문 스크롤 진행도 (헤더 하단 진행바)
+  useEffect(() => {
+    if (editing) return;
+    const onScroll = () => {
+      const el = document.documentElement;
+      const max = el.scrollHeight - el.clientHeight;
+      setScrollPct(max > 0 ? Math.min(100, (el.scrollTop / max) * 100) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [editing, id]);
 
   if (!story) {
     const stillLoading = isMine ? myStories.length === 0 : !catalogLoaded;
@@ -379,10 +393,24 @@ export default function StoryDetailPage() {
         }
       />
 
-      <div className="max-w-5xl mx-auto px-5 lg:px-8 pt-6 pb-[88px] lg:pb-6 lg:grid lg:grid-cols-[38%_1fr] lg:gap-8">
-        {/* 좌: 표지 + 제목 + 태그 + 교훈 + CTA */}
-        <div className="lg:sticky lg:top-24 lg:self-start mb-6 lg:mb-0">
-          <div className="relative aspect-[4/3] lg:max-h-[40vh] rounded-2xl bg-surface-soft overflow-hidden mb-4">
+      {/* 본문 스크롤 진행바 (헤더 하단, 2px) */}
+      {!editing && (
+        <div className="sticky top-[88px] z-40 h-0.5 bg-transparent pointer-events-none">
+          <div
+            className="h-full bg-primary"
+            style={{ width: `${scrollPct}%` }}
+          />
+        </div>
+      )}
+
+      <div className="max-w-5xl mx-auto w-full px-5 lg:px-8 pt-6 pb-[104px] lg:pb-10 lg:grid lg:grid-cols-[380px_1fr] lg:gap-10 lg:items-start">
+        {/* 좌: 표지 + 제목 + 태그 + 교훈 + CTA (데스크톱 sticky 고정) */}
+        <div
+          className={`mb-6 lg:mb-0 ${
+            editing ? "" : "lg:sticky lg:top-[112px] lg:self-start"
+          }`}
+        >
+          <div className="relative aspect-[4/3] lg:max-h-[300px] rounded-2xl bg-surface-soft overflow-hidden mb-4">
             <StoryCover story={story} className="w-full h-full" />
             {story.isPremium && (
               <span className="absolute top-3 left-3 bg-[#F4C566] text-[#5C4400] text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider">
@@ -415,7 +443,7 @@ export default function StoryDetailPage() {
                 key={m}
                 className="text-xs bg-primary-light text-primary px-2.5 py-1 rounded-full font-semibold"
               >
-                {m}
+                {koTag(m)}
               </span>
             ))}
           </div>
@@ -441,10 +469,10 @@ export default function StoryDetailPage() {
           {!editing && (
             <div className="hidden lg:block">
               {lastVoice ? (
-                <div className="flex items-stretch gap-2">
+                <>
                   <button
                     onClick={playWithLast}
-                    className="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-2xl text-sm font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20"
+                    className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-2xl text-sm font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20"
                   >
                     <VoiceAvatar emoji={lastVoice.emoji} size={18} />
                     {lastVoice.name}
@@ -452,16 +480,9 @@ export default function StoryDetailPage() {
                   </button>
                   <button
                     onClick={() => setVoiceModalOpen(true)}
-                    className="shrink-0 px-4 rounded-2xl border border-border text-muted hover:text-primary hover:border-primary hover:bg-primary-light/40 transition flex flex-col items-center justify-center gap-0.5"
-                    aria-label="목소리 바꾸기"
+                    className="w-full mt-2 flex items-center justify-center gap-1.5 bg-surface border border-border text-foreground/80 py-3 rounded-2xl text-[13px] font-semibold hover:border-primary hover:text-primary hover:bg-primary-light/40 transition"
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden
-                    >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                       <path
                         d="M4 7h13l-3-3M20 17H7l3 3"
                         stroke="currentColor"
@@ -470,9 +491,12 @@ export default function StoryDetailPage() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                    <span className="text-[10px] font-bold">변경</span>
+                    목소리 바꾸기
                   </button>
-                </div>
+                  <p className="text-center text-[12px] text-muted mt-2">
+                    아빠, 할머니 목소리로도 들을 수 있어요
+                  </p>
+                </>
               ) : clonedVoices.length === 0 ? (
                 <>
                   <button
@@ -502,8 +526,8 @@ export default function StoryDetailPage() {
           )}
         </div>
 
-        {/* 우: 전문 or 편집 (본문 컬럼 최대 640px, 중앙 정렬) */}
-        <div className="w-full lg:max-w-[640px] lg:mx-auto">
+        {/* 우: 전문 or 편집 (본문 최대 640px, 줄 길이 제한) */}
+        <div className="w-full lg:max-w-[640px]">
           <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3">
             동화 이야기
           </p>
@@ -527,7 +551,7 @@ export default function StoryDetailPage() {
               {paragraphs.map((p, i) => (
                 <p
                   key={i}
-                  className="text-[15px] lg:text-[16px] text-foreground/85 leading-[1.95]"
+                  className="text-[17px] lg:text-[16px] text-foreground/85 leading-[1.9]"
                 >
                   {p}
                 </p>
@@ -540,11 +564,7 @@ export default function StoryDetailPage() {
       {/* 모바일 하단 고정 듣기 바 (데스크탑은 좌측 sticky CTA 사용) */}
       {!editing && (
         <div
-          className="lg:hidden fixed left-0 right-0 z-40 bottom-[calc(68px+env(safe-area-inset-bottom))] px-4 py-3"
-          style={{
-            background: "var(--background)",
-            borderTop: "0.5px solid var(--border-strong)",
-          }}
+          className="lg:hidden fixed left-0 right-0 z-40 bottom-[calc(68px_+_env(safe-area-inset-bottom))] px-4 py-3 bg-surface border-t border-border"
         >
           {lastVoice ? (
             <div className="flex items-center gap-2">
@@ -558,9 +578,18 @@ export default function StoryDetailPage() {
               </button>
               <button
                 onClick={() => setVoiceModalOpen(true)}
-                className="shrink-0 text-sm font-semibold text-muted hover:text-primary px-3 transition"
+                className="shrink-0 w-[52px] h-[52px] rounded-2xl border border-border text-foreground/70 hover:text-primary hover:border-primary transition flex items-center justify-center"
+                aria-label="목소리 바꾸기"
               >
-                변경
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M4 7h13l-3-3M20 17H7l3 3"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
             </div>
           ) : clonedVoices.length === 0 ? (

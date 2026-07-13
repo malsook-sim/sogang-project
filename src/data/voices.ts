@@ -10,21 +10,21 @@ export interface Voice {
 export const defaultVoices: Voice[] = [
   {
     id: "Lb7qkOn5hF8p7qfCDH8q",
-    name: "포근한 엄마",
+    name: "포근한 엄마 목소리",
     description: "엄마가 들려주듯 포근하고 다정한 목소리예요",
     emoji: "🤱",
     type: "premade",
   },
   {
     id: "5n5gqmaQi9Ewevrz7bOS",
-    name: "상냥한 언니",
+    name: "상냥한 언니 목소리",
     description: "상냥하고 친근한 언니 목소리로 들려줘요",
     emoji: "👧",
     type: "premade",
   },
   {
     id: "1W00IGEmNmwmsDeYy7ag",
-    name: "밝은 이야기꾼",
+    name: "밝은 이야기꾼 목소리",
     description: "밝고 경쾌한 목소리로 신나게 읽어줘요",
     emoji: "🌟",
     type: "premade",
@@ -52,7 +52,7 @@ export const defaultVoices: Voice[] = [
   },
   {
     id: "n2fbxG88jqAoaVPUy3IG",
-    name: "또박또박 낭독",
+    name: "또박또박 낭독 목소리",
     description: "또박또박 정성껏 읽어주는 낭독 목소리예요",
     emoji: "📖",
     type: "premade",
@@ -77,7 +77,7 @@ export const englishVoices: Voice[] = [
   },
   {
     id: "3AMU7jXQuQa3oRvRqUmb",
-    name: "원어민 선생님",
+    name: "원어민 선생님 목소리",
     description: "또렷한 원어민 발음으로 읽어줘요",
     emoji: "🌎",
     type: "premade",
