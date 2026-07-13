@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Children's Stories - My voice story for Kids</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header / Navigation -->
+    <header class="header">
+        <div class="container header-inner">
+            <a href="#" class="logo">LOGO <span>HERE</span></a>
+
+            <nav class="nav" id="nav">
+                <button class="nav-close" id="navClose" aria-label="Close menu">&times;</button>
+                <ul class="nav-list">
+                    <li><a href="#home" class="active">Home</a></li>
+                    <li><a href="#about">About Author</a></li>
+                    <li><a href="#books">Books</a></li>
+                    <li><a href="#upcoming">Upcoming Book</a></li>
+                    <li><a href="#blogs">Blogs</a></li>
+                    <li><a href="#testimonials">Testimonials</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-actions">
+                <button class="cart-btn" aria-label="Shopping cart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="21" r="1"/>
+                        <circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>
+                    </svg>
+                    <span class="cart-count">0</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" aria-label="Open menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <!-- Decorative background elements -->
+        <div class="hero-bg">
+            <div class="sparkle s1"></div>
+            <div class="sparkle s2"></div>
+            <div class="sparkle s3"></div>
+            <div class="sparkle s4"></div>
+            <div class="sparkle s5"></div>
+            <div class="sparkle s6"></div>
+
+            <!-- Paper airplane left -->
+            <div class="airplane airplane-left">
+                <svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 50 L90 20 L60 80 L50 55 L10 50 Z"/>
+                    <path d="M50 55 L90 20"/>
+                </svg>
+            </div>
+
+            <!-- Paper airplane right with trail -->
+            <div class="airplane airplane-right">
+                <svg viewBox="0 0 200 120" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M80 40 L180 15 L150 85 L130 55 L80 40 Z"/>
+                    <path d="M130 55 L180 15"/>
+                    <path d="M10 80 Q 40 60, 70 70 T 130 60" stroke-dasharray="4 6"/>
+                    <circle cx="20" cy="85" r="2" fill="#fff"/>
+                    <circle cx="50" cy="68" r="2" fill="#fff"/>
+                </svg>
+            </div>
+
+            <!-- Hot air balloon -->
+            <div class="balloon">
+                <svg viewBox="0 0 80 110" fill="none">
+                    <ellipse cx="40" cy="40" rx="32" ry="38" fill="#7dd3c0"/>
+                    <path d="M8 40 Q 40 70, 72 40" stroke="#5cb8a3" stroke-width="2" fill="none"/>
+                    <path d="M22 8 Q 22 50, 30 78" stroke="#f9a825" stroke-width="3" fill="none"/>
+                    <path d="M58 8 Q 58 50, 50 78" stroke="#f9a825" stroke-width="3" fill="none"/>
+                    <line x1="30" y1="78" x2="34" y2="92" stroke="#333" stroke-width="1"/>
+                    <line x1="50" y1="78" x2="46" y2="92" stroke="#333" stroke-width="1"/>
+                    <rect x="32" y="92" width="16" height="12" rx="2" fill="#8b4513"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="container hero-content">
+            <span class="badge">생성형 AI의 이해와 활용 9조 : 김국희 김현정 최지은</span>
+            <h1 class="hero-title">
+                My voice story<br>
+                for Kids
+            </h1>
+            <p class="hero-desc">
+                단 1분의 목소리 녹음만으로, 언제나 엄마 아빠가 곁에서 직접 읽어주는 특별한 동화책을 선물할 수 있습니다
+            </p>
+            <div class="hero-buttons">
+                <a href="#books" class="btn btn-primary">Buy Books</a>
+                <a href="#about" class="btn btn-secondary">Learn More</a>
+            </div>
+        </div>
+
+        <!-- Bottom center character (background removed in JS) -->
+        <div class="hero-bottom-center" aria-hidden="true">
+            <img
+                id="readingKids"
+                class="hero-bottom-img"
+                src="images/reading-kids.png?v=2"
+                alt=""
+                decoding="async"
+                loading="eager"
+            >
+        </div>
+
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container about-grid">
+            <div class="about-image">
+                <div class="purple-blob">
+                    <div class="blob-deco d1"></div>
+                    <div class="blob-deco d2"></div>
+                    <div class="blob-deco d3"></div>
+                    <div class="blob-deco d4"></div>
+                    <div class="kid-illustration">
+                        <div class="kid-face">
+                            <div class="hair"></div>
+                            <div class="face">
+                                <div class="eye left"></div>
+                                <div class="eye right"></div>
+                                <div class="cheek left"></div>
+                                <div class="cheek right"></div>
+                                <div class="smile"></div>
+                            </div>
+                            <div class="body"></div>
+                        </div>
+                        <div class="leaf-deco"></div>
+                    </div>
+                </div>
+                <div class="hands-deco">
+                    <span class="hand h1">✋</span>
+                    <span class="hand h2">🖐️</span>
+                    <span class="hand h3">🤚</span>
+                </div>
+            </div>
+
+            <div class="about-content">
+                <span class="badge badge-pink">About Your Writing</span>
+                <h2 class="section-title">
+                    Pioneering Adventures<br>
+                    in Kids' Stories
+                </h2>
+                <p class="about-desc">
+                    As both the creator and curator of whimsical adventures, lorem
+                    brings stories to life, sparking joy and fostering a love for the
+                    written word. Welcome to Holland's literary playground, where
+                    every page is a new adventure waiting to unfold.
+                </p>
+
+                <div class="features">
+                    <div class="feature">
+                        <span class="feature-icon">⭐</span>
+                        <div>
+                            <h3>Master of Imagination</h3>
+                            <p>Inspiring creativity through magical narratives</p>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">🌸</span>
+                        <div>
+                            <h3>Guardian of Innocence</h3>
+                            <p>Protecting and nurturing childhood wonder</p>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="#books" class="btn btn-primary">Discover More</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Books Section -->
+    <section id="books" class="books-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge badge-pink">Our Books</span>
+                <h2 class="section-title">Magical Stories Collection</h2>
+            </div>
+            <div class="books-grid">
+                <div class="book-card">
+                    <div class="book-cover" style="background: linear-gradient(135deg, #ff9a9e, #fad0c4);">
+                        <span class="book-emoji">🦄</span>
+                    </div>
+                    <h3>The Magical Unicorn</h3>
+                    <p>Ages 4-8 · Adventure</p>
+                    <span class="price">$14.99</span>
+                </div>
+                <div class="book-card">
+                    <div class="book-cover" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+                        <span class="book-emoji">🌈</span>
+                    </div>
+                    <h3>Rainbow Adventures</h3>
+                    <p>Ages 5-9 · Fantasy</p>
+                    <span class="price">$12.99</span>
+                </div>
+                <div class="book-card">
+                    <div class="book-cover" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);">
+                        <span class="book-emoji">🐻</span>
+                    </div>
+                    <h3>Friendly Bear Tales</h3>
+                    <p>Ages 3-7 · Friendship</p>
+                    <span class="price">$13.99</span>
+                </div>
+                <div class="book-card">
+                    <div class="book-cover" style="background: linear-gradient(135deg, #c2e9fb, #a1c4fd);">
+                        <span class="book-emoji">🚀</span>
+                    </div>
+                    <h3>Space Explorer</h3>
+                    <p>Ages 6-10 · Sci-Fi</p>
+                    <span class="price">$15.99</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge badge-pink">Testimonials</span>
+                <h2 class="section-title">What Parents Say</h2>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="stars">⭐⭐⭐⭐⭐</div>
+                    <p>"My daughter absolutely loves these books! The stories are engaging and the illustrations are beautiful."</p>
+                    <div class="author">
+                        <span class="avatar">👩</span>
+                        <div>
+                            <h4>Sarah Johnson</h4>
+                            <small>Parent of two</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="stars">⭐⭐⭐⭐⭐</div>
+                    <p>"These books have become our bedtime favorites. Every story sparks meaningful conversations."</p>
+                    <div class="author">
+                        <span class="avatar">👨</span>
+                        <div>
+                            <h4>Michael Chen</h4>
+                            <small>Father</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="stars">⭐⭐⭐⭐⭐</div>
+                    <p>"Beautiful stories that teach valuable lessons. Highly recommend for any young reader!"</p>
+                    <div class="author">
+                        <span class="avatar">👩</span>
+                        <div>
+                            <h4>Emma Wilson</h4>
+                            <small>Teacher</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-inner">
+            <div class="footer-col">
+                <a href="#" class="logo logo-light">LOGO <span>HERE</span></a>
+                <p>Crafting magical stories for children, one page at a time.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#books">Books</a></li>
+                    <li><a href="#testimonials">Testimonials</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Contact</h4>
+                <p>📧 hello@kidsstories.com</p>
+                <p>📞 +1 (555) 123-4567</p>
+            </div>
+            <div class="footer-col">
+                <h4>Follow Us</h4>
+                <div class="social">
+                    <a href="#" aria-label="Facebook">📘</a>
+                    <a href="#" aria-label="Instagram">📷</a>
+                    <a href="#" aria-label="Twitter">🐦</a>
+                    <a href="#" aria-label="YouTube">📺</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Children's Stories. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
