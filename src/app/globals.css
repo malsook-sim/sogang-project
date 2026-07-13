@@ -1,40 +1,50 @@
 @import "tailwindcss";
 
 :root {
-  /* Warm ivory background, near-black foreground */
-  --background: #F6F2EC;
+  /* Midnight Lavender — cream bg, night-navy ink */
+  --background: #FBF9F6;
   --surface: #FFFFFF;
-  --surface-soft: #FBF8F3;
-  --foreground: #1C1812;
+  --surface-soft: #F4F1FB;
+  --foreground: #2C2A45;
 
-  /* Refined terracotta */
-  --primary: #B85339;
-  --primary-light: #F7ECE5;
-  --primary-dark: #913E27;
+  /* Lavender (main) */
+  --primary: #6E5FD6;
+  --primary-light: #EDE9F7;
+  --primary-dark: #4A3FA0;
 
-  /* Deep plum (literary, premium) */
-  --secondary: #4A3F6B;
-  --secondary-light: #ECE7F2;
+  /* Night navy (depth — thumbnails / primary banner) */
+  --secondary: #2C2A45;
+  --secondary-light: #EDE9F7;
 
-  /* Warm gold accent */
-  --accent: #C9974A;
-  --accent-light: #F8EFDD;
+  /* Star gold (decoration / highlight only) */
+  --accent: #F4C566;
+  --accent-light: #FDF3D9;
 
   --card-bg: #FFFFFF;
-  --success: #5E9A6A;
-  --danger: #B84A4A;
-  --muted: #8A7E72;
-  --border: #E8E0D5;
-  --border-strong: #DCD2C4;
+  --success: #57B894;
+  --danger: #E5606B;
+  --muted: #8B86A3;
+  --border: #E8E4F0;
+  --border-strong: #D8D3E8;
+
+  /* 추가 세분 토큰 */
+  --night: #2C2A45;
+  --night-caption: #A79FD9;
+  --night-text: #C9C3E8;
+  --night-muted: #7A73A8;
+  --text-body: #5C5680;
+  --muted-soft: #B3AECB;
+  --star: #F4C566;
+  --primary-deep: #4A3FA0;
 
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-xl: 28px;
 
-  --shadow-sm: 0 1px 2px rgba(28, 24, 18, 0.04), 0 1px 1px rgba(28, 24, 18, 0.03);
-  --shadow-md: 0 4px 12px rgba(28, 24, 18, 0.06), 0 2px 4px rgba(28, 24, 18, 0.04);
-  --shadow-lg: 0 12px 32px rgba(28, 24, 18, 0.08), 0 4px 8px rgba(28, 24, 18, 0.04);
+  --shadow-sm: 0 1px 2px rgba(34, 29, 51, 0.05), 0 1px 1px rgba(34, 29, 51, 0.03);
+  --shadow-md: 0 4px 12px rgba(34, 29, 51, 0.07), 0 2px 4px rgba(34, 29, 51, 0.05);
+  --shadow-lg: 0 12px 32px rgba(76, 63, 107, 0.12), 0 4px 8px rgba(34, 29, 51, 0.06);
 }
 
 @theme inline {
@@ -76,7 +86,7 @@ body {
 }
 
 ::selection {
-  background: rgba(184, 83, 57, 0.18);
+  background: rgba(110, 95, 214, 0.18);
   color: var(--foreground);
 }
 
@@ -85,7 +95,7 @@ button, a {
 }
 
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-  outline: 2px solid rgba(184, 83, 57, 0.45);
+  outline: 2px solid rgba(110, 95, 214, 0.5);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -99,11 +109,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   scrollbar-width: none;
 }
 
-/* Subtle glass surface used by sticky headers */
+/* Sticky header surface — 불투명(콘텐츠 비침 방지) */
 .glass {
-  background: color-mix(in oklch, var(--background) 78%, transparent);
-  backdrop-filter: saturate(140%) blur(14px);
-  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  background: var(--background);
 }
 
 /* Premium card */
@@ -128,17 +136,33 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 /* Soft gradients */
 .bg-hero-warm {
   background:
-    radial-gradient(120% 80% at 0% 0%, rgba(184, 83, 57, 0.10), transparent 60%),
-    radial-gradient(120% 80% at 100% 100%, rgba(74, 63, 107, 0.10), transparent 60%),
+    radial-gradient(120% 80% at 0% 0%, rgba(110, 95, 214, 0.12), transparent 60%),
+    radial-gradient(120% 80% at 100% 100%, rgba(255, 138, 122, 0.12), transparent 60%),
     var(--background);
 }
 
 .bg-hero-primary {
-  background: linear-gradient(135deg, #B85339 0%, #913E27 100%);
+  background: linear-gradient(135deg, #7B72FF 0%, #574FE0 100%);
 }
 
 .bg-hero-secondary {
-  background: linear-gradient(135deg, #5B4F80 0%, #3E335A 100%);
+  background: linear-gradient(135deg, #6B5FA6 0%, #45386A 100%);
+}
+
+/* Midnight Lavender — 로그인/회원가입/온보딩 전용 토큰 (이 스코프 안에서만 적용) */
+.auth-theme {
+  --color-bg: #FBF9F6;
+  --color-night: #2C2A45;
+  --color-primary: #6E5FD6;
+  --color-primary-soft: #EDE9F7;
+  --color-star: #F4C566;
+  --color-text: #2C2A45;
+  --color-text-sub: #8B86A3;
+  --color-label: #5C5680;
+  --color-border: #D8D3E8;
+  --color-placeholder: #B3AECB;
+  --color-night-text: #C9C3E8;
+  --color-night-muted: #7A73A8;
 }
 
 /* Animated equalizer (for preview button) */

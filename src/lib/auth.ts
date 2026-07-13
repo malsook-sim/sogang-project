@@ -13,6 +13,8 @@ export interface SessionUser {
   email: string;
   childName: string | null;
   childAge: number | null;
+  childGender: string | null;
+  defaultVoiceId: string | null;
 }
 
 export function hashPassword(password: string): Promise<string> {
@@ -61,7 +63,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     if (!uid) return null;
 
     const [rows] = await db.query<RowDataPacket[]>(
-      "SELECT id, email, child_name, child_age FROM users WHERE id = ? LIMIT 1",
+      "SELECT id, email, child_name, child_age, child_gender, default_voice_id FROM users WHERE id = ? LIMIT 1",
       [uid]
     );
     const row = rows[0];
@@ -72,6 +74,8 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       email: row.email,
       childName: row.child_name,
       childAge: row.child_age,
+      childGender: row.child_gender ?? null,
+      defaultVoiceId: row.default_voice_id ?? null,
     };
   } catch {
     return null;

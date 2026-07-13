@@ -9,7 +9,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ stories: [] });
 
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT id, title, content, content_ko, morals, age_min, age_max,
+    `SELECT id, title, content, content_ko, morals, moral_summary, age_min, age_max,
             duration_min, UNIX_TIMESTAMP(created_at) AS created_at
      FROM user_stories WHERE user_id = ? ORDER BY created_at DESC`,
     [user.id]
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
   }
 
-  const { title, content, contentKo, morals, ageMin, ageMax } =
+  const { title, content, contentKo, morals, moralSummary, ageMin, ageMax } =
     await req.json();
   if (!title || !content) {
     return NextResponse.json(
@@ -36,18 +36,23 @@ export async function POST(req: NextRequest) {
   const min = Number(ageMin) || 4;
   const max = Number(ageMax) || 7;
   const durationMin = Math.max(1, Math.round(String(content).length / 320));
+  const summary =
+    typeof moralSummary === "string" && moralSummary.trim()
+      ? moralSummary.trim().slice(0, 200)
+      : null;
 
   const [result] = await db.query<ResultSetHeader>(
     `INSERT INTO user_stories
-       (user_id, title, content, content_ko, morals, age_min, age_max,
+       (user_id, title, content, content_ko, morals, moral_summary, age_min, age_max,
         duration_min)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       user.id,
       title,
       content,
       contentKo || null,
       JSON.stringify(Array.isArray(morals) ? morals : []),
+      summary,
       min,
       max,
       durationMin,
@@ -64,6 +69,7 @@ export async function POST(req: NextRequest) {
       ageMin: min,
       ageMax: max,
       morals: Array.isArray(morals) ? morals : [],
+      moralSummary: summary || undefined,
       isPremium: false,
       category: "custom",
       durationMin,

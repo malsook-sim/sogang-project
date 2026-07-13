@@ -7,6 +7,7 @@ export interface Story {
   ageMin: number;
   ageMax: number;
   morals: string[];
+  moralSummary?: string;
   isPremium: boolean;
   category: string;
   durationMin: number;

@@ -17,15 +17,24 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 동화 id 예요." }, { status: 400 });
   }
 
-  const { title } = await req.json();
+  const { title, content } = await req.json();
   if (!title || !String(title).trim()) {
     return NextResponse.json({ error: "제목을 입력해 주세요." }, { status: 400 });
   }
 
-  await db.query(
-    "UPDATE user_stories SET title = ? WHERE user_id = ? AND id = ?",
-    [String(title).trim().slice(0, 200), user.id, dbId]
-  );
+  if (typeof content === "string" && content.trim()) {
+    await db.query(
+      "UPDATE user_stories SET title = ?, content = ? WHERE user_id = ? AND id = ?",
+      [String(title).trim().slice(0, 200), String(content).trim(), user.id, dbId]
+    );
+    // 내용이 바뀌면 만들어둔 오디오 캐시를 비워 다음 재생 때 재합성되게
+    await db.query("DELETE FROM audio_cache WHERE story_id = ?", [id]);
+  } else {
+    await db.query(
+      "UPDATE user_stories SET title = ? WHERE user_id = ? AND id = ?",
+      [String(title).trim().slice(0, 200), user.id, dbId]
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

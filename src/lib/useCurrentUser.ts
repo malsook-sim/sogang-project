@@ -5,6 +5,7 @@ export interface CurrentUser {
   email: string;
   childName: string | null;
   childAge: number | null;
+  childGender: string | null;
 }
 
 export function useCurrentUser() {

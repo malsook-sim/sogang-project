@@ -2,19 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import PageHeader from "@/components/PageHeader";
 import {
-  ChevronLeft,
   Lock,
   Mic,
   Refresh,
   ChevronRight,
   Pencil,
   Play,
+  Pause,
   Trash,
 } from "@/components/Icon";
+import { VoiceAvatar } from "@/components/VoiceAvatar";
+import { RELATIONSHIPS } from "@/lib/relationships";
 import { useMyVoices } from "@/lib/useMyVoices";
 
-// 한 번에 읽을 짧은 지문 — 3개만 읽어도 복제에 충분하도록 적당히 길게
 const scriptPool = [
   "옛날 옛날 깊은 산속에 작고 아늑한 오두막 한 채가 있었어요. 그곳에는 마음씨 착한 할머니와 귀여운 강아지가 함께 살았답니다.",
   "햇살이 따뜻한 어느 봄날 아침이었어요. 들판에는 노란 꽃들이 활짝 피어났고, 작은 나비들이 춤을 추듯 사뿐사뿐 날아다녔지요.",
@@ -32,31 +34,43 @@ function pickRandomScripts(): string[] {
   return [...scriptPool].sort(() => Math.random() - 0.5).slice(0, 3);
 }
 
-// 녹음 일시 표기 (예: 2026.5.20 15:24)
-function formatRecordedAt(ms: number): string {
+// 목록 메타용 짧은 날짜 (예: 5.26)
+function shortDate(ms: number): string {
   const d = new Date(ms);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${p(
-    d.getHours()
-  )}:${p(d.getMinutes())}`;
+  return `${d.getMonth() + 1}.${d.getDate()}`;
 }
 
 const CONSENT_KEY = "mvk.recordConsent";
-
-// 녹음 대상자 테마 — 목소리 이름·이모지 기본값을 정함
-const VOICE_THEMES = [
-  { id: "mom", label: "엄마", emoji: "👩", name: "엄마 목소리" },
-  { id: "dad", label: "아빠", emoji: "👨", name: "아빠 목소리" },
-  { id: "grandma", label: "할머니", emoji: "👵", name: "할머니 목소리" },
-  { id: "grandpa", label: "할아버지", emoji: "👴", name: "할아버지 목소리" },
-  { id: "bro", label: "오빠", emoji: "👦", name: "오빠 목소리" },
-  { id: "sis", label: "언니", emoji: "👧", name: "언니 목소리" },
-  { id: "etc", label: "기타", emoji: "🎙️", name: "내 목소리" },
-];
+const MIN_SECONDS = 30;
+const BAR_COUNT = 32;
 
 type RecordingState = "idle" | "recording" | "done";
 type SubmitState = "ready" | "submitting" | "success" | "error";
 type Mode = "list" | "theme" | "consent" | "recording";
+
+function Check({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M5 12l5 5 9-11"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function Kebab() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <circle cx="12" cy="5" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="12" cy="19" r="1.7" />
+    </svg>
+  );
+}
 
 function pickMimeType(): string {
   const candidates = [
@@ -80,9 +94,7 @@ export default function RecordPage() {
   const router = useRouter();
   const { voices, refresh: refreshVoices } = useMyVoices();
   const [mode, setMode] = useState<Mode>("list");
-  const [scripts, setScripts] = useState<string[]>(() =>
-    scriptPool.slice(0, 3)
-  );
+  const [scripts, setScripts] = useState<string[]>(() => scriptPool.slice(0, 3));
   const [currentScript, setCurrentScript] = useState(0);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [completedScripts, setCompletedScripts] = useState<number[]>([]);
@@ -97,6 +109,79 @@ export default function RecordPage() {
   const [themeId, setThemeId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
+
+  // 목록 미리듣기용 (복제 목소리 TTS 재생 — 원본 샘플은 서버 미저장)
+  const prevAudioRef = useRef<HTMLAudioElement | null>(null);
+  const prevUrlRef = useRef<string | null>(null);
+  const prevReqRef = useRef(0);
+
+  const stopPreview = () => {
+    prevReqRef.current++;
+    if (prevAudioRef.current) {
+      prevAudioRef.current.pause();
+      prevAudioRef.current = null;
+    }
+    if (prevUrlRef.current) {
+      URL.revokeObjectURL(prevUrlRef.current);
+      prevUrlRef.current = null;
+    }
+    setPreviewingId(null);
+  };
+
+  const handlePreview = async (voiceId: string) => {
+    if (previewingId === voiceId) {
+      stopPreview();
+      return;
+    }
+    const reqId = ++prevReqRef.current;
+    if (prevAudioRef.current) prevAudioRef.current.pause();
+    setPreviewingId(voiceId);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: "안녕, 오늘은 어떤 이야기를 들려줄까?",
+          voiceId,
+        }),
+      });
+      if (!res.ok || reqId !== prevReqRef.current) {
+        if (reqId === prevReqRef.current) setPreviewingId(null);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      if (reqId !== prevReqRef.current) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      const audio = new Audio(url);
+      prevAudioRef.current = audio;
+      prevUrlRef.current = url;
+      audio.onended = () => {
+        if (reqId === prevReqRef.current) stopPreview();
+      };
+      audio.play().catch(() => {});
+    } catch {
+      if (reqId === prevReqRef.current) setPreviewingId(null);
+    }
+  };
+
+  const handleSetDefaultVoice = async (id: string) => {
+    setMenuId(null);
+    try {
+      await fetch(`/api/voices/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ makeDefault: true }),
+      });
+      refreshVoices();
+    } catch {
+      // 무시
+    }
+  };
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const previewRef = useRef<HTMLAudioElement | null>(null);
@@ -105,13 +190,36 @@ export default function RecordPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mimeRef = useRef<string>("");
 
+  // Web Audio 레벨미터
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const freqRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const barRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const allDone = completedScripts.length === scripts.length;
+  const reachedMin = seconds >= MIN_SECONDS;
+
+  const stopMeter = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    analyserRef.current = null;
+    freqRef.current = null;
+    audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
+    barRefs.current.forEach((el) => {
+      if (el) el.style.height = "4px";
+    });
+  };
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       previewRef.current?.pause();
+      prevAudioRef.current?.pause();
+      if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
+      stopMeter();
     };
   }, []);
 
@@ -122,11 +230,45 @@ export default function RecordPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allDone]);
 
+  const startMeter = (stream: MediaStream) => {
+    try {
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      const ctx = new Ctx();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = BAR_COUNT * 2;
+      source.connect(analyser);
+      audioCtxRef.current = ctx;
+      analyserRef.current = analyser;
+      freqRef.current = new Uint8Array(new ArrayBuffer(analyser.frequencyBinCount));
+      const tick = () => {
+        const a = analyserRef.current;
+        const f = freqRef.current;
+        if (a && f) {
+          a.getByteFrequencyData(f);
+          for (let i = 0; i < BAR_COUNT; i++) {
+            const v = (f[i] ?? 0) / 255;
+            const el = barRefs.current[i];
+            if (el) el.style.height = `${4 + v * 44}px`;
+          }
+        }
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    } catch {
+      // 레벨미터 실패해도 녹음은 진행
+    }
+  };
+
   const startRecording = async () => {
     setErrorMsg(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      startMeter(stream);
       const mime = pickMimeType();
       mimeRef.current = mime;
       const recorder = mime
@@ -172,6 +314,7 @@ export default function RecordPage() {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    stopMeter();
     setRecordingState("done");
   };
 
@@ -204,7 +347,6 @@ export default function RecordPage() {
     });
   };
 
-  // 방금 녹음한 내 목소리 들어보기
   const playRecording = () => {
     const blob = recordings[currentScript];
     if (!blob) return;
@@ -216,7 +358,6 @@ export default function RecordPage() {
     audio.play().catch(() => {});
   };
 
-  // 녹음된 목소리 이름 바꾸기
   const saveRename = async (id: string) => {
     const name = editName.trim();
     if (!name) return;
@@ -233,7 +374,6 @@ export default function RecordPage() {
     }
   };
 
-  // 녹음된 목소리 삭제
   const handleDeleteVoice = async (id: string) => {
     if (!confirm("이 목소리를 삭제할까요?")) return;
     try {
@@ -299,10 +439,7 @@ export default function RecordPage() {
       recordings.forEach((blob, i) => {
         if (blob) form.append("files", blob, `sample-${i + 1}.${ext}`);
       });
-      const res = await fetch("/api/voices/clone", {
-        method: "POST",
-        body: form,
-      });
+      const res = await fetch("/api/voices/clone", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "목소리를 만들지 못했어요.");
@@ -314,64 +451,92 @@ export default function RecordPage() {
     }
   };
 
+  const containerW = "max-w-[960px]";
+
   return (
     <>
-      <header className="sticky top-0 z-40 glass border-b border-border">
-        <div className="max-w-lg lg:max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button
-            onClick={() => (mode === "list" ? router.back() : setMode("list"))}
-            className="w-10 h-10 rounded-full hover:bg-surface flex items-center justify-center text-muted hover:text-foreground transition"
-            aria-label="뒤로"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <h1 className="font-bold text-sm tracking-tight">목소리 녹음</h1>
-          <div className="w-10" />
-        </div>
-      </header>
+      <PageHeader
+        title="목소리 녹음"
+        subtitle={
+          mode === "list"
+            ? "엄마·아빠 목소리로 동화를 들려줄 수 있어요"
+            : undefined
+        }
+        onBack={mode !== "list" ? () => setMode("list") : undefined}
+        containerClassName="max-w-[960px] mx-auto px-5"
+      />
 
-      <div className="max-w-lg lg:max-w-2xl mx-auto px-5 py-6">
+      <div className={`${containerW} mx-auto px-5 py-6`}>
         {mode === "list" && (
           <>
-            <div className="text-center mb-7">
-              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-primary-light text-primary flex items-center justify-center">
-                <Mic size={24} filled />
+            {/* 새 목소리 등록 히어로 */}
+            <div className="relative overflow-hidden rounded-2xl bg-[var(--night)] p-5 sm:p-6 mb-6">
+              <svg
+                viewBox="0 0 300 160"
+                preserveAspectRatio="xMidYMid slice"
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                aria-hidden
+              >
+                <circle cx="28" cy="26" r="2" fill="#F4C566" />
+                <circle cx="58" cy="46" r="1.4" fill="#EDE9F7" opacity="0.9" />
+                <circle cx="86" cy="22" r="1.2" fill="#EDE9F7" opacity="0.7" />
+                <circle cx="44" cy="70" r="1.6" fill="#F4C566" opacity="0.8" />
+              </svg>
+              {/* 우측 파형 그래픽 */}
+              <div className="absolute right-5 sm:right-7 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-[4px] h-10 pointer-events-none">
+                {[14, 26, 38, 22, 32, 18].map((h, i) => (
+                  <span
+                    key={i}
+                    className="w-[3px] rounded-full bg-[#6E5FD6]/50"
+                    style={{ height: `${h}px` }}
+                  />
+                ))}
               </div>
-              <h2 className="text-xl font-extrabold mb-1.5 tracking-tight">
-                내 목소리
-              </h2>
-              <p className="text-sm text-muted leading-relaxed">
-                녹음한 목소리로 동화를 들려줄 수 있어요
-              </p>
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-white font-extrabold text-[17px] mb-1">
+                    새 목소리 등록하기
+                  </h2>
+                  <p className="text-[13px] text-[var(--night-text)] leading-relaxed">
+                    조용한 곳에서 30초면 충분해요
+                    <br className="sm:hidden" /> · 가족 누구든 좋아요
+                  </p>
+                </div>
+                <button
+                  onClick={startNewRecording}
+                  className="shrink-0 bg-primary text-white font-bold text-sm px-5 h-10 rounded-full hover:bg-primary-dark transition inline-flex items-center gap-1.5"
+                >
+                  <Mic size={16} filled />
+                  녹음 시작
+                </button>
+              </div>
             </div>
 
             {voices.length > 0 ? (
-              <div className="space-y-2.5 mb-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {voices.map((v) => (
                   <div
                     key={v.id}
-                    className="card p-4 flex items-center gap-3.5"
+                    className="card p-3.5 flex items-center gap-3"
                   >
-                    <div className="w-11 h-11 rounded-full bg-primary-light flex items-center justify-center text-xl flex-shrink-0">
-                      {v.emoji}
-                    </div>
+                    <VoiceAvatar emoji={v.emoji} size={38} />
                     {editingId === v.id ? (
-                      <div className="flex-1 flex items-center gap-2 min-w-0">
+                      <div className="flex-1 flex items-center gap-1.5 min-w-0">
                         <input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           autoFocus
-                          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-primary bg-surface text-sm focus:outline-none"
+                          className="flex-1 min-w-0 h-9 px-2.5 rounded-[10px] border border-primary bg-white text-sm focus:outline-none focus:ring-[3px] focus:ring-primary-light"
                         />
                         <button
                           onClick={() => saveRename(v.id)}
-                          className="text-xs font-bold text-primary px-2 py-1.5 flex-shrink-0"
+                          className="text-xs font-bold text-primary px-1.5 py-1.5 shrink-0"
                         >
                           저장
                         </button>
                         <button
                           onClick={() => setEditingId(null)}
-                          className="text-xs text-muted px-1 py-1.5 flex-shrink-0"
+                          className="text-xs text-muted px-1 py-1.5 shrink-0"
                         >
                           취소
                         </button>
@@ -379,53 +544,111 @@ export default function RecordPage() {
                     ) : (
                       <>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm truncate">
-                            {v.name}
-                          </p>
-                          <p className="text-xs text-muted">
-                            {formatRecordedAt(v.createdAt)} 녹음
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <p className="font-bold text-sm truncate min-w-0">
+                              {v.name}
+                            </p>
+                            {v.isDefault && (
+                              <span
+                                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap"
+                                style={{ background: "#F4C566", color: "#5C4400" }}
+                              >
+                                기본
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted mt-0.5 truncate">
+                            {shortDate(v.createdAt)} 녹음
+                            {v.usageCount > 0
+                              ? ` · 동화 ${v.usageCount}편에 사용`
+                              : ""}
                           </p>
                         </div>
+
+                        {/* 미리듣기 */}
                         <button
-                          onClick={() => {
-                            setEditingId(v.id);
-                            setEditName(v.name);
-                          }}
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-primary hover:bg-primary-light transition flex-shrink-0"
-                          aria-label="이름 수정"
+                          onClick={() => handlePreview(v.id)}
+                          className={`w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 transition ${
+                            previewingId === v.id
+                              ? "bg-primary text-white pulse-ring"
+                              : "bg-primary-light text-primary hover:bg-primary hover:text-white"
+                          }`}
+                          aria-label={previewingId === v.id ? "정지" : "미리듣기"}
                         >
-                          <Pencil size={16} />
+                          {previewingId === v.id ? (
+                            <Pause size={13} />
+                          ) : (
+                            <Play size={13} />
+                          )}
                         </button>
-                        <button
-                          onClick={() => handleDeleteVoice(v.id)}
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition flex-shrink-0"
-                          aria-label="삭제"
-                        >
-                          <Trash size={16} />
-                        </button>
+
+                        {/* 케밥 메뉴 */}
+                        <div className="relative shrink-0">
+                          <button
+                            onClick={() =>
+                              setMenuId(menuId === v.id ? null : v.id)
+                            }
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:text-foreground hover:bg-surface-soft transition"
+                            aria-label="더보기"
+                          >
+                            <Kebab />
+                          </button>
+                          {menuId === v.id && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setMenuId(null)}
+                              />
+                              <div className="absolute right-0 top-full mt-1 w-40 bg-surface border border-border rounded-xl shadow-lg py-1 z-50">
+                                <button
+                                  onClick={() => {
+                                    setEditingId(v.id);
+                                    setEditName(v.name);
+                                    setMenuId(null);
+                                  }}
+                                  className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-surface-soft transition flex items-center gap-2"
+                                >
+                                  <Pencil size={14} /> 이름 변경
+                                </button>
+                                {!v.isDefault && (
+                                  <button
+                                    onClick={() => handleSetDefaultVoice(v.id)}
+                                    className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-surface-soft transition"
+                                  >
+                                    기본으로 설정
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    setMenuId(null);
+                                    handleDeleteVoice(v.id);
+                                  }}
+                                  className="w-full text-left px-3.5 py-2 text-[13px] text-danger hover:bg-danger/10 transition flex items-center gap-2"
+                                >
+                                  <Trash size={14} /> 삭제
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="card p-8 text-center mb-5 border-dashed">
-                <p className="text-sm text-foreground/70 font-medium">
-                  아직 녹음한 목소리가 없어요
+              <div className="card p-10 text-center border-dashed">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary-light text-primary flex items-center justify-center">
+                  <Mic size={24} filled />
+                </div>
+                <p className="text-sm text-foreground/80 font-semibold">
+                  아직 등록된 목소리가 없어요
                 </p>
                 <p className="text-xs text-muted mt-1">
-                  새로 녹음해서 나만의 목소리를 만들어 보세요
+                  첫 목소리를 녹음해볼까요?
                 </p>
               </div>
             )}
-
-            <button
-              onClick={startNewRecording}
-              className="w-full py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-            >
-              <Mic size={18} filled />
-              새로 녹음하기
-            </button>
           </>
         )}
 
@@ -442,25 +665,33 @@ export default function RecordPage() {
                 녹음할 목소리의 주인공을 골라주세요
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-2.5 mb-6">
-              {VOICE_THEMES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    setThemeId(t.id);
-                    setVoiceName(t.name);
-                    setVoiceEmoji(t.emoji);
-                  }}
-                  className={`card p-4 flex flex-col items-center gap-1.5 transition ${
-                    themeId === t.id
-                      ? "!border-primary ring-2 ring-primary/25"
-                      : "hover:border-border-strong"
-                  }`}
-                >
-                  <span className="text-3xl">{t.emoji}</span>
-                  <span className="text-xs font-bold">{t.label}</span>
-                </button>
-              ))}
+            <div className="grid grid-cols-4 gap-2.5 mb-6">
+              {RELATIONSHIPS.map((t) => {
+                const selected = themeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setThemeId(t.id);
+                      setVoiceName(t.name);
+                      setVoiceEmoji(t.emoji);
+                    }}
+                    className={`relative rounded-2xl p-3 flex flex-col items-center gap-2 border transition ${
+                      selected
+                        ? "bg-primary-light border-[1.5px] border-primary"
+                        : "bg-surface border-border hover:border-border-strong"
+                    }`}
+                  >
+                    {selected && (
+                      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
+                        <Check size={10} />
+                      </span>
+                    )}
+                    <VoiceAvatar emoji={t.emoji} size={40} />
+                    <span className="text-xs font-bold">{t.label}</span>
+                  </button>
+                );
+              })}
             </div>
             <button
               onClick={proceedFromTheme}
@@ -539,7 +770,7 @@ export default function RecordPage() {
 
             {!allDone ? (
               <>
-                <div className="text-center mb-7">
+                <div className="text-center mb-6">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-muted font-semibold mb-2">
                     Script {currentScript + 1} / {scripts.length}
                   </p>
@@ -551,113 +782,125 @@ export default function RecordPage() {
                   </p>
                 </div>
 
-                <div className="card p-7 mb-8 text-center bg-surface-soft border-dashed">
+                <div className="card p-7 mb-6 text-center bg-surface-soft border-dashed">
                   <p className="text-lg leading-relaxed font-medium text-foreground/90 tracking-tight">
                     &ldquo;{scripts[currentScript]}&rdquo;
                   </p>
                 </div>
 
-                <div className="flex items-end justify-center gap-[3px] h-16 mb-6">
-                  {Array.from({ length: 32 }).map((_, i) => {
-                    const height =
-                      recordingState === "recording"
-                        ? Math.random() * 44 + 6
-                        : 6;
-                    return (
-                      <div
-                        key={i}
-                        className={`w-[3px] rounded-full transition-all duration-150 ${
-                          recordingState === "recording"
-                            ? "bg-primary"
-                            : "bg-border-strong"
-                        }`}
-                        style={{ height: `${height}px` }}
-                      />
-                    );
-                  })}
+                {/* 실시간 입력 레벨 (Web Audio) */}
+                <div className="flex items-end justify-center gap-[3px] h-14 mb-4">
+                  {Array.from({ length: BAR_COUNT }).map((_, i) => (
+                    <div
+                      key={i}
+                      ref={(el) => {
+                        barRefs.current[i] = el;
+                      }}
+                      className={`w-[3px] rounded-full transition-colors ${
+                        recordingState === "recording"
+                          ? "bg-primary"
+                          : "bg-border-strong"
+                      }`}
+                      style={{ height: "4px" }}
+                    />
+                  ))}
                 </div>
 
-                {recordingState !== "idle" && (
-                  <p className="text-center text-2xl font-mono font-bold mb-6 text-primary tabular-nums">
-                    {Math.floor(seconds / 60)}:
-                    {(seconds % 60).toString().padStart(2, "0")}
+                {/* 경과 시간 + 30초 최소 게이지 */}
+                {recordingState !== "idle" ? (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[22px] font-mono font-bold text-primary tabular-nums">
+                        {Math.floor(seconds / 60)}:
+                        {(seconds % 60).toString().padStart(2, "0")}
+                      </span>
+                      {reachedMin ? (
+                        <span className="inline-flex items-center gap-1 text-[13px] font-bold text-primary">
+                          <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
+                            <Check size={10} />
+                          </span>
+                          충분해요!
+                        </span>
+                      ) : (
+                        <span className="text-[13px] text-muted tabular-nums">
+                          {MIN_SECONDS - seconds}초 더
+                        </span>
+                      )}
+                    </div>
+                    <div className="h-1.5 rounded-full bg-primary-light overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(100, (seconds / MIN_SECONDS) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-sm text-muted mb-6">
+                    최소 <span className="font-bold text-foreground">30초</span> 이상
+                    녹음이 필요해요
                   </p>
                 )}
 
                 {errorMsg && (
-                  <p className="text-center text-xs text-danger mb-4">
-                    {errorMsg}
-                  </p>
+                  <p className="text-center text-xs text-danger mb-4">{errorMsg}</p>
                 )}
 
-                <div className="flex flex-col items-center gap-4">
-                  {recordingState === "done" ? (
-                    <div className="w-full">
-                      <button
-                        onClick={playRecording}
-                        className="w-full py-3 mb-3 rounded-xl bg-secondary-light text-secondary text-sm font-bold hover:bg-secondary hover:text-white transition flex items-center justify-center gap-1.5"
-                      >
-                        <Play size={15} />
-                        녹음 들어보기
-                      </button>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={handleRetry}
-                          className="flex-1 py-3.5 rounded-xl border border-border text-sm font-semibold hover:bg-surface transition flex items-center justify-center gap-1.5"
-                        >
-                          <Refresh size={16} />
-                          다시 녹음
-                        </button>
-                        <button
-                          onClick={handleNext}
-                          className="flex-1 py-3.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20 flex items-center justify-center gap-1.5"
-                        >
-                          {currentScript < scripts.length - 1 ? (
-                            <>
-                              다음 문장
-                              <ChevronRight size={16} />
-                            </>
-                          ) : (
-                            "완료"
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <button
-                        onClick={handleRecord}
-                        className={`relative w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
-                          recordingState === "recording"
-                            ? "bg-danger text-white shadow-danger/30 pulse-ring"
-                            : "bg-primary text-white shadow-primary/30"
-                        }`}
-                        aria-label={
-                          recordingState === "recording"
-                            ? "녹음 멈추기"
-                            : "녹음 시작"
-                        }
-                      >
-                        {recordingState === "recording" ? (
-                          <span className="w-5 h-5 bg-white rounded-sm" />
-                        ) : (
-                          <Mic size={28} filled />
-                        )}
-                      </button>
-                    </div>
-                  )}
-
-                  {recordingState === "idle" && (
-                    <p className="text-xs text-muted">
-                      버튼을 눌러 녹음을 시작하세요
+                {recordingState === "done" ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={playRecording}
+                      className="py-3 rounded-xl border border-border text-[13px] font-semibold hover:bg-surface transition flex flex-col items-center gap-1"
+                    >
+                      <Play size={16} />
+                      다시 듣기
+                    </button>
+                    <button
+                      onClick={handleRetry}
+                      className="py-3 rounded-xl border border-border text-[13px] font-semibold hover:bg-surface transition flex flex-col items-center gap-1"
+                    >
+                      <Refresh size={16} />
+                      다시 녹음
+                    </button>
+                    <button
+                      onClick={handleNext}
+                      className="py-3 rounded-xl bg-primary text-white text-[13px] font-bold hover:bg-primary-dark transition shadow-sm shadow-primary/20 flex flex-col items-center gap-1"
+                    >
+                      <ChevronRight size={16} />
+                      {currentScript < scripts.length - 1 ? "다음" : "완료"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-4">
+                    <button
+                      onClick={handleRecord}
+                      className={`relative w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 bg-primary text-white shadow-primary/30 ${
+                        recordingState === "recording" ? "pulse-ring" : ""
+                      }`}
+                      aria-label={
+                        recordingState === "recording" ? "녹음 멈추기" : "녹음 시작"
+                      }
+                    >
+                      {recordingState === "recording" ? (
+                        <span className="w-6 h-6 bg-white rounded-md" />
+                      ) : (
+                        <Mic size={28} filled />
+                      )}
+                    </button>
+                    <p
+                      className={`text-xs ${
+                        recordingState === "recording"
+                          ? "text-primary font-medium"
+                          : "text-muted"
+                      }`}
+                    >
+                      {recordingState === "recording"
+                        ? "녹음 중... 버튼을 눌러 멈추기"
+                        : "버튼을 눌러 녹음을 시작하세요"}
                     </p>
-                  )}
-                  {recordingState === "recording" && (
-                    <p className="text-xs text-danger font-medium">
-                      녹음 중... 버튼을 눌러 멈추기
-                    </p>
-                  )}
-                </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-center py-8">
@@ -676,9 +919,7 @@ export default function RecordPage() {
                     </p>
                     <div className="card p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-primary-light rounded-full flex items-center justify-center text-xl">
-                          {voiceEmoji}
-                        </div>
+                        <VoiceAvatar emoji={voiceEmoji} size={44} />
                         <div className="text-left flex-1">
                           <p className="font-bold text-sm">{voiceName}</p>
                           <p className="text-xs text-muted">만드는 중...</p>

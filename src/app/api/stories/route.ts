@@ -5,7 +5,7 @@ import { rowToCatalogStory } from "@/lib/storyRow";
 
 export async function GET() {
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT id, title, content, content_ko, age_min, age_max, morals,
+    `SELECT id, title, content, content_ko, age_min, age_max, morals, moral_summary,
             is_premium, category, duration_min, play_count
      FROM stories ORDER BY sort_order, id`
   );

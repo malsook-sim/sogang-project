@@ -4,7 +4,9 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { voicesForLang } from "@/data/voices";
 import { useMyVoices } from "@/lib/useMyVoices";
-import { ChevronLeft, ChevronRight, Mic, Play, Stop, Trash } from "@/components/Icon";
+import { ChevronRight, Mic, Play, Stop, Trash } from "@/components/Icon";
+import PageHeader from "@/components/PageHeader";
+import { VoiceAvatar } from "@/components/VoiceAvatar";
 
 export default function VoiceSelectPage() {
   return (
@@ -108,6 +110,11 @@ function VoiceSelectContent() {
 
   const handleConfirm = () => {
     if (!selected) return;
+    try {
+      localStorage.setItem("mvk.lastVoiceId", selected);
+    } catch {
+      // localStorage 사용 불가 시 무시
+    }
     if (storyId) {
       router.push(`/player/${storyId}?voiceId=${selected}`);
     } else {
@@ -117,21 +124,13 @@ function VoiceSelectContent() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 glass border-b border-border">
-        <div className="max-w-lg lg:max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-full hover:bg-surface flex items-center justify-center text-muted hover:text-foreground transition"
-            aria-label="뒤로"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <h1 className="font-bold text-sm tracking-tight">목소리 고르기</h1>
-          <div className="w-10" />
-        </div>
-      </header>
+      <PageHeader
+        title="목소리 고르기"
+        onBack={() => router.back()}
+        containerClassName="max-w-lg lg:max-w-[960px] mx-auto px-5"
+      />
 
-      <div className="max-w-lg lg:max-w-3xl mx-auto px-5 py-6">
+      <div className="max-w-lg lg:max-w-[960px] mx-auto px-5 py-6">
         <div className="text-center mb-8">
           <p className="text-[11px] uppercase tracking-[0.18em] text-muted font-semibold mb-2">
             Voice
@@ -157,7 +156,6 @@ function VoiceSelectContent() {
                   name={voice.name}
                   description="내가 녹음한 목소리"
                   emoji={voice.emoji}
-                  tone="primary"
                   isSelected={selected === voice.id}
                   isPreviewing={previewing === voice.id}
                   onSelect={() => setSelected(voice.id)}
@@ -194,7 +192,7 @@ function VoiceSelectContent() {
           <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3 pl-1">
             {lang === "en" ? "영어 동화 목소리" : "기본 목소리"}
           </p>
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2.5 lg:grid lg:grid-cols-2">
             {baseVoices.map((voice) => (
               <VoiceRow
                 key={voice.id}
@@ -202,7 +200,6 @@ function VoiceSelectContent() {
                 name={voice.name}
                 description={voice.description}
                 emoji={voice.emoji}
-                tone="neutral"
                 isSelected={selected === voice.id}
                 isPreviewing={previewing === voice.id}
                 onSelect={() => setSelected(voice.id)}
@@ -230,7 +227,6 @@ function VoiceRow({
   name,
   description,
   emoji,
-  tone,
   isSelected,
   isPreviewing,
   onSelect,
@@ -242,7 +238,6 @@ function VoiceRow({
   name: string;
   description: string;
   emoji: string;
-  tone: "primary" | "neutral";
   isSelected: boolean;
   isPreviewing: boolean;
   onSelect: () => void;
@@ -257,17 +252,7 @@ function VoiceRow({
         isSelected ? "!border-primary ring-1 ring-primary/30" : ""
       }`}
     >
-      <div
-        className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 transition ${
-          isSelected
-            ? "bg-primary text-white"
-            : tone === "primary"
-            ? "bg-primary-light"
-            : "bg-surface-soft"
-        }`}
-      >
-        {emoji}
-      </div>
+      <VoiceAvatar emoji={emoji} size={48} />
       <div className="text-left flex-1 min-w-0">
         <p className="font-bold text-sm truncate">{name}</p>
         <p className="text-xs text-muted mt-0.5 truncate">{description}</p>

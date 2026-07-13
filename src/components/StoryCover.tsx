@@ -28,12 +28,33 @@ const fallbackPalettes: Pal[] = [
   { sky: ["#AEC4EA", "#56699E"], back: "#566596", front: "#46527E" },
 ];
 
+// 밤하늘/황혼 계열 씬 id (웜톤 보정 필터에서 제외)
+const NIGHT_IDS = new Set(["2", "5", "9"]);
+
+// 신규 생성 동화(my-*)에 쓰는 네이비-라벤더 야간 팔레트
+const nightPalettes: Pal[] = [
+  { sky: ["#9B99C9", "#373260"], back: "#322E58", front: "#262247" },
+  { sky: ["#A9C9DD", "#425972"], back: "#3C5870", front: "#314A60" },
+  { sky: ["#CBB4E6", "#6E5F9E"], back: "#9683C2", front: "#7E6CA8" },
+];
+
+// 웜톤 보정: 밤하늘 계열은 제외하고 주황/노을 계열만 살짝 눌러 새 팔레트와 조화
+const WARM_TONE_FILTER = "saturate(0.85) hue-rotate(-8deg) brightness(0.97)";
+
 function hashId(id: string): number {
   let h = 0;
   for (let i = 0; i < id.length; i++) {
     h = (h * 31 + id.charCodeAt(i)) >>> 0;
   }
   return h;
+}
+
+// 밤하늘 계열인지 (웜톤 보정 필터 제외 대상)
+function isNightScene(id: string): boolean {
+  if (id.startsWith("my-")) return true; // 신규 생성 동화는 네이비-라벤더 야간 톤
+  if (NIGHT_IDS.has(id)) return true;
+  if (!palettes[id]) return hashId(id) % 3 === 1; // 기본 표지의 밤하늘 변형
+  return false;
 }
 
 function Hills({ back, front }: { back: string; front: string }) {
@@ -124,7 +145,15 @@ function Bear({
   );
 }
 
-function Scene({ id, pal }: { id: string; pal: Pal }) {
+function Scene({
+  id,
+  pal,
+  forceNight,
+}: {
+  id: string;
+  pal: Pal;
+  forceNight?: boolean;
+}) {
   const hills = <Hills back={pal.back} front={pal.front} />;
 
   switch (id) {
@@ -525,9 +554,9 @@ function Scene({ id, pal }: { id: string; pal: Pal }) {
         </>
       );
 
-    // 그 외 동화 — id 해시로 다양한 기본 풍경
+    // 그 외 동화 — id 해시로 다양한 기본 풍경 (my-* 등 야간 강제 시 밤하늘 고정)
     default: {
-      const variant = hashId(id) % 3;
+      const variant = forceNight ? 1 : hashId(id) % 3;
 
       if (variant === 1) {
         // 밤하늘
@@ -609,6 +638,13 @@ function Scene({ id, pal }: { id: string; pal: Pal }) {
   }
 }
 
+// 동화별 대표색 (표지 그라데이션의 진한 쪽) — 틴트 시스템에서 사용
+export function coverColor(id: string): string {
+  const pal =
+    palettes[id] ?? fallbackPalettes[hashId(id) % fallbackPalettes.length];
+  return pal.sky[1];
+}
+
 export function StoryCover({
   story,
   className,
@@ -619,15 +655,19 @@ export function StoryCover({
   showTitle?: boolean;
 }) {
   const gradId = useId();
-  const pal =
-    palettes[story.id] ??
-    fallbackPalettes[hashId(story.id) % fallbackPalettes.length];
+  const isMy = story.id.startsWith("my-");
+  const night = isNightScene(story.id);
+  const pal = isMy
+    ? nightPalettes[hashId(story.id) % nightPalettes.length]
+    : palettes[story.id] ??
+      fallbackPalettes[hashId(story.id) % fallbackPalettes.length];
 
   return (
     <svg
       viewBox="0 0 200 200"
       preserveAspectRatio="xMidYMid slice"
       className={className}
+      style={night ? undefined : { filter: WARM_TONE_FILTER }}
       role="img"
       aria-label={story.title}
     >
@@ -643,7 +683,7 @@ export function StoryCover({
       <circle cx="178" cy="176" r="54" fill="#FFFFFF" opacity="0.06" />
 
       {showTitle ? (
-        <Scene id={story.id} pal={pal} />
+        <Scene id={story.id} pal={pal} forceNight={isMy} />
       ) : (
         <Hills back={pal.back} front={pal.front} />
       )}

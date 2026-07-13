@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { defaultVoices, englishVoices } from "@/data/voices";
+import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 // 기본 제공 보이스 ID — 이 목록에 없으면 사용자가 복제한 목소리로 간주
 const PREMADE_VOICE_IDS = new Set(
   [...defaultVoices, ...englishVoices].map((v) => v.id)
 );
+
+// 목소리 사용 현황 기록 (동화×목소리 조합, 중복 무시)
+async function logUsage(voiceId: string, storyId: string) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return;
+    await db.query(
+      "INSERT IGNORE INTO audio_cache (user_id, story_id, voice_id) VALUES (?, ?, ?)",
+      [user.id, storyId, voiceId]
+    );
+  } catch {
+    // 로깅 실패는 무시
+  }
+}
 
 // 같은 동화·목소리 조합은 한 번만 생성하고 메모리에 캐시 — 다시 들을 땐 즉시 응답
 const CACHE = new Map<string, ArrayBuffer>();
@@ -19,7 +35,7 @@ function cacheKey(voiceId: string, text: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { text, voiceId } = await req.json();
+  const { text, voiceId, storyId } = await req.json();
 
   if (!text || !voiceId) {
     return NextResponse.json(
@@ -27,6 +43,9 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+
+  // 사용 현황 기록 (재생 요청 = 이 목소리로 이 동화를 들음)
+  if (storyId) void logUsage(String(voiceId), String(storyId));
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {

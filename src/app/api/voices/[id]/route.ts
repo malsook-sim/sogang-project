@@ -15,6 +15,18 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
+  // 기본 목소리로 설정
+  if (body.makeDefault === true) {
+    await db.query(
+      `UPDATE users SET default_voice_id = ?
+       WHERE id = ? AND EXISTS (
+         SELECT 1 FROM voices WHERE user_id = ? AND elevenlabs_voice_id = ?
+       )`,
+      [id, user.id, user.id, id]
+    );
+    return NextResponse.json({ ok: true });
+  }
+
   // name / description 중 들어온 것만 수정
   const sets: string[] = [];
   const vals: (string | number)[] = [];
@@ -78,6 +90,12 @@ export async function DELETE(
 
   await db.query(
     "DELETE FROM voices WHERE user_id = ? AND elevenlabs_voice_id = ?",
+    [user.id, id]
+  );
+
+  // 삭제한 목소리가 기본이었다면 기본값 해제
+  await db.query(
+    "UPDATE users SET default_voice_id = NULL WHERE id = ? AND default_voice_id = ?",
     [user.id, id]
   );
 

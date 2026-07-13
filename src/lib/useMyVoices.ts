@@ -6,6 +6,8 @@ export interface MyVoice {
   emoji: string;
   description: string;
   createdAt: number;
+  usageCount: number;
+  isDefault: boolean;
 }
 
 export function useMyVoices() {

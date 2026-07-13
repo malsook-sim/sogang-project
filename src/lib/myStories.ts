@@ -6,6 +6,7 @@ export interface GeneratedStory {
   content: string;
   contentKo?: string;
   morals: string[];
+  moralSummary?: string;
   ageMin: number;
   ageMax: number;
 }
@@ -96,6 +97,29 @@ export async function renameMyStory(id: string, title: string): Promise<void> {
   } catch {
     stories = prev;
     emit();
+  }
+}
+
+export async function editMyStory(
+  id: string,
+  title: string,
+  content: string
+): Promise<boolean> {
+  const prev = stories;
+  stories = stories.map((s) => (s.id === id ? { ...s, title, content } : s));
+  emit();
+  try {
+    const res = await fetch(`/api/my-stories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, content }),
+    });
+    if (!res.ok) throw new Error("edit failed");
+    return true;
+  } catch {
+    stories = prev;
+    emit();
+    return false;
   }
 }
 
