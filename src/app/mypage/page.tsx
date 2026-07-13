@@ -19,7 +19,7 @@ import {
 } from "@/components/Icon";
 import { VoiceCard } from "@/components/VoiceCard";
 import { useMyVoices } from "@/lib/useMyVoices";
-import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useCurrentUser, displayName } from "@/lib/useCurrentUser";
 import { useBookmarks, toggleBookmark } from "@/lib/bookmarks";
 import { useMyStories, removeMyStory, renameMyStory } from "@/lib/myStories";
 import { type Story } from "@/data/stories";
@@ -107,8 +107,13 @@ export default function MyPage() {
                 <User size={26} filled />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-base truncate">{user.email}</p>
-                <p className="text-xs text-muted mt-0.5">
+                <p className="font-bold text-base truncate">
+                  {displayName(user)}
+                </p>
+                <p className="text-xs text-muted mt-0.5 truncate">
+                  {user.email}
+                </p>
+                <p className="text-[11px] text-muted mt-0.5">
                   {user.childName
                     ? `${user.childName} · ${user.childAge ?? "?"}세`
                     : "아이 정보가 아직 없어요"}
@@ -283,14 +288,6 @@ export default function MyPage() {
                 </span>
               )}
             </h2>
-            {myStories.length > 0 && (
-              <Link
-                href="/create"
-                className="ml-auto text-[13px] font-semibold text-primary hover:underline shrink-0"
-              >
-                새 동화 만들기 →
-              </Link>
-            )}
           </div>
 
           {myStories.length > 0 ? (
@@ -479,19 +476,35 @@ export default function MyPage() {
           )}
 
           {[
-            { Icon: Bell, label: "알림 설정" },
-            { Icon: Lock, label: "개인정보 처리방침" },
-            { Icon: FileText, label: "서비스 이용약관" },
-          ].map((item, i) => (
-            <button
-              key={i}
-              className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-surface-soft transition text-left border-t border-border"
-            >
-              <item.Icon size={18} className="text-muted" />
-              <span className="text-sm">{item.label}</span>
-              <ChevronRight size={16} className="ml-auto text-muted/60" />
-            </button>
-          ))}
+            { Icon: Bell, label: "알림 설정", href: null },
+            { Icon: Lock, label: "개인정보 처리방침", href: "/privacy" },
+            { Icon: FileText, label: "서비스 이용약관", href: "/terms" },
+          ].map((item, i) => {
+            const cls =
+              "w-full flex items-center gap-3 px-5 py-3.5 hover:bg-surface-soft transition text-left border-t border-border";
+            const inner = (
+              <>
+                <item.Icon size={18} className="text-muted" />
+                <span className="text-sm">{item.label}</span>
+                <ChevronRight size={16} className="ml-auto text-muted/60" />
+              </>
+            );
+            return item.href ? (
+              <a
+                key={i}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cls}
+              >
+                {inner}
+              </a>
+            ) : (
+              <button key={i} className={cls}>
+                {inner}
+              </button>
+            );
+          })}
         </div>
       </div>
 

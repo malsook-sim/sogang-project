@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  /* Midnight Lavender — cream bg, night-navy ink */
-  --background: #FBF9F6;
+  /* Midnight Lavender — cool off-white bg, night-navy ink */
+  --background: #FAF9FC;
   --surface: #FFFFFF;
   --surface-soft: #F4F1FB;
+  --field: #F7F6FB;         /* 카드 내부 입력 필드 배경 */
+  --night-surface: #F8F7FC; /* 밤 카드(#2C2A45) 위 밝은 텍스트/장식 */
   --foreground: #2C2A45;
 
   /* Lavender (main) */
@@ -51,6 +53,8 @@
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-soft: var(--surface-soft);
+  --color-field: var(--field);
+  --color-night-surface: var(--night-surface);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
@@ -151,7 +155,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 /* Midnight Lavender — 로그인/회원가입/온보딩 전용 토큰 (이 스코프 안에서만 적용) */
 .auth-theme {
-  --color-bg: #FBF9F6;
+  --color-bg: #FAF9FC;
   --color-night: #2C2A45;
   --color-primary: #6E5FD6;
   --color-primary-soft: #EDE9F7;

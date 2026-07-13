@@ -16,6 +16,7 @@ interface SeedStory {
   ageMin: number;
   ageMax: number;
   morals: string[];
+  moralSummary?: string;
   isPremium: boolean;
   category: string;
   durationMin: number;
@@ -68,6 +69,13 @@ async function main() {
     ...englishStories,
   ];
 
+  // 교훈 캡션(moral_summary) — id 기준으로 한 파일에서 관리
+  const summaryRaw = await readFile(
+    join(root, "db", "moral-summaries.json"),
+    "utf8"
+  );
+  const moralSummaries = JSON.parse(summaryRaw) as Record<string, string>;
+
   // 권장 연령 재분류 적용
   for (const s of all) {
     const o = AGE_OVERRIDES[s.id];
@@ -92,9 +100,9 @@ async function main() {
   for (const s of all) {
     await conn.query(
       `INSERT INTO stories
-         (id, title, content, content_ko, age_min, age_max, morals,
+         (id, title, content, content_ko, age_min, age_max, morals, moral_summary,
           is_premium, category, duration_min, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         s.id,
         s.title,
@@ -103,6 +111,7 @@ async function main() {
         s.ageMin,
         s.ageMax,
         JSON.stringify(s.morals),
+        moralSummaries[s.id] ?? s.moralSummary ?? null,
         s.isPremium ? 1 : 0,
         s.category,
         s.durationMin,

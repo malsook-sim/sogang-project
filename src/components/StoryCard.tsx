@@ -37,7 +37,7 @@ export function StoryCard({
         </div>
       </div>
       <div className="p-3">
-        <h3 className="font-bold text-sm mb-1 group-hover:text-primary transition-colors truncate">
+        <h3 className="font-bold text-sm mb-1 group-hover:text-primary transition-colors line-clamp-2 leading-snug min-h-[2.5rem]">
           {story.title}
         </h3>
         <p className="text-[11px] text-muted">

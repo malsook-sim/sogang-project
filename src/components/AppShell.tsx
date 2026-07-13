@@ -14,7 +14,14 @@ const navItems = [
 ];
 
 // 셸(사이드바/하단탭) 없이 단독으로 그리는 화면
-const BARE_PREFIXES = ["/player", "/landing", "/login", "/onboarding"];
+const BARE_PREFIXES = [
+  "/player",
+  "/landing",
+  "/login",
+  "/onboarding",
+  "/terms",
+  "/privacy",
+];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

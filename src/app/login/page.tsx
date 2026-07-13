@@ -25,6 +25,8 @@ function LoginContent() {
   );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [agreedPrivacy, setAgreedPrivacy] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>(
     {}
@@ -55,6 +57,7 @@ function LoginContent() {
     setSubmitted(true);
     setFormError("");
     if (emailError || pwError) return;
+    if (mode === "signup" && !agreedPrivacy) return;
 
     setLoading(true);
     try {
@@ -63,7 +66,16 @@ function LoginContent() {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailTrim, password }),
+        body: JSON.stringify(
+          mode === "signup"
+            ? {
+                email: emailTrim,
+                password,
+                nickname: nickname.trim(),
+                agreedPrivacy,
+              }
+            : { email: emailTrim, password }
+        ),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -86,11 +98,18 @@ function LoginContent() {
     }
   };
 
+  // 소셜: 가입 모드에서 동의 전이면 막음 (첫 가입도 동일 동의 경유)
+  const socialBlocked = mode === "signup" && !agreedPrivacy;
+  const handleSocial = () =>
+    setSocialNote("소셜 로그인은 곧 지원될 예정이에요.");
+
   const switchMode = (m: Mode) => {
     setMode(m);
     setSubmitted(false);
     setTouched({});
     setFormError("");
+    setAgreedPrivacy(false);
+    setSocialNote("");
   };
 
   const features = [
@@ -104,16 +123,21 @@ function LoginContent() {
       {/* 왼쪽 밤하늘 브랜드 패널 (데스크탑) */}
       <aside className="hidden md:flex md:flex-col md:justify-between relative overflow-hidden bg-[var(--color-night)] p-12 lg:p-16">
         {/* 별 + 초승달 장식 */}
+        {/* 초승달 — 패널 상단에서 최소 40px 여백, 잘리지 않게 별도 배치 */}
+        <svg
+          viewBox="0 0 48 48"
+          className="absolute top-10 right-10 w-14 h-14 pointer-events-none z-10"
+          aria-hidden
+        >
+          <circle cx="24" cy="24" r="24" fill="#F4C566" />
+          <circle cx="33" cy="18" r="21" fill="#2C2A45" />
+        </svg>
         <svg
           viewBox="0 0 400 560"
           preserveAspectRatio="xMidYMid slice"
           className="absolute inset-0 w-full h-full pointer-events-none"
           aria-hidden
         >
-          <g transform="translate(312 76)">
-            <circle cx="0" cy="0" r="24" fill="#F4C566" />
-            <circle cx="9" cy="-6" r="21" fill="#2C2A45" />
-          </g>
           <circle cx="70" cy="70" r="1.6" fill="#EDE9F7" />
           <circle cx="120" cy="52" r="1.2" fill="#F4C566" />
           <circle cx="52" cy="150" r="1.4" fill="#EDE9F7" opacity="0.8" />
@@ -224,16 +248,77 @@ function LoginContent() {
               <p className="mt-1.5 text-[13px] text-[#E5606B]">{pwError}</p>
             ) : null}
 
+            {/* 보호자 호칭 (선택, 가입 시에만) */}
+            {mode === "signup" ? (
+              <>
+                <label className="block text-[13px] font-semibold text-[var(--color-label)] mb-1.5 mt-4">
+                  보호자 호칭{" "}
+                  <span className="font-normal text-[var(--color-placeholder)]">
+                    (선택)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="예: 지우 엄마"
+                  maxLength={50}
+                  autoComplete="nickname"
+                  className="w-full h-11 px-3.5 rounded-[10px] bg-white text-[15px] text-[var(--color-text)] border border-[var(--color-border)] placeholder:text-[var(--color-placeholder)] focus:outline-none focus:border-[1.5px] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-primary-soft)] transition"
+                />
+                <p className="mt-1.5 text-[12px] text-[var(--color-text-sub)]">
+                  내 서재와 인사말에 표시돼요. 비워두면 이메일 앞부분으로 보여요.
+                </p>
+              </>
+            ) : null}
+
             {formError ? (
               <p className="mt-4 text-[13px] text-[#C4444F] bg-[#FBEBEC] rounded-lg px-3 py-2">
                 {formError}
               </p>
             ) : null}
 
+            {/* 필수 동의 (가입 시에만) */}
+            {mode === "signup" ? (
+              <label className="flex items-start gap-2.5 mt-6 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={agreedPrivacy}
+                  onChange={(e) => setAgreedPrivacy(e.target.checked)}
+                  className="mt-0.5 w-[18px] h-[18px] shrink-0 accent-[var(--color-primary)] cursor-pointer"
+                />
+                <span className="text-[13px] leading-relaxed text-[var(--color-text-sub)]">
+                  <span className="font-bold text-[var(--color-label)]">
+                    [필수]
+                  </span>{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-primary)] font-semibold hover:underline"
+                  >
+                    서비스 이용약관
+                  </a>{" "}
+                  및{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-primary)] font-semibold hover:underline"
+                  >
+                    개인정보 처리방침
+                  </a>
+                  에 동의합니다
+                </span>
+              </label>
+            ) : null}
+
             <button
               type="submit"
-              disabled={loading}
-              className="w-full h-12 mt-6 rounded-[10px] bg-[var(--color-primary)] text-white font-bold text-[15px] hover:bg-[#5D4FC4] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || (mode === "signup" && !agreedPrivacy)}
+              className={`w-full h-12 ${
+                mode === "signup" ? "mt-4" : "mt-6"
+              } rounded-[10px] bg-[var(--color-primary)] text-white font-bold text-[15px] hover:bg-[#5D4FC4] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--color-primary)]`}
             >
               {loading
                 ? "잠시만요..."
@@ -250,23 +335,30 @@ function LoginContent() {
             <span className="h-px flex-1 bg-[var(--color-border)]" />
           </div>
 
-          {/* 소셜 로그인 */}
+          {/* 소셜 로그인/가입 — 가입 시엔 동의 후에만 (첫 가입도 동일 동의 경유) */}
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setSocialNote("소셜 로그인은 곧 지원될 예정이에요.")}
-              className="h-11 rounded-[10px] bg-white border border-[var(--color-border)] flex items-center justify-center gap-2 text-[14px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]/40 transition"
+              onClick={handleSocial}
+              disabled={socialBlocked}
+              className="h-11 rounded-[10px] bg-white border border-[var(--color-border)] flex items-center justify-center gap-2 text-[14px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]/40 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <GoogleMark /> Google
             </button>
             <button
               type="button"
-              onClick={() => setSocialNote("소셜 로그인은 곧 지원될 예정이에요.")}
-              className="h-11 rounded-[10px] bg-white border border-[var(--color-border)] flex items-center justify-center gap-2 text-[14px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]/40 transition"
+              onClick={handleSocial}
+              disabled={socialBlocked}
+              className="h-11 rounded-[10px] bg-white border border-[var(--color-border)] flex items-center justify-center gap-2 text-[14px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]/40 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <AppleMark /> Apple
             </button>
           </div>
+          {mode === "signup" && !agreedPrivacy ? (
+            <p className="mt-2.5 text-center text-[12px] text-[var(--color-text-sub)]">
+              소셜 가입도 약관·개인정보 처리방침 동의가 필요해요.
+            </p>
+          ) : null}
           {socialNote ? (
             <p className="mt-2.5 text-center text-[12px] text-[var(--color-text-sub)]">
               {socialNote}

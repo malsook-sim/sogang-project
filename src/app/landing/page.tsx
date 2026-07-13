@@ -310,7 +310,7 @@ export default function LandingPage() {
           >
             How it works
           </p>
-          <h2 className="text-center text-[26px] sm:text-[30px] font-extrabold mb-8 tracking-tight text-[#FBF9F6]">
+          <h2 className="text-center text-[26px] sm:text-[30px] font-extrabold mb-8 tracking-tight text-[var(--night-surface)]">
             3단계로 끝나요
           </h2>
           <div className="grid gap-4 md:grid-cols-3">

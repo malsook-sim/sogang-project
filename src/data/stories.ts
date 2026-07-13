@@ -53,6 +53,8 @@ export const stories: Story[] = [
     ageMin: 3,
     ageMax: 6,
     morals: ["끈기", "겸손"],
+    moralSummary:
+      "느려도 포기하지 않고 한 걸음씩 나아가면 결국 해낼 수 있어요. 남을 얕보지 않는 겸손한 마음도 함께 배워요.",
     isPremium: false,
     category: "classic",
     durationMin: 4,
@@ -87,6 +89,8 @@ export const stories: Story[] = [
     ageMin: 4,
     ageMax: 7,
     morals: ["용기", "지혜"],
+    moralSummary:
+      "무서운 순간에도 용기를 잃지 않고 지혜롭게 생각하면, 어떤 위기도 이겨낼 수 있어요.",
     isPremium: false,
     category: "classic",
     durationMin: 5,
@@ -117,6 +121,8 @@ export const stories: Story[] = [
     ageMin: 4,
     ageMax: 7,
     morals: ["정직", "선행"],
+    moralSummary:
+      "정직하고 착한 마음으로 살다 보면, 언젠가 그 마음을 알아봐 주는 사람이 나타나요.",
     isPremium: false,
     category: "classic",
     durationMin: 5,
@@ -145,6 +151,8 @@ export const stories: Story[] = [
     ageMin: 3,
     ageMax: 7,
     morals: ["나눔", "선행"],
+    moralSummary:
+      "욕심내지 않고 따뜻하게 나누는 마음이, 결국 큰 복이 되어 돌아온다는 걸 알려줘요.",
     isPremium: false,
     category: "classic",
     durationMin: 4,
@@ -171,6 +179,8 @@ export const stories: Story[] = [
     ageMin: 5,
     ageMax: 8,
     morals: ["우정", "사랑"],
+    moralSummary:
+      "서로를 아끼고 사랑하는 마음, 그리고 소중한 약속을 지키는 일이 얼마나 귀한지 배워요.",
     isPremium: true,
     category: "classic",
     durationMin: 5,
@@ -205,6 +215,8 @@ export const stories: Story[] = [
     ageMin: 3,
     ageMax: 6,
     morals: ["정직", "겸손"],
+    moralSummary:
+      "욕심내지 않고 정직하게 말하면, 뜻밖의 좋은 선물이 찾아온다는 걸 알려줘요.",
     isPremium: false,
     category: "classic",
     durationMin: 4,
@@ -231,6 +243,8 @@ export const stories: Story[] = [
     ageMin: 4,
     ageMax: 7,
     morals: ["용기", "사랑"],
+    moralSummary:
+      "진심 어린 사랑과 용기는, 오랜 잠에 빠진 마법도 깨울 만큼 강하답니다.",
     isPremium: true,
     category: "world",
     durationMin: 4,
@@ -259,6 +273,8 @@ export const stories: Story[] = [
     ageMin: 2,
     ageMax: 5,
     morals: ["예절", "겸손"],
+    moralSummary:
+      "남의 집과 물건을 함부로 대하지 않고, 예의를 지키는 것이 왜 중요한지 배워요.",
     isPremium: false,
     category: "world",
     durationMin: 3,
@@ -287,6 +303,8 @@ export const stories: Story[] = [
     ageMin: 3,
     ageMax: 6,
     morals: ["나눔", "사랑"],
+    moralSummary:
+      "가진 것이 적어도 따뜻하게 나누는 마음은, 밤하늘의 별처럼 오래도록 빛나요.",
     isPremium: false,
     category: "bedtime",
     durationMin: 3,

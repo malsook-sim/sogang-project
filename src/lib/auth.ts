@@ -11,10 +11,19 @@ const secret = new TextEncoder().encode(process.env.SESSION_SECRET);
 export interface SessionUser {
   id: number;
   email: string;
+  nickname: string | null;
   childName: string | null;
   childAge: number | null;
   childGender: string | null;
   defaultVoiceId: string | null;
+}
+
+// 표시용 이름 — 보호자 호칭이 없으면 이메일 앞부분으로 폴백
+export function displayName(user: {
+  nickname: string | null;
+  email: string;
+}): string {
+  return user.nickname?.trim() || user.email.split("@")[0];
 }
 
 export function hashPassword(password: string): Promise<string> {
@@ -63,7 +72,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     if (!uid) return null;
 
     const [rows] = await db.query<RowDataPacket[]>(
-      "SELECT id, email, child_name, child_age, child_gender, default_voice_id FROM users WHERE id = ? LIMIT 1",
+      "SELECT id, email, nickname, child_name, child_age, child_gender, default_voice_id FROM users WHERE id = ? LIMIT 1",
       [uid]
     );
     const row = rows[0];
@@ -72,6 +81,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     return {
       id: row.id,
       email: row.email,
+      nickname: row.nickname ?? null,
       childName: row.child_name,
       childAge: row.child_age,
       childGender: row.child_gender ?? null,

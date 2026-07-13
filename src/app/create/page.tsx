@@ -220,9 +220,9 @@ export default function CreateStoryPage() {
                   placeholder="이름 (예: 지우)"
                   value={childName}
                   onChange={(e) => setChildName(e.target.value)}
-                  className="flex-1 min-w-0 h-11 px-3.5 rounded-[10px] bg-background border border-border text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
+                  className="flex-1 min-w-0 h-11 px-3.5 rounded-[10px] bg-field border border-border text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
                 />
-                <div className="shrink-0 flex items-center h-11 rounded-[10px] bg-background border border-border overflow-hidden">
+                <div className="shrink-0 flex items-center h-11 rounded-[10px] bg-field border border-border overflow-hidden">
                   <button
                     type="button"
                     onClick={() =>
@@ -282,7 +282,7 @@ export default function CreateStoryPage() {
               placeholder="줄거리를 자유롭게 적어주세요&#10;예: 숲속에서 길을 잃은 토끼가 친구들의 도움으로 집을 찾아가는 이야기"
               value={plot}
               onChange={(e) => setPlot(e.target.value.slice(0, MAX_PLOT))}
-              className="w-full min-h-[160px] px-3.5 py-3 rounded-[10px] bg-background border border-border text-sm leading-relaxed resize-y text-foreground placeholder:text-muted/60 focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
+              className="w-full min-h-[160px] px-3.5 py-3 rounded-[10px] bg-field border border-border text-sm leading-relaxed resize-y text-foreground placeholder:text-muted/60 focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
             />
             <p className="text-right text-[11px] text-muted mt-1.5 tabular-nums">
               {plot.length} / {MAX_PLOT}자
@@ -319,7 +319,7 @@ export default function CreateStoryPage() {
               <button
                 type="button"
                 onClick={() => setVoiceMenuOpen((v) => !v)}
-                className="w-full h-12 pl-2.5 pr-3 rounded-[10px] bg-background border border-border hover:border-border-strong flex items-center gap-2.5 text-left transition"
+                className="w-full h-12 pl-2.5 pr-3 rounded-[10px] bg-field border border-border hover:border-border-strong flex items-center gap-2.5 text-left transition"
               >
                 <VoiceAvatar emoji={selectedOption?.emoji} size={30} />
                 <span className="flex-1 min-w-0 text-sm font-semibold truncate">
@@ -420,75 +420,41 @@ export default function CreateStoryPage() {
             </div>
           </div>
 
-          {/* 실행 카드 */}
-          <div className="relative overflow-hidden rounded-2xl bg-primary-light border border-primary/15 p-4">
-            <svg
-              viewBox="0 0 300 200"
-              preserveAspectRatio="xMidYMid slice"
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              aria-hidden
-            >
-              <circle cx="34" cy="26" r="2" fill="#F4C566">
-                {generating && (
-                  <animate
-                    attributeName="opacity"
-                    values="0.4;1;0.4"
-                    dur="1.2s"
-                    repeatCount="indefinite"
-                  />
-                )}
-              </circle>
-              <circle cx="258" cy="38" r="1.6" fill="#F4C566" opacity="0.9">
-                {generating && (
-                  <animate
-                    attributeName="opacity"
-                    values="1;0.4;1"
-                    dur="1.5s"
-                    repeatCount="indefinite"
-                  />
-                )}
-              </circle>
-              <circle cx="180" cy="150" r="1.8" fill="#6E5FD6" opacity="0.35">
-                {generating && (
-                  <animate
-                    attributeName="opacity"
-                    values="0.2;0.5;0.2"
-                    dur="1.8s"
-                    repeatCount="indefinite"
-                  />
-                )}
-              </circle>
-            </svg>
-
-            <div className="relative z-10">
-              {generating ? (
-                <div className="py-2 text-center">
-                  <div className="w-10 h-10 mx-auto mb-3 border-2 border-primary/25 border-t-primary rounded-full animate-spin" />
-                  <p className="text-foreground font-bold text-[15px] mb-1">
-                    {stages[stageIndex]}
-                  </p>
-                  <p className="text-[12px] text-[var(--text-body)]">
-                    조금만 기다려 주세요…
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <button
-                    onClick={handleGenerate}
-                    disabled={!canGenerate}
-                    className="w-full h-12 rounded-xl bg-[var(--star)] text-[var(--night)] font-extrabold text-[15px] shadow-md shadow-[#C99A2E]/30 hover:brightness-[1.05] active:brightness-95 transition disabled:bg-white disabled:text-muted disabled:border disabled:border-border disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
+          {/* 실행 버튼 + 안내 (래퍼 카드 없이) */}
+          <div>
+            {generating ? (
+              <>
+                <button
+                  type="button"
+                  disabled
+                  className="w-full h-[52px] rounded-[12px] bg-primary text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-wait"
+                >
+                  <span className="w-5 h-5 shrink-0 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  <span className="truncate">{stages[stageIndex]}</span>
+                </button>
+                <p className="text-center text-[12px] text-muted mt-3">
+                  조금만 기다려 주세요…
+                </p>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleGenerate}
+                  disabled={!canGenerate}
+                  className="w-full h-[52px] rounded-[12px] bg-primary hover:bg-[#5D4FC4] disabled:hover:bg-primary text-white font-extrabold text-[15px] transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span className="flex text-[var(--star)]">
                     <Sparkles size={18} filled />
-                    동화 만들기
-                  </button>
-                  <p className="text-center text-[11px] text-[var(--text-body)] mt-3">
-                    {canGenerate
-                      ? "약 30초~1분 정도 걸려요"
-                      : "줄거리를 입력하면 만들 수 있어요"}
-                  </p>
-                </>
-              )}
-            </div>
+                  </span>
+                  동화 만들기
+                </button>
+                <p className="text-center text-[12px] text-muted mt-2.5">
+                  {canGenerate
+                    ? "약 30초~1분 정도 걸려요"
+                    : "줄거리를 입력하면 만들 수 있어요"}
+                </p>
+              </>
+            )}
           </div>
 
           {error && (

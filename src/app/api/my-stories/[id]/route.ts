@@ -59,5 +59,22 @@ export async function DELETE(
     dbId,
   ]);
 
+  // 이 동화에 매달린 파생 데이터 정리 (story_id 는 다형성이라 FK cascade 가 없음)
+  // 모두 user_id + story_id 로만 특정해 지우는 타깃 삭제
+  await Promise.all([
+    db.query("DELETE FROM bookmarks WHERE user_id = ? AND story_id = ?", [
+      user.id,
+      id,
+    ]),
+    db.query("DELETE FROM play_history WHERE user_id = ? AND story_id = ?", [
+      user.id,
+      id,
+    ]),
+    db.query("DELETE FROM audio_cache WHERE user_id = ? AND story_id = ?", [
+      user.id,
+      id,
+    ]),
+  ]);
+
   return NextResponse.json({ ok: true });
 }

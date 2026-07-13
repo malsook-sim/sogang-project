@@ -5,7 +5,7 @@ import Link from "next/link";
 import { categories, type Story } from "@/data/stories";
 import { useCatalog } from "@/lib/useCatalog";
 import { useMyStories } from "@/lib/myStories";
-import { Search, Bell, Moon } from "@/components/Icon";
+import { Search, Bell, Moon, Sparkles, Mic } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 import { StoryCard } from "@/components/StoryCard";
 import { moralKeywords } from "@/lib/morals";
@@ -148,22 +148,29 @@ export default function HomePage() {
     )
   );
 
-  // 인기 동화 — 재생수 순, 6개 고정
+  // 추천·이어듣기 제외 후 다음 순위로 채워 항상 n개 (전체가 n 미만이면 있는 만큼)
+  const fillTo = (ordered: Story[], n: number) => {
+    const out: Story[] = [];
+    const used = new Set<string>();
+    for (const s of ordered) {
+      if (out.length >= n) break;
+      if (excludeIds.has(s.id) || used.has(s.id)) continue;
+      out.push(s);
+      used.add(s.id);
+    }
+    return out;
+  };
+
+  // 인기 동화 — 재생수 높은 순 우선, 모자라면 다음 순위로 채워 6개 고정
   const popular = isDefaultView
-    ? [...catalog]
-        .filter((s) => (s.playCount ?? 0) > 0 && !excludeIds.has(s.id))
-        .sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0))
-        .slice(0, 6)
+    ? fillTo(
+        [...catalog].sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0)),
+        6
+      )
     : [];
 
-  // 새로 온 동화 — 최근 추가순 6개 (콘텐츠 12개 이상일 때만)
-  const newArrivals =
-    isDefaultView && catalog.length >= 12
-      ? [...catalog]
-          .reverse()
-          .filter((s) => !excludeIds.has(s.id))
-          .slice(0, 6)
-      : [];
+  // 새로 온 동화 — 최근 추가순 우선, 모자라면 채워 6개 고정
+  const newArrivals = isDefaultView ? fillTo([...catalog].reverse(), 6) : [];
 
   return (
     <>
@@ -302,32 +309,35 @@ export default function HomePage() {
                 </h2>
                 <Link
                   href={`/stories/${featured.id}`}
-                  className="card card-interactive overflow-hidden flex bg-primary-light"
+                  className="card card-interactive overflow-hidden flex flex-col sm:flex-row bg-primary-light sm:h-[176px]"
                 >
-                  <div className="w-28 sm:w-40 lg:w-56 flex-shrink-0 aspect-square bg-surface-soft">
+                  {/* 썸네일: 모바일 상단 120px / 데스크톱 좌측 240px 와이드 크롭 */}
+                  <div className="w-full h-[120px] sm:w-60 sm:h-auto flex-shrink-0 bg-surface-soft overflow-hidden">
                     <StoryCover story={featured} className="w-full h-full" />
                   </div>
-                  <div className="p-4 sm:p-6 lg:p-8 flex flex-col justify-center flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-primary font-bold mb-1.5">
+                  {/* 콘텐츠 세로 중앙 압축 (요소 간 8px) */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center gap-2 px-5 py-4">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-primary font-bold">
                       Today&apos;s Pick
                     </p>
-                    <h3 className="font-extrabold text-base sm:text-xl lg:text-2xl mb-1.5 truncate">
+                    <h3 className="font-extrabold text-[20px] leading-tight truncate">
                       {featured.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-muted mb-3">
-                      {featured.ageMin}~{featured.ageMax}세 · {featured.durationMin}분
-                    </p>
-                    <div className="hidden sm:flex gap-1.5 mb-4 flex-wrap">
-                      {moralKeywords(featured.morals, 3).map((m) => (
+                    {/* 메타 + 칩 한 줄 병합 */}
+                    <div className="flex items-center gap-2 text-xs text-muted min-w-0 overflow-hidden">
+                      <span className="whitespace-nowrap">
+                        {featured.ageMin}~{featured.ageMax}세 · {featured.durationMin}분
+                      </span>
+                      {moralKeywords(featured.morals, 2).map((m) => (
                         <span
                           key={m}
-                          className="text-[11px] bg-primary-light text-primary px-2.5 py-0.5 rounded-full font-semibold"
+                          className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold whitespace-nowrap"
                         >
                           {m}
                         </span>
                       ))}
                     </div>
-                    <span className="inline-flex items-center gap-1.5 self-start bg-primary text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-full">
+                    <span className="inline-flex items-center justify-center gap-1.5 self-start h-10 bg-primary text-white text-sm font-bold px-4 rounded-full">
                       지금 들어보기 <span aria-hidden>→</span>
                     </span>
                   </div>
@@ -358,76 +368,64 @@ export default function HomePage() {
               </section>
             )}
 
-            {/* 4. 프로모 배너 */}
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 mb-8 lg:grid lg:grid-cols-2 lg:gap-5 lg:mx-0 lg:px-0 lg:overflow-visible">
+            {/* 4. 프로모 배너 (컴팩트 가로 · 모바일 세로 스택) */}
+            <div className="flex flex-col gap-3 mb-8 lg:grid lg:grid-cols-2 lg:gap-5">
+              {/* AI Story Maker — 네이비 (주) */}
               <Link
                 href="/create"
-                className="min-w-[280px] lg:min-w-0 bg-[var(--night)] rounded-2xl p-6 lg:p-7 lg:min-h-[180px] lg:flex lg:flex-col lg:justify-center relative overflow-hidden card-interactive"
+                className="relative overflow-hidden card-interactive h-[104px] rounded-2xl px-3.5 flex items-center gap-3 bg-[var(--night)]"
               >
+                <span className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                  <Sparkles size={22} filled className="text-[var(--star)]" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-extrabold text-white leading-tight truncate">
+                    우리 아이만의 동화를 만들어요
+                  </p>
+                  <p className="text-[12px] text-white/55 truncate mt-0.5">
+                    줄거리만 알려주면 AI가 뚝딱
+                  </p>
+                </div>
+                <span className="shrink-0 inline-flex items-center gap-1 text-[13px] font-bold text-[var(--star)] whitespace-nowrap">
+                  만들러 가기 <span aria-hidden>→</span>
+                </span>
+                {/* 소형 장식: 초승달 20px (우상단, 텍스트 비겹침) */}
                 <svg
-                  viewBox="0 0 100 100"
-                  className="absolute -top-6 -right-4 w-24 h-24 pointer-events-none"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  className="absolute top-2.5 right-3 pointer-events-none"
                   aria-hidden
                 >
-                  <circle cx="50" cy="50" r="34" fill="#F4C566" />
-                  <circle cx="63" cy="41" r="30" fill="#2C2A45" />
+                  <circle cx="10" cy="10" r="7" fill="#F4C566" />
+                  <circle cx="13" cy="8" r="6" fill="var(--night)" />
                 </svg>
-                <span
-                  className="absolute w-1 h-1 rounded-full bg-[#F4C566] pointer-events-none"
-                  style={{ top: "52%", right: "15%" }}
-                  aria-hidden
-                />
-                <span
-                  className="absolute w-1 h-1 rounded-full bg-[#EDE9F7] opacity-70 pointer-events-none"
-                  style={{ top: "72%", right: "8%" }}
-                  aria-hidden
-                />
-                <div className="relative z-10">
-                  <p className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--night-caption)] mb-2">
-                    AI Story Maker
-                  </p>
-                  <h2 className="text-[18px] lg:text-[20px] font-extrabold mb-1.5 leading-snug text-white">
-                    우리 아이만의 동화를<br />만들어요
-                  </h2>
-                  <p className="text-[13px] text-white/55">줄거리만 알려주세요</p>
-                  <span className="inline-flex items-center gap-1 mt-4 text-[13px] font-bold text-[var(--star)]">
-                    만들러 가기 <span aria-hidden>→</span>
-                  </span>
-                </div>
               </Link>
 
+              {/* Voice Clone — 연보라 (부) */}
               <Link
                 href="/record"
-                className="min-w-[280px] lg:min-w-0 bg-primary-light rounded-2xl p-6 lg:p-7 lg:min-h-[180px] lg:flex lg:flex-col lg:justify-center relative overflow-hidden card-interactive"
+                className="relative overflow-hidden card-interactive h-[104px] rounded-2xl px-3.5 flex items-center gap-3 bg-primary-light"
               >
-                <div className="relative z-10">
-                  <p className="text-[11px] font-bold tracking-[0.14em] uppercase text-primary mb-2">
-                    Voice Clone
+                <span className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Mic size={22} filled className="text-primary" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-extrabold text-[#3C3489] leading-tight truncate">
+                    내 목소리로 동화 들려주기
                   </p>
-                  <h2 className="text-[18px] lg:text-[20px] font-extrabold mb-1.5 leading-snug text-[#3C3489]">
-                    내 목소리로<br />동화 들려주기
-                  </h2>
-                  <p className="text-[13px] text-[var(--text-body)]">30초 녹음이면 충분해요</p>
-                  <span className="inline-flex items-center gap-1 mt-4 text-[13px] font-bold text-primary">
-                    녹음하러 가기 <span aria-hidden>→</span>
-                  </span>
+                  <p className="text-[12px] text-[var(--text-body)] truncate mt-0.5">
+                    30초 녹음이면 충분해요
+                  </p>
                 </div>
-                <svg
-                  viewBox="0 0 200 200"
-                  className="absolute -right-6 -bottom-8 w-40 h-40 text-primary opacity-[0.16] pointer-events-none"
-                  fill="currentColor"
-                  aria-hidden
-                >
-                  <rect x="80" y="40" width="40" height="80" rx="20" />
-                  <path
-                    d="M55 100a45 45 0 0 0 90 0"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                  <path d="M100 145v25" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
-                </svg>
+                <span className="shrink-0 inline-flex items-center gap-1 text-[13px] font-bold text-primary whitespace-nowrap">
+                  녹음하러 가기 <span aria-hidden>→</span>
+                </span>
+                {/* 소형 장식: 마이크 24px (우상단, 옅게) */}
+                <Mic
+                  size={24}
+                  className="absolute top-2.5 right-3 text-primary opacity-20 pointer-events-none"
+                />
               </Link>
             </div>
 

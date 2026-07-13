@@ -468,6 +468,16 @@ function PlayerContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 목소리 팝업 열릴 때 배경 스크롤 잠금
+  useEffect(() => {
+    if (!voiceModalOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [voiceModalOpen]);
+
   if (!storyResolved) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -680,7 +690,7 @@ function PlayerContent() {
       </div>
 
       {/* 상단 바 */}
-      <header className="relative z-20 shrink-0 flex items-center justify-between gap-3 px-5 lg:px-8 h-14 max-w-6xl mx-auto w-full">
+      <header className="relative z-20 shrink-0 flex items-center justify-between gap-3 px-5 lg:px-8 h-14 mt-[calc(env(safe-area-inset-top)+12px)] max-w-6xl mx-auto w-full">
         <button
           onClick={() => {
             audioRef.current?.pause();
@@ -701,7 +711,7 @@ function PlayerContent() {
           </p>
           <p
             className={`text-xs font-semibold tracking-tight mt-0.5 truncate transition-colors duration-[1200ms] ${
-              nightMode ? "text-[#FBF9F6]" : "text-foreground"
+              nightMode ? "text-[var(--night-surface)]" : "text-foreground"
             }`}
           >
             {voiceName}
@@ -720,7 +730,11 @@ function PlayerContent() {
             aria-label="잠자기 타이머"
           >
             <Moon size={15} filled={!!sleepTimer} />
-            {sleepTimer ? formatTime(sleepRemaining) : "잠자기"}
+            {sleepTimer
+              ? sleepRemaining >= 60
+                ? `${Math.floor(sleepRemaining / 60)}분`
+                : "곧 끝나요"
+              : "잠자기"}
           </button>
           {showSleepMenu && (
             <>
@@ -769,7 +783,7 @@ function PlayerContent() {
       </header>
 
       {/* 본문 2열 */}
-      <div className="relative z-10 flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[38%_1fr] lg:gap-10 lg:items-stretch max-w-6xl mx-auto w-full px-5 lg:px-8 pt-2 lg:pt-4 pb-2">
+      <div className="relative z-10 flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[38%_1fr] lg:gap-10 lg:items-stretch max-w-6xl mx-auto w-full px-5 lg:px-8 pt-10 lg:pt-16 pb-2">
         {/* 좌: 앨범아트 + 제목 */}
         <div className="shrink-0 flex flex-col items-center lg:justify-center text-center">
           <div
@@ -780,7 +794,7 @@ function PlayerContent() {
           </div>
           <h1
             className={`text-xl lg:text-2xl font-extrabold mt-4 mb-2 tracking-tight transition-colors duration-[1200ms] ${
-              nightMode ? "text-[#FBF9F6]" : "text-foreground"
+              nightMode ? "text-[var(--night-surface)]" : "text-foreground"
             }`}
           >
             {story.title}
@@ -831,7 +845,7 @@ function PlayerContent() {
               className={`flex-1 min-h-0 flex flex-col items-center justify-center text-center backdrop-blur border rounded-2xl p-6 transition-colors duration-[1200ms] ${panelCls}`}
             >
               <Moon size={44} filled className="text-[#F4C566]" />
-              <p className="mt-4 text-lg font-extrabold text-[#FBF9F6]">
+              <p className="mt-4 text-lg font-extrabold text-[var(--night-surface)]">
                 오늘은 여기까지, 잘 자요
               </p>
               <p className="mt-1.5 text-sm text-[#8B86A3]">
@@ -844,7 +858,7 @@ function PlayerContent() {
             >
               <p
                 className={`font-extrabold text-base mb-1 ${
-                  nightMode ? "text-[#FBF9F6]" : "text-foreground"
+                  nightMode ? "text-[var(--night-surface)]" : "text-foreground"
                 }`}
               >
                 다른 동화 들어볼까요?
@@ -914,7 +928,7 @@ function PlayerContent() {
                     className={`text-[15px] lg:text-base leading-[1.9] rounded-lg px-2 py-1 cursor-pointer transition-colors duration-300 ${
                       i === currentParagraph
                         ? nightMode
-                          ? "text-[#FBF9F6] font-semibold bg-[rgba(110,95,214,0.35)]"
+                          ? "text-[var(--night-surface)] font-semibold bg-[rgba(110,95,214,0.35)]"
                           : "text-[var(--primary-deep)] font-semibold bg-primary-light"
                         : nightMode
                         ? "text-[#8B86A3]"
@@ -1012,7 +1026,7 @@ function PlayerContent() {
       {voiceModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-[rgba(44,42,69,0.5)]"
             onClick={() => {
               stopPreviewAudio();
               setVoiceModalOpen(false);

@@ -11,10 +11,12 @@ CREATE TABLE IF NOT EXISTS users (
   id            BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
   email         VARCHAR(255)     NOT NULL,
   password_hash VARCHAR(255)     NOT NULL,
+  nickname      VARCHAR(50)      NULL,
   child_name    VARCHAR(50)      NULL,
   child_age     TINYINT UNSIGNED NULL,
   child_gender  VARCHAR(10)      NULL,
   default_voice_id VARCHAR(100)  NULL,
+  privacy_agreed_at TIMESTAMP    NULL,
   created_at    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email)

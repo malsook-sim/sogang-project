@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useCurrentUser, displayName } from "@/lib/useCurrentUser";
 
 export default function OnboardingPage() {
   return (
@@ -16,6 +17,7 @@ const AGES = [3, 4, 5, 6, 7, 8];
 function OnboardingContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
+  const { user } = useCurrentUser();
 
   const [name, setName] = useState("");
   const [age, setAge] = useState<number | null>(null);
@@ -48,7 +50,7 @@ function OnboardingContent() {
         <svg width="72" height="40" viewBox="0 0 72 40" className="mb-6" aria-hidden>
           <g transform="translate(16 18)">
             <circle cx="0" cy="0" r="13" fill="#F4C566" />
-            <circle cx="6" cy="-4" r="11" fill="#FBF9F6" />
+            <circle cx="6" cy="-4" r="11" fill="var(--color-bg)" />
           </g>
           <path
             d="M44 8 l1.6 3.6 3.6 1.6 -3.6 1.6 -1.6 3.6 -1.6 -3.6 -3.6 -1.6 3.6 -1.6z"
@@ -58,6 +60,11 @@ function OnboardingContent() {
           <circle cx="38" cy="28" r="1.6" fill="#CEC7EE" />
         </svg>
 
+        {user ? (
+          <p className="text-[14px] font-bold text-[var(--color-primary)] mb-1.5">
+            {displayName(user)}, 환영해요 🎉
+          </p>
+        ) : null}
         <h1 className="text-[20px] font-extrabold text-[var(--color-text)] tracking-tight mb-1.5">
           아이를 소개해 주세요
         </h1>

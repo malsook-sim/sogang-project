@@ -63,7 +63,7 @@ export default function StoriesBrowsePage() {
         containerClassName="max-w-[1280px] mx-auto px-5 lg:px-8"
       />
 
-      <div className="max-w-[1280px] mx-auto px-5 lg:px-8 py-5">
+      <div className="max-w-[1280px] mx-auto px-5 lg:px-8 py-6">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 mb-1.5">
           {categories.map((c) =>
             chip(c.id, activeCategory === c.id, c.label, () =>
