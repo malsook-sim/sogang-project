@@ -14,8 +14,10 @@ $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 "[$stamp] === autostart begin ===" | Out-File $log -Append -Encoding utf8
 
-# 1) Next.js production server (npm start -> pinned to port 3001) -- skip if already listening
+# 1) Next.js production server (port 3001 via PORT env) -- skip if already listening
+#    NOTE: package.json "start" is env-neutral ("next start"); local port is pinned here.
 if (-not (Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue)) {
+    $env:PORT = "3001"
     Start-Process -FilePath $npm -ArgumentList "start" `
                   -WorkingDirectory $proj -WindowStyle Hidden
     "[$stamp] production server started (port 3001)" | Out-File $log -Append -Encoding utf8
