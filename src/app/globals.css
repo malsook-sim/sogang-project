@@ -199,13 +199,91 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   --progress-fill: var(--star); /* 밤엔 진행바가 골드(달빛 차오름) */
 }
 
+/* 잠자기(밤) 사이드바 대비 보강 — 표면을 페이지 배경보다 반 단계 밝게(#1B1A36),
+   활성 메뉴는 배경 + 3px 세로 액센트 바로 형태까지 강조, 비활성은 두 단계 어둡게 */
+[data-theme="sleep"] .app-sidebar {
+  background: #1B1A36;
+  border-right-color: #2C2A4C;
+}
+[data-theme="sleep"] .app-logo-label {
+  color: #6E6890;
+}
+[data-theme="sleep"] .app-logo-name {
+  color: #B7ABF4;
+}
+[data-theme="sleep"] .app-nav-item {
+  color: #8B86A3;
+  background: transparent;
+}
+[data-theme="sleep"] .app-nav-item .nav-icon {
+  color: #8B86A3;
+}
+[data-theme="sleep"] .app-nav-item:hover {
+  background: #232145;
+  color: #C5BFE0;
+}
+[data-theme="sleep"] .app-nav-item:hover .nav-icon {
+  color: #C5BFE0;
+}
+[data-theme="sleep"] .app-nav-item.is-active {
+  background: #2E2B58;
+  color: #B7ABF4;
+  font-weight: 700;
+}
+[data-theme="sleep"] .app-nav-item.is-active .nav-icon {
+  color: #B7ABF4;
+}
+[data-theme="sleep"] .app-nav-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 0;
+  background: #8F7FE8;
+}
+[data-theme="sleep"] .app-profile-card {
+  background: #211F42;
+  border-color: #2C2A4C;
+}
+[data-theme="sleep"] .app-profile-card:hover {
+  background: #211F42;
+  border-color: #8F7FE8;
+}
+
+/* 썸네일 톤 통일 — 라이트는 낮 배경 그대로, 잠자기 모드에선 밤 팔레트로 눌러줌
+   (SVG 위 navy 오버레이 0.45 + 채도 다운). 라이트에선 오버레이 opacity 0으로 무영향 */
+.cover-night-overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+[data-theme="sleep"] .cover-night-overlay {
+  opacity: 0.45;
+}
+[data-theme="sleep"] .story-cover {
+  filter: saturate(0.7) brightness(0.92) !important;
+}
+
 /* 프로모 배너 잠자기 변형 — AI 배너는 배경(--night)이 밤 페이지 톤과 겹쳐 테두리로 분리,
    Voice 배너 제목은 어두운 틴트 위에서 밝은 라벤더로, 마이크 워터마크는 조금 더 진하게 */
 [data-theme="sleep"] .promo-ai {
-  border-color: var(--border);
+  background: #211F42; /* 주 배너: 카드 surface + 보더로 분리 */
+  border-color: #383564;
+}
+[data-theme="sleep"] .promo-voice {
+  background: #2B2850; /* 부 배너: 주보다 반 단계 밝게, 보더 없음으로 위계 차 */
+  border-color: transparent;
 }
 [data-theme="sleep"] .promo-voice-title {
   color: #CFC6F8;
+}
+[data-theme="sleep"] .promo-voice-cta {
+  color: #B7ABF4;
+}
+[data-theme="sleep"] .promo-voice-mark {
+  color: #B7ABF4;
 }
 [data-theme="sleep"] .promo-voice-mark {
   opacity: 0.22;

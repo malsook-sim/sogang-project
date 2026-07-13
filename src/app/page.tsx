@@ -271,9 +271,11 @@ export default function HomePage() {
           )}
 
           {/* 카테고리 / 연령 — 2단 배열 (가로 스크롤 대신 줄바꿈). 모바일 스크롤 부담 해소 */}
+          {/* 필터 칩 — 카테고리/연령 각각 가로 스크롤 한 줄(총 2줄 고정).
+              -mx-5 px-5로 화면 끝까지 흘려 우측 칩이 살짝 잘리는 스크롤 힌트 */}
           <div className="space-y-2">
             {/* 1단: 카테고리 */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5">
               {categories.map((cat) => {
                 const active = activeCategory === cat.id;
                 const isHome = cat.id === "all";
@@ -283,7 +285,7 @@ export default function HomePage() {
                     onClick={() =>
                       setActiveCategory(active && !isHome ? "all" : cat.id)
                     }
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition border ${
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition border ${
                       active
                         ? "bg-primary text-white border-primary"
                         : "bg-surface text-[var(--text-body)] border-border hover:border-border-strong"
@@ -296,14 +298,14 @@ export default function HomePage() {
             </div>
 
             {/* 2단: 연령 */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5">
               {ageGroups.map((g) => {
                 const active = activeAge === g.id;
                 return (
                   <button
                     key={g.id}
                     onClick={() => setActiveAge(g.id)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition border ${
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition border ${
                       active
                         ? "bg-primary text-white border-primary"
                         : "bg-surface text-[var(--text-body)] border-border hover:border-border-strong"
@@ -384,17 +386,11 @@ export default function HomePage() {
             {/* 3. 인기 동화 */}
             {popular.length > 0 && (
               <section className="mb-8">
-                <div className="flex items-center justify-between mb-3.5">
+                <div className="mb-3.5">
                   <h2 className="text-base font-bold flex items-center gap-2">
                     <span className="text-lg">🔥</span>
                     인기 동화
                   </h2>
-                  <Link
-                    href="/stories"
-                    className="text-[11px] text-muted hover:text-primary font-semibold transition flex items-center gap-0.5"
-                  >
-                    전체보기 <span aria-hidden>→</span>
-                  </Link>
                 </div>
                 <div className="flex gap-3.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-2">
                   {popular.map((story) => (
@@ -441,7 +437,7 @@ export default function HomePage() {
               {/* Voice Clone — 연보라 (부) */}
               <Link
                 href="/record"
-                className="group relative overflow-hidden h-[104px] rounded-2xl px-3.5 flex items-center gap-3 bg-primary-light"
+                className="promo-voice group relative overflow-hidden h-[104px] rounded-2xl px-3.5 flex items-center gap-3 bg-primary-light border border-transparent"
               >
                 <span className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <Mic size={22} filled className="text-primary" />
@@ -454,7 +450,7 @@ export default function HomePage() {
                     30초 녹음이면 충분해요
                   </p>
                 </div>
-                <span className="shrink-0 inline-flex items-center gap-1 text-[13px] font-bold text-[#3C3489] group-hover:underline whitespace-nowrap">
+                <span className="promo-voice-cta shrink-0 inline-flex items-center gap-1 text-[13px] font-bold text-[#3C3489] group-hover:underline whitespace-nowrap">
                   녹음하러 가기 <span aria-hidden>→</span>
                 </span>
                 {/* 소형 장식: 마이크 24px (우상단, 옅게) */}
@@ -531,7 +527,7 @@ function ContinueCard({ story, pct }: { story: Story; pct: number }) {
       href={`/player/${story.id}`}
       className="group block card card-interactive overflow-hidden min-w-[150px] w-[150px]"
     >
-      <div className="relative aspect-square bg-surface-soft overflow-hidden">
+      <div className="relative aspect-square bg-surface overflow-hidden">
         <StoryCover
           story={story}
           className="w-full h-full transition-transform duration-500 group-hover:scale-105"

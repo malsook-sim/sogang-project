@@ -17,7 +17,7 @@ export default function BottomNav() {
   if (pathname.startsWith("/player")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 glass border-t border-border z-50 lg:hidden">
+    <nav className="app-bottomnav fixed bottom-0 left-0 right-0 glass border-t border-border z-50 lg:hidden">
       <div className="max-w-lg mx-auto flex justify-around items-stretch h-[68px] pb-[env(safe-area-inset-bottom)]">
         {tabs.map((tab) => {
           const isActive =
@@ -29,12 +29,14 @@ export default function BottomNav() {
               key={tab.href}
               href={tab.href}
               className={`group relative flex flex-col items-center justify-center gap-1 flex-1 transition-colors ${
-                isActive ? "text-primary" : "text-muted hover:text-foreground"
+                isActive
+                  ? "tab-active text-primary"
+                  : "tab-inactive text-muted hover:text-foreground"
               }`}
             >
               <span
                 aria-hidden
-                className={`absolute top-0 h-[2px] w-8 rounded-full transition-all ${
+                className={`tab-indicator absolute top-0 h-[2px] w-8 rounded-full transition-all ${
                   isActive ? "bg-primary opacity-100" : "opacity-0"
                 }`}
               />

@@ -666,7 +666,7 @@ export function StoryCover({
     <svg
       viewBox="0 0 200 200"
       preserveAspectRatio="xMidYMid slice"
-      className={className}
+      className={`story-cover ${className ?? ""}`}
       style={night ? undefined : { filter: WARM_TONE_FILTER }}
       role="img"
       aria-label={story.title}
@@ -687,6 +687,14 @@ export function StoryCover({
       ) : (
         <Hills back={pal.back} front={pal.front} />
       )}
+
+      {/* 잠자기(밤) 톤 통일 오버레이 — CSS로 opacity 제어(라이트 0 / 잠자기 0.45) */}
+      <rect
+        className="cover-night-overlay"
+        width="200"
+        height="200"
+        fill="#14132A"
+      />
     </svg>
   );
 }
