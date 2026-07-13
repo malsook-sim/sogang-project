@@ -40,12 +40,41 @@ export default function MyPage() {
     "boy" | "girl" | null
   >(null);
   const [savingChild, setSavingChild] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState(""); // 설정 폼용 보호자 호칭
+
+  // 보호자 호칭 인라인 편집 (계정 카드)
+  const [nickOpen, setNickOpen] = useState(false);
+  const [nickInput, setNickInput] = useState("");
+  const [savingNick, setSavingNick] = useState(false);
+
+  const startNickEdit = () => {
+    setNickInput(user?.nickname ?? "");
+    setNickOpen(true);
+  };
+  const saveNick = async () => {
+    if (savingNick) return;
+    setSavingNick(true);
+    try {
+      await fetch("/api/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname: nickInput.trim() }),
+      });
+      await refreshUser();
+      setNickOpen(false);
+    } catch {
+      // 무시
+    } finally {
+      setSavingNick(false);
+    }
+  };
 
   const toggleChildEdit = () => {
     if (childOpen) {
       setChildOpen(false);
       return;
     }
+    setNicknameInput(user?.nickname ?? "");
     setChildNameInput(user?.childName ?? "");
     setChildAgeInput(user?.childAge ?? null);
     setChildGenderInput(
@@ -64,6 +93,7 @@ export default function MyPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          nickname: nicknameInput.trim(),
           childName: childNameInput.trim(),
           childAge: childAgeInput ?? "",
           childGender: childGenderInput ?? "",
@@ -107,9 +137,52 @@ export default function MyPage() {
                 <User size={26} filled />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-base truncate">
-                  {displayName(user)}
-                </p>
+                {nickOpen ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      value={nickInput}
+                      onChange={(e) => setNickInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && saveNick()}
+                      autoFocus
+                      maxLength={50}
+                      placeholder="예: 지우 엄마"
+                      className="flex-1 min-w-0 h-8 px-2.5 rounded-[8px] border border-primary bg-field text-sm focus:outline-none focus:ring-[3px] focus:ring-primary-light"
+                    />
+                    <button
+                      onClick={saveNick}
+                      disabled={savingNick}
+                      className="text-xs font-bold text-primary px-1.5 shrink-0 disabled:opacity-50"
+                    >
+                      저장
+                    </button>
+                    <button
+                      onClick={() => setNickOpen(false)}
+                      className="text-xs text-muted px-1 shrink-0"
+                    >
+                      취소
+                    </button>
+                  </div>
+                ) : user.nickname ? (
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <p className="font-bold text-base truncate">
+                      {displayName(user)}
+                    </p>
+                    <button
+                      onClick={startNickEdit}
+                      aria-label="호칭 수정"
+                      className="shrink-0 text-muted hover:text-primary transition"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={startNickEdit}
+                    className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition"
+                  >
+                    <Pencil size={13} /> 호칭을 설정해 보세요
+                  </button>
+                )}
                 <p className="text-xs text-muted mt-0.5 truncate">
                   {user.email}
                 </p>
@@ -393,6 +466,18 @@ export default function MyPage() {
           {childOpen && (
             <div className="px-5 pt-1 pb-4 border-t border-border bg-surface-soft/40">
               <label className="block text-[13px] font-semibold text-muted mt-3 mb-1.5">
+                보호자 호칭
+              </label>
+              <input
+                type="text"
+                value={nicknameInput}
+                onChange={(e) => setNicknameInput(e.target.value)}
+                placeholder="예: 지우 엄마"
+                maxLength={50}
+                className="w-full h-11 px-3.5 rounded-[10px] bg-white border border-border text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
+              />
+
+              <label className="block text-[13px] font-semibold text-muted mt-4 mb-1.5">
                 아이 이름
               </label>
               <input

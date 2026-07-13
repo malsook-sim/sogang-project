@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, User, FileText, Refresh, ChevronDown } from "@/components/Icon";
+import {
+  Sparkles,
+  User,
+  FileText,
+  Refresh,
+  ChevronDown,
+  Mic,
+  Sliders,
+} from "@/components/Icon";
 import PageHeader from "@/components/PageHeader";
 import { VoiceAvatar } from "@/components/VoiceAvatar";
 import { saveMyStory } from "@/lib/myStories";
@@ -20,6 +28,15 @@ function Check({ size = 15 }: { size?: number }) {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+// 섹션 제목 아이콘 — 네이비 원형 타일(28px) + 골드 아이콘 (이 화면 시그니처 악센트)
+function TileIcon({ children }: { children: ReactNode }) {
+  return (
+    <span className="w-7 h-7 rounded-full bg-[#2C2A45] flex items-center justify-center shrink-0 text-[#F4C566]">
+      {children}
+    </span>
   );
 }
 
@@ -181,7 +198,26 @@ export default function CreateStoryPage() {
         <div>
           {/* 아이 정보 */}
           {hasProfile && !editProfile ? (
-            <div className="card px-4 py-3 mb-3.5 flex items-center justify-between gap-3">
+            <div className="card relative overflow-hidden pl-5 pr-4 py-3 mb-3.5 flex items-center justify-between gap-3">
+              {/* 좌측 네이비 액센트 바 */}
+              <span
+                className="absolute left-0 top-0 bottom-0 w-1 bg-[#2C2A45]"
+                aria-hidden
+              />
+              {/* 우측 끝 작은 별 장식 (상단 여백 안쪽) */}
+              <svg
+                width="26"
+                height="9"
+                viewBox="0 0 26 9"
+                className="absolute right-2 top-1 pointer-events-none opacity-70"
+                aria-hidden
+              >
+                <path
+                  d="M5 1.5 l0.8 1.7 1.7 0.8 -1.7 0.8 -0.8 1.7 -0.8 -1.7 -1.7 -0.8 1.7 -0.8z"
+                  fill="#F4C566"
+                />
+                <circle cx="20" cy="4" r="1.2" fill="#F4C566" opacity="0.8" />
+              </svg>
               <p className="text-sm text-foreground">
                 <span className="font-bold">
                   {childName}
@@ -191,7 +227,7 @@ export default function CreateStoryPage() {
               </p>
               <button
                 onClick={() => setEditProfile(true)}
-                className="text-[13px] font-semibold text-primary hover:underline shrink-0"
+                className="relative text-[13px] font-semibold text-primary hover:underline shrink-0"
               >
                 변경
               </button>
@@ -255,7 +291,9 @@ export default function CreateStoryPage() {
           <div className="card p-4 mb-3.5">
             <div className="flex items-center justify-between gap-2 mb-2.5">
               <h3 className="font-bold text-sm flex items-center gap-2">
-                <FileText size={16} className="text-muted" />
+                <TileIcon>
+                  <FileText size={15} />
+                </TileIcon>
                 어떤 이야기를 만들까요?
               </h3>
               <div className="flex gap-0.5 bg-surface-soft rounded-lg p-0.5 shrink-0">
@@ -295,8 +333,13 @@ export default function CreateStoryPage() {
               <button
                 key={ex}
                 onClick={() => setPlot(ex.slice(0, MAX_PLOT))}
-                className="text-left text-[13px] px-3.5 py-2 rounded-full border border-border bg-surface text-[var(--text-body)] hover:border-primary hover:text-primary transition"
+                className="group text-left text-[13px] px-3.5 py-2 rounded-full border border-border bg-surface text-[var(--text-body)] hover:bg-[#2C2A45] hover:text-[#FBF9F6] hover:border-[#2C2A45] transition inline-flex items-center gap-1.5"
               >
+                <Sparkles
+                  size={13}
+                  filled
+                  className="text-[#F4C566] shrink-0"
+                />
                 {ex}
               </button>
             ))}
@@ -314,7 +357,12 @@ export default function CreateStoryPage() {
         <div className="mt-4 lg:mt-0 lg:sticky lg:top-20 space-y-3.5">
           {/* 목소리 */}
           <div className="card p-4">
-            <h3 className="font-bold text-sm mb-2.5">들려줄 목소리</h3>
+            <h3 className="font-bold text-sm mb-2.5 flex items-center gap-2">
+              <TileIcon>
+                <Mic size={15} />
+              </TileIcon>
+              들려줄 목소리
+            </h3>
             <div className="relative">
               <button
                 type="button"
@@ -391,7 +439,12 @@ export default function CreateStoryPage() {
 
           {/* 이야기 길이 */}
           <div className="card p-4">
-            <h3 className="font-bold text-sm mb-2.5">이야기 길이</h3>
+            <h3 className="font-bold text-sm mb-2.5 flex items-center gap-2">
+              <TileIcon>
+                <Sliders size={15} />
+              </TileIcon>
+              이야기 길이
+            </h3>
             <div className="grid grid-cols-2 gap-2">
               {(
                 [
@@ -427,9 +480,9 @@ export default function CreateStoryPage() {
                 <button
                   type="button"
                   disabled
-                  className="w-full h-[52px] rounded-[12px] bg-primary text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-wait"
+                  className="w-full h-[52px] rounded-[12px] bg-[#2C2A45] text-[#FBF9F6] font-bold text-[14px] flex items-center justify-center gap-2 cursor-wait"
                 >
-                  <span className="w-5 h-5 shrink-0 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  <span className="w-5 h-5 shrink-0 border-2 border-white/30 border-t-[#F4C566] rounded-full animate-spin" />
                   <span className="truncate">{stages[stageIndex]}</span>
                 </button>
                 <p className="text-center text-[12px] text-muted mt-3">
@@ -441,9 +494,9 @@ export default function CreateStoryPage() {
                 <button
                   onClick={handleGenerate}
                   disabled={!canGenerate}
-                  className="w-full h-[52px] rounded-[12px] bg-primary hover:bg-[#5D4FC4] disabled:hover:bg-primary text-white font-extrabold text-[15px] transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full h-[52px] rounded-[12px] bg-[#2C2A45] hover:bg-[#3D3A5C] disabled:hover:bg-[#2C2A45] text-[#FBF9F6] font-extrabold text-[15px] transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <span className="flex text-[var(--star)]">
+                  <span className="flex text-[#F4C566]">
                     <Sparkles size={18} filled />
                   </span>
                   동화 만들기

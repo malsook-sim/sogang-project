@@ -5,7 +5,7 @@ import Link from "next/link";
 import { categories, type Story } from "@/data/stories";
 import { useCatalog } from "@/lib/useCatalog";
 import { useMyStories } from "@/lib/myStories";
-import { Search, Bell, Moon, Sparkles, Mic } from "@/components/Icon";
+import { Search, Bell, Moon, Sparkles, Mic, Home } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 import { StoryCard } from "@/components/StoryCard";
 import { moralKeywords } from "@/lib/morals";
@@ -72,11 +72,14 @@ export default function HomePage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [childName, setChildName] = useState<string | null>(null);
+  const [childAge, setChildAge] = useState<number | null>(null);
   const [hour, setHour] = useState<number | null>(null);
+  const [dayIndex, setDayIndex] = useState(0); // 오늘의 추천 로테이션용 (클라이언트에서 설정)
   const [history, setHistory] = useState<PlayRow[]>([]);
   const catalog = useCatalog();
   const myStories = useMyStories();
   const notifRef = useRef<HTMLDivElement | null>(null);
+  const agePresetRef = useRef(false); // 아이 나이 기본 프리셋 1회만 적용
 
   useEffect(() => {
     if (!notifOpen) return;
@@ -90,16 +93,38 @@ export default function HomePage() {
   }, [notifOpen]);
 
   useEffect(() => {
+    // 클라이언트 마운트 시 현재 시각/날짜를 읽음 (hydration 불일치 방지 — 의도된 setState)
+    /* eslint-disable react-hooks/set-state-in-effect */
     setHour(new Date().getHours());
+    setDayIndex(Math.floor(Date.now() / 86_400_000));
+    /* eslint-enable react-hooks/set-state-in-effect */
     fetch("/api/auth/me")
       .then((r) => (r.ok ? r.json() : { user: null }))
-      .then((d) => setChildName(d.user?.childName ?? null))
+      .then((d) => {
+        setChildName(d.user?.childName ?? null);
+        setChildAge(
+          typeof d.user?.childAge === "number" ? d.user.childAge : null
+        );
+      })
       .catch(() => {});
     fetch("/api/play-progress")
       .then((r) => (r.ok ? r.json() : { history: [] }))
       .then((d) => setHistory(Array.isArray(d.history) ? d.history : []))
       .catch(() => {});
   }, []);
+
+  // 아이 나이가 있으면 첫 진입 시 해당 연령 그룹을 기본 선택 (사용자가 이미 바꿨으면 유지)
+  useEffect(() => {
+    if (agePresetRef.current || childAge == null) return;
+    agePresetRef.current = true;
+    const band = childAge <= 5 ? "young" : childAge <= 7 ? "mid" : "old";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveAge((cur) => (cur === "all" ? band : cur));
+  }, [childAge]);
+
+  // 연령 필터 (큐레이션 섹션 + 그리드 공통)
+  const inAge = (story: Story) =>
+    activeAge === "all" || ageBandOf(story) === activeAge;
 
   const filtered = catalog
     .filter((story) => {
@@ -109,19 +134,17 @@ export default function HomePage() {
         searchQuery === "" ||
         story.title.includes(searchQuery) ||
         story.morals.some((m) => m.includes(searchQuery));
-      const matchesAge =
-        activeAge === "all" || ageBandOf(story) === activeAge;
-      return matchesCategory && matchesSearch && matchesAge;
+      return matchesCategory && matchesSearch && inAge(story);
     })
     // 어린 나이대 동화부터 보이도록 정렬
     .sort((a, b) => a.ageMin - b.ageMin || a.ageMax - b.ageMax);
 
-  // 필터·검색 없으면 큐레이션 뷰, 아니면 전체 그리드
-  const isDefaultView =
-    activeCategory === "all" && activeAge === "all" && searchQuery === "";
+  // 카테고리 선택 또는 검색 시 그리드 뷰, 그 외("추천 홈")는 큐레이션 뷰.
+  // 연령 칩은 뷰를 바꾸지 않고 각 섹션/결과를 필터링만 함.
+  const isCuration = activeCategory === "all" && searchQuery.trim() === "";
 
-  // 이어 듣기 — 듣다 만 동화 (진행률 3~95%), 최대 6개
-  const continueList = isDefaultView
+  // 이어 듣기 — 듣다 만 동화 (진행률 3~95%), 최대 6개 (개인 진행이라 연령 필터 제외)
+  const continueList = isCuration
     ? history
         .map((h) => {
           const story = h.storyId.startsWith("my-")
@@ -135,10 +158,11 @@ export default function HomePage() {
         .slice(0, 6)
     : [];
 
-  // 오늘의 추천 — 날짜 기준으로 매일 바뀜
+  // 오늘의 추천 — 선택된 연령(기본=아이 연령) 범위 내에서 날짜 기준으로 매일 바뀜
+  const featPool = catalog.filter(inAge);
   const featured =
-    isDefaultView && catalog.length > 0
-      ? catalog[Math.floor(Date.now() / 86_400_000) % catalog.length]
+    isCuration && featPool.length > 0
+      ? featPool[dayIndex % featPool.length]
       : null;
 
   // 중복 노출 방지 (오늘의 추천 + 이어 듣기는 다른 줄에서 제외)
@@ -161,16 +185,18 @@ export default function HomePage() {
     return out;
   };
 
-  // 인기 동화 — 재생수 높은 순 우선, 모자라면 다음 순위로 채워 6개 고정
-  const popular = isDefaultView
+  // 인기 / 새로 온 — 선택 연령으로 필터 후 6개 고정
+  const popular = isCuration
     ? fillTo(
-        [...catalog].sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0)),
+        catalog
+          .filter(inAge)
+          .sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0)),
         6
       )
     : [];
-
-  // 새로 온 동화 — 최근 추가순 우선, 모자라면 채워 6개 고정
-  const newArrivals = isDefaultView ? fillTo([...catalog].reverse(), 6) : [];
+  const newArrivals = isCuration
+    ? fillTo([...catalog.filter(inAge)].reverse(), 6)
+    : [];
 
   return (
     <>
@@ -193,7 +219,7 @@ export default function HomePage() {
                   setSearchOpen(!searchOpen);
                   setNotifOpen(false);
                 }}
-                className="w-10 h-10 rounded-full bg-surface border border-border hover:border-border-strong flex items-center justify-center text-muted hover:text-foreground transition"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-muted hover:text-foreground transition"
                 aria-label="검색"
               >
                 <Search size={18} />
@@ -201,10 +227,10 @@ export default function HomePage() {
               <div ref={notifRef} className="relative">
                 <button
                   onClick={() => setNotifOpen((v) => !v)}
-                  className={`w-10 h-10 rounded-full border flex items-center justify-center transition ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
                     notifOpen
-                      ? "bg-primary-light border-primary/30 text-primary"
-                      : "bg-surface border-border hover:border-border-strong text-muted hover:text-foreground"
+                      ? "text-primary"
+                      : "text-muted hover:text-foreground"
                   }`}
                   aria-label="알림"
                 >
@@ -245,17 +271,25 @@ export default function HomePage() {
           <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5">
             {categories.map((cat) => {
               const active = activeCategory === cat.id;
+              const isHome = cat.id === "all";
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
+                  onClick={() =>
+                    setActiveCategory(active && !isHome ? "all" : cat.id)
+                  }
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border inline-flex items-center gap-1 ${
+                    isHome ? "shrink-0" : ""
+                  } ${
                     active
                       ? "bg-primary text-white border-primary"
+                      : isHome
+                      ? "bg-primary-light text-primary border-primary/30"
                       : "bg-surface text-[var(--text-body)] border-border hover:border-border-strong"
                   }`}
                 >
-                  {cat.label}
+                  {isHome && <Home size={13} filled={active} />}
+                  {isHome ? "추천 홈" : cat.label}
                 </button>
               );
             })}
@@ -283,7 +317,7 @@ export default function HomePage() {
       </header>
 
       <div className="max-w-lg lg:max-w-[1280px] mx-auto px-5 lg:px-8 pt-5 pb-4">
-        {isDefaultView ? (
+        {isCuration ? (
           <>
             {/* 1. 이어 듣기 */}
             {continueList.length > 0 && (
@@ -380,10 +414,10 @@ export default function HomePage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-extrabold text-white leading-tight truncate">
-                    우리 아이만의 동화를 만들어요
+                    세상에 하나뿐인 우리 아이 동화
                   </p>
                   <p className="text-[12px] text-white/55 truncate mt-0.5">
-                    줄거리만 알려주면 AI가 뚝딱
+                    한 줄 줄거리가 한 편의 동화로
                   </p>
                 </div>
                 <span className="shrink-0 inline-flex items-center gap-1 text-[13px] font-bold text-[var(--star)] whitespace-nowrap">
@@ -446,6 +480,26 @@ export default function HomePage() {
           </>
         ) : (
           <>
+            {/* 그리드 상단: 분류명 + 전체 N편 카운트 */}
+            <div className="flex items-baseline justify-between gap-3 mb-4">
+              <h2 className="text-base font-bold min-w-0 truncate">
+                {searchQuery.trim()
+                  ? `“${searchQuery}” 검색`
+                  : categories.find((c) => c.id === activeCategory)?.label}
+                <span className="text-muted font-semibold text-sm ml-2">
+                  전체 {filtered.length}편
+                </span>
+              </h2>
+              <button
+                onClick={() => {
+                  setActiveCategory("all");
+                  setSearchQuery("");
+                }}
+                className="shrink-0 inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
+              >
+                <Home size={13} /> 추천 홈
+              </button>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
               {filtered.map((story) => (
                 <StoryCard key={story.id} story={story} variant="grid" />

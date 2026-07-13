@@ -1,16 +1,30 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
+import {
+  Suspense,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type CSSProperties,
+} from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Story } from "@/data/stories";
 import { defaultVoices, englishVoices, getVoiceById } from "@/data/voices";
 import { bgmTracks } from "@/data/bgm";
-import { ChevronLeft, Moon, Play, Pause, Refresh } from "@/components/Icon";
+import { Moon, Play, Pause, Refresh } from "@/components/Icon";
+import BackButton from "@/components/BackButton";
 import { StoryCover } from "@/components/StoryCover";
 import { VoiceAvatar } from "@/components/VoiceAvatar";
 import { useCatalog } from "@/lib/useCatalog";
 import { useMyVoices } from "@/lib/useMyVoices";
+import {
+  useSleepMode,
+  useSleepRemaining,
+  startSleepTimer as startSleepGlobal,
+  stopSleepMode,
+} from "@/lib/sleepMode";
 import { moralKeywords } from "@/lib/morals";
 
 export default function PlayerPage() {
@@ -86,15 +100,17 @@ function PlayerContent() {
   const [duration, setDuration] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [currentParagraph, setCurrentParagraph] = useState(0);
-  const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
-  const [sleepRemaining, setSleepRemaining] = useState(0);
+  const [activePreset, setActivePreset] = useState<number | null>(null);
+  // 잠자기 타이머/밤 모드는 전역 스토어 사용 (페이지 이동해도 유지)
+  const sleep = useSleepMode();
+  const nightMode = sleep.active;
+  const sleepRemaining = useSleepRemaining();
   const [bgmId, setBgmId] = useState<string | null>(null);
   const [showBgmMenu, setShowBgmMenu] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
   const [finished, setFinished] = useState(false);
-  // 잠자기 타이머 → 밤 모드. bedtime: 타이머 종료 시 작별 인사 표시
-  const [nightMode, setNightMode] = useState(false);
+  // bedtime: 타이머 종료 시 작별 인사 표시 (밤 모드는 전역 sleep.active 사용)
   const [bedtime, setBedtime] = useState(false);
   // 목소리 팝업 미리듣기
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -102,13 +118,25 @@ function PlayerContent() {
   const previewUrlRef = useRef<string | null>(null);
   const previewReqRef = useRef(0);
 
+  // 모바일 하단 고정 컨트롤 바 높이 측정 → 콘텐츠 하단 패딩(--cbh)에 반영
+  const [controlBarH, setControlBarH] = useState(150);
+  const barObserverRef = useRef<ResizeObserver | null>(null);
+  const controlBarRef = useCallback((el: HTMLDivElement | null) => {
+    barObserverRef.current?.disconnect();
+    if (el) {
+      setControlBarH(el.offsetHeight);
+      const ro = new ResizeObserver(() => setControlBarH(el.offsetHeight));
+      ro.observe(el);
+      barObserverRef.current = ro;
+    }
+  }, []);
+
   const scriptRef = useRef<HTMLDivElement | null>(null);
   const paraRefs = useRef<(HTMLParagraphElement | null)[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
-  const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sleepEndsAtRef = useRef(0);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const prevEndsAtRef = useRef<number | null>(null);
   const resumeRef = useRef(0); // 이어 들을 위치 (초)
   const lastSaveRef = useRef(0); // 마지막으로 저장한 재생 위치
   const countedRef = useRef(false); // 재생수 중복 카운트 방지
@@ -356,23 +384,16 @@ function PlayerContent() {
     setShowBgmMenu(false);
   };
 
+  // 수동으로 끔 → 전역 밤 모드까지 완전 해제
   const clearSleepTimer = () => {
-    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
-    sleepTimerRef.current = null;
-    setSleepTimer(null);
-    setSleepRemaining(0);
-    // 수동으로 끄면 원래 동화 틴트로 복귀
-    setNightMode(false);
+    stopSleepMode();
+    setActivePreset(null);
     setBedtime(false);
   };
 
-  // 타이머 만료 — 볼륨을 서서히 줄이며 멈춤 (스르르 잠들도록)
+  // 타이머 만료 — 볼륨을 서서히 줄이며 멈춤 (스르르 잠들도록). 밤 테마는 유지.
   const fadeOutAndStop = () => {
-    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
-    sleepTimerRef.current = null;
-    setSleepTimer(null);
-    setSleepRemaining(0);
-    // 타이머 종료 시엔 밤 모드를 유지하고 작별 인사를 띄움
+    setActivePreset(null);
     setBedtime(true);
     const audio = audioRef.current;
     if (!audio) return;
@@ -390,24 +411,22 @@ function PlayerContent() {
     }, 150);
   };
 
+  // 타이머 설정 → 전역 스토어에 위임 (페이지 이동해도 유지)
   const startSleepTimer = (minutes: number) => {
-    clearSleepTimer();
-    setSleepTimer(minutes);
-    setSleepRemaining(minutes * 60);
+    startSleepGlobal(minutes);
+    setActivePreset(minutes);
     setShowSleepMenu(false);
-    // 타이머 설정 시 밤 모드 진입
-    setNightMode(true);
     setBedtime(false);
-    sleepEndsAtRef.current = Date.now() + minutes * 60 * 1000;
-    sleepTimerRef.current = setInterval(() => {
-      const left = Math.round((sleepEndsAtRef.current - Date.now()) / 1000);
-      if (left <= 0) {
-        fadeOutAndStop();
-      } else {
-        setSleepRemaining(left);
-      }
-    }, 1000);
   };
+
+  // 전역 타이머 만료 감지 (endsAt: 값→null & 여전히 active) → 페이드아웃 + 작별 인사
+  useEffect(() => {
+    const prev = prevEndsAtRef.current;
+    prevEndsAtRef.current = sleep.endsAt;
+    if (prev && sleep.endsAt === null && sleep.active) {
+      fadeOutAndStop();
+    }
+  }, [sleep.endsAt, sleep.active]);
 
   useEffect(() => {
     let active = true;
@@ -463,7 +482,6 @@ function PlayerContent() {
       previewAudioRef.current?.pause();
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-      if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -629,7 +647,10 @@ function PlayerContent() {
     .slice(0, 3);
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden">
+    <div
+      className="fixed inset-0 flex flex-col overflow-hidden"
+      style={{ ["--cbh" as string]: `${controlBarH}px` } as CSSProperties}
+    >
       {/* 배경: 동화 틴트 ↔ 밤 모드 크로스페이드 */}
       <div className="absolute inset-0 z-0">
         {/* 동화별 배경 틴트 */}
@@ -691,16 +712,13 @@ function PlayerContent() {
 
       {/* 상단 바 */}
       <header className="relative z-20 shrink-0 flex items-center justify-between gap-3 px-5 lg:px-8 h-14 mt-[calc(env(safe-area-inset-top)+12px)] max-w-6xl mx-auto w-full">
-        <button
+        <BackButton
+          night={nightMode}
           onClick={() => {
             audioRef.current?.pause();
             router.back();
           }}
-          className="w-10 h-10 shrink-0 rounded-full bg-surface/70 backdrop-blur border border-border flex items-center justify-center text-foreground/80 hover:bg-surface transition"
-          aria-label="뒤로"
-        >
-          <ChevronLeft size={20} />
-        </button>
+        />
         <div className="text-center min-w-0">
           <p
             className={`text-[10px] uppercase tracking-[0.18em] font-semibold transition-colors duration-[1200ms] ${
@@ -723,14 +741,14 @@ function PlayerContent() {
             className={`h-10 px-3 rounded-full border flex items-center gap-1.5 text-xs font-bold tabular-nums transition duration-[1200ms] ${
               nightMode
                 ? "bg-[#3D3A5C] border-white/10 text-[#F4C566]"
-                : sleepTimer
+                : sleep.endsAt
                 ? "bg-primary-light border-primary/30 text-primary"
                 : "bg-surface/70 border-border text-foreground/80 hover:bg-surface"
             }`}
             aria-label="잠자기 타이머"
           >
-            <Moon size={15} filled={!!sleepTimer} />
-            {sleepTimer
+            <Moon size={15} filled={!!sleep.endsAt} />
+            {sleep.endsAt
               ? sleepRemaining >= 60
                 ? `${Math.floor(sleepRemaining / 60)}분`
                 : "곧 끝나요"
@@ -756,7 +774,7 @@ function PlayerContent() {
                       key={min}
                       onClick={() => startSleepTimer(min)}
                       className={`flex-1 py-2 rounded-lg text-sm font-semibold transition tabular-nums ${
-                        sleepTimer === min
+                        activePreset === min
                           ? "bg-primary text-white"
                           : "bg-surface-soft text-foreground/80 hover:bg-primary-light"
                       }`}
@@ -765,7 +783,7 @@ function PlayerContent() {
                     </button>
                   ))}
                 </div>
-                {sleepTimer && (
+                {sleep.active && (
                   <button
                     onClick={() => {
                       clearSleepTimer();
@@ -783,7 +801,7 @@ function PlayerContent() {
       </header>
 
       {/* 본문 2열 */}
-      <div className="relative z-10 flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[38%_1fr] lg:gap-10 lg:items-stretch max-w-6xl mx-auto w-full px-5 lg:px-8 pt-10 lg:pt-16 pb-2">
+      <div className="relative z-10 flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[38%_1fr] lg:gap-10 lg:items-stretch max-w-6xl mx-auto w-full px-5 lg:px-8 pt-10 lg:pt-16 pb-[calc(var(--cbh)_+_16px)] lg:pb-2">
         {/* 좌: 앨범아트 + 제목 */}
         <div className="shrink-0 flex flex-col items-center lg:justify-center text-center">
           <div
@@ -955,15 +973,16 @@ function PlayerContent() {
         </div>
       </div>
 
-      {/* 하단 컨트롤 바 */}
+      {/* 하단 컨트롤 바 — 모바일: 뷰포트 하단 고정 / 데스크톱: 하단 도킹 유지 */}
       <div
-        className={`relative z-20 shrink-0 backdrop-blur border-t transition-colors duration-[1200ms] ${
+        ref={controlBarRef}
+        className={`fixed inset-x-0 bottom-0 z-30 shrink-0 backdrop-blur border-t transition-colors duration-[1200ms] lg:relative lg:inset-x-auto lg:bottom-auto lg:z-20 ${
           nightMode
             ? "bg-[rgba(44,42,69,0.9)] border-white/10"
             : "bg-white/80 border-border"
         }`}
       >
-        <div className="max-w-4xl mx-auto px-5 lg:px-8 pt-3 pb-6 lg:pb-4">
+        <div className="max-w-4xl mx-auto px-5 lg:px-8 pt-3 pb-[calc(env(safe-area-inset-bottom)_+_20px)] lg:pb-4">
           {/* 진행바 */}
           <div
             className={`w-full h-1.5 rounded-full cursor-pointer relative ${

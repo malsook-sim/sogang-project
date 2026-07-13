@@ -570,8 +570,8 @@ export default function RecordPage() {
                           onClick={() => handlePreview(v.id)}
                           className={`w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 transition ${
                             previewingId === v.id
-                              ? "bg-primary text-white pulse-ring"
-                              : "bg-primary-light text-primary hover:bg-primary hover:text-white"
+                              ? "bg-[#2C2A45] text-[#F4C566] pulse-ring"
+                              : "bg-[#2C2A45] text-[#F4C566] hover:bg-[#3D3A5C]"
                           }`}
                           aria-label={previewingId === v.id ? "정지" : "미리듣기"}
                         >
@@ -635,6 +635,25 @@ export default function RecordPage() {
                     )}
                   </div>
                 ))}
+                {/* 목록 아래 은은한 별 장식 (콘텐츠와 겹치지 않게) */}
+                <div
+                  className="col-span-full flex justify-center items-center gap-6 pt-7 pb-1 pointer-events-none select-none"
+                  aria-hidden
+                >
+                  <svg width="72" height="14" viewBox="0 0 72 14" fill="none">
+                    <path
+                      d="M10 2 l1 2.2 2.2 1 -2.2 1 -1 2.2 -1 -2.2 -2.2 -1 2.2 -1z"
+                      fill="#CEC7EE"
+                      opacity="0.8"
+                    />
+                    <circle cx="36" cy="7" r="1.6" fill="#CEC7EE" opacity="0.55" />
+                    <path
+                      d="M60 3 l0.8 1.8 1.8 0.8 -1.8 0.8 -0.8 1.8 -0.8 -1.8 -1.8 -0.8 1.8 -0.8z"
+                      fill="#CEC7EE"
+                      opacity="0.7"
+                    />
+                  </svg>
+                </div>
               </div>
             ) : (
               <div className="card p-10 text-center border-dashed">

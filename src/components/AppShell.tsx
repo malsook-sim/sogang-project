@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import SleepIndicator from "@/components/SleepIndicator";
 import { Home, Sparkles, Mic, Library } from "@/components/Icon";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
@@ -102,6 +103,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="pb-24 lg:pb-0">{children}</div>
 
+      <SleepIndicator />
       <BottomNav />
     </div>
   );

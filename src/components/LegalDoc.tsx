@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { ChevronLeft } from "@/components/Icon";
+import BackButton from "@/components/BackButton";
 
 // 약관/개인정보 처리방침 공통 문서 레이아웃 (읽기용 단독 화면)
 export function LegalDoc({
@@ -16,13 +15,7 @@ export function LegalDoc({
     <div className="auth-theme min-h-screen bg-[var(--color-bg)]">
       <header className="sticky top-0 z-10 bg-[var(--color-bg)]/90 backdrop-blur border-b border-[var(--color-border)]">
         <div className="max-w-[720px] mx-auto px-5 h-14 flex items-center gap-2">
-          <Link
-            href="/"
-            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[var(--color-text-sub)] hover:bg-white/60 transition"
-            aria-label="닫기"
-          >
-            <ChevronLeft size={20} />
-          </Link>
+          <BackButton href="/" ariaLabel="닫기" />
           <h1 className="text-[16px] font-extrabold text-[var(--color-night)] tracking-tight">
             {title}
           </h1>
