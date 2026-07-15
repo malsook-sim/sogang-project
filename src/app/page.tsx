@@ -3,11 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { categories, type Story } from "@/data/stories";
-import { useCatalog } from "@/lib/useCatalog";
+import {
+  useCatalog,
+  useCatalogLoaded,
+  useCatalogError,
+  retryCatalog,
+} from "@/lib/useCatalog";
 import { useMyStories } from "@/lib/myStories";
 import { Search, Bell, Moon, Sparkles, Mic } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 import { StoryCard } from "@/components/StoryCard";
+import { StoryGridSkeleton, CatalogError } from "@/components/CatalogStates";
 import SleepModeButton from "@/components/SleepModeButton";
 import { moralKeywords } from "@/lib/morals";
 
@@ -78,6 +84,8 @@ export default function HomePage() {
   const [dayIndex, setDayIndex] = useState(0); // 오늘의 추천 로테이션용 (클라이언트에서 설정)
   const [history, setHistory] = useState<PlayRow[]>([]);
   const catalog = useCatalog();
+  const catalogLoaded = useCatalogLoaded();
+  const catalogError = useCatalogError();
   const myStories = useMyStories();
   const notifRef = useRef<HTMLDivElement | null>(null);
   const agePresetRef = useRef(false); // 아이 나이 기본 프리셋 1회만 적용
@@ -321,7 +329,13 @@ export default function HomePage() {
       </header>
 
       <div className="max-w-lg lg:max-w-[1280px] mx-auto px-5 lg:px-8 pt-5 pb-4">
-        {isCuration ? (
+        {!catalogLoaded ? (
+          catalogError ? (
+            <CatalogError onRetry={retryCatalog} />
+          ) : (
+            <HomeCurationSkeleton />
+          )
+        ) : isCuration ? (
           <>
             {/* 1. 이어 듣기 */}
             {continueList.length > 0 && (
@@ -539,5 +553,26 @@ function ContinueCard({ story, pct }: { story: Story; pct: number }) {
         </p>
       </div>
     </Link>
+  );
+}
+
+// 홈 큐레이션 로딩 스켈레톤 — 오늘의 추천(와이드) + 인기 동화(그리드)
+function HomeCurationSkeleton() {
+  return (
+    <div className="animate-pulse">
+      {/* 오늘의 추천 */}
+      <div className="h-5 w-28 rounded bg-surface-soft mb-3.5" />
+      <div className="card overflow-hidden flex flex-col sm:flex-row sm:h-[176px] mb-8">
+        <div className="w-full h-[120px] sm:w-60 sm:h-auto bg-surface-soft" />
+        <div className="flex-1 p-5 space-y-3">
+          <div className="h-3 w-16 rounded bg-surface-soft" />
+          <div className="h-5 w-2/3 rounded bg-surface-soft" />
+          <div className="h-10 w-32 rounded-full bg-surface-soft" />
+        </div>
+      </div>
+      {/* 인기 동화 */}
+      <div className="h-5 w-24 rounded bg-surface-soft mb-3.5" />
+      <StoryGridSkeleton count={6} />
+    </div>
   );
 }

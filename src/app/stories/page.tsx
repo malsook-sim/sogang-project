@@ -3,9 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { categories, type Story } from "@/data/stories";
-import { useCatalog } from "@/lib/useCatalog";
+import {
+  useCatalog,
+  useCatalogLoaded,
+  useCatalogError,
+  retryCatalog,
+} from "@/lib/useCatalog";
 import PageHeader from "@/components/PageHeader";
 import { StoryCard } from "@/components/StoryCard";
+import { StoryGridSkeleton, CatalogError } from "@/components/CatalogStates";
 
 const ageGroups = [
   { id: "all", label: "전체 나이" },
@@ -24,6 +30,8 @@ function ageBandOf(story: Story): "young" | "mid" | "old" {
 export default function StoriesBrowsePage() {
   const router = useRouter();
   const catalog = useCatalog();
+  const catalogLoaded = useCatalogLoaded();
+  const catalogError = useCatalogError();
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeAge, setActiveAge] = useState("all");
 
@@ -77,7 +85,13 @@ export default function StoriesBrowsePage() {
           )}
         </div>
 
-        {filtered.length > 0 ? (
+        {!catalogLoaded ? (
+          catalogError ? (
+            <CatalogError onRetry={retryCatalog} />
+          ) : (
+            <StoryGridSkeleton />
+          )
+        ) : filtered.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
             {filtered.map((s) => (
               <StoryCard key={s.id} story={s} variant="grid" />
