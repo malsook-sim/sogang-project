@@ -34,7 +34,6 @@ function LoginContent() {
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [socialNote, setSocialNote] = useState("");
 
   const emailTrim = email.trim();
   const emailError = !emailTrim
@@ -98,18 +97,12 @@ function LoginContent() {
     }
   };
 
-  // 소셜: 가입 모드에서 동의 전이면 막음 (첫 가입도 동일 동의 경유)
-  const socialBlocked = mode === "signup" && !agreedPrivacy;
-  const handleSocial = () =>
-    setSocialNote("소셜 로그인은 곧 지원될 예정이에요.");
-
   const switchMode = (m: Mode) => {
     setMode(m);
     setSubmitted(false);
     setTouched({});
     setFormError("");
     setAgreedPrivacy(false);
-    setSocialNote("");
   };
 
   const features = [
@@ -335,35 +328,28 @@ function LoginContent() {
             <span className="h-px flex-1 bg-[var(--color-border)]" />
           </div>
 
-          {/* 소셜 로그인/가입 — 가입 시엔 동의 후에만 (첫 가입도 동일 동의 경유) */}
+          {/* 소셜 로그인/가입 — 준비 중 (지금은 이메일만 지원) */}
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={handleSocial}
-              disabled={socialBlocked}
-              className="h-11 rounded-[10px] bg-white border border-[var(--color-border)] flex items-center justify-center gap-2 text-[14px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]/40 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled
+              aria-label="Google 로그인 (준비 중)"
+              className="h-11 rounded-[10px] bg-white border border-[var(--color-border)] flex items-center justify-center gap-2 text-[14px] font-semibold text-[var(--color-text)] opacity-50 cursor-not-allowed"
             >
               <GoogleMark /> Google
             </button>
             <button
               type="button"
-              onClick={handleSocial}
-              disabled={socialBlocked}
-              className="h-11 rounded-[10px] bg-white border border-[var(--color-border)] flex items-center justify-center gap-2 text-[14px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]/40 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled
+              aria-label="Apple 로그인 (준비 중)"
+              className="h-11 rounded-[10px] bg-white border border-[var(--color-border)] flex items-center justify-center gap-2 text-[14px] font-semibold text-[var(--color-text)] opacity-50 cursor-not-allowed"
             >
               <AppleMark /> Apple
             </button>
           </div>
-          {mode === "signup" && !agreedPrivacy ? (
-            <p className="mt-2.5 text-center text-[12px] text-[var(--color-text-sub)]">
-              소셜 가입도 약관·개인정보 처리방침 동의가 필요해요.
-            </p>
-          ) : null}
-          {socialNote ? (
-            <p className="mt-2.5 text-center text-[12px] text-[var(--color-text-sub)]">
-              {socialNote}
-            </p>
-          ) : null}
+          <p className="mt-2.5 text-center text-[12px] text-[var(--color-text-sub)]">
+            소셜 로그인은 준비 중이에요 · 지금은 이메일로 시작해 주세요
+          </p>
 
           {/* 전환 링크 */}
           <p className="text-center mt-8 text-[14px] text-[var(--color-text-sub)]">

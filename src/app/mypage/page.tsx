@@ -9,7 +9,6 @@ import {
   User,
   Mic,
   Heart,
-  Bell,
   Lock,
   FileText,
   Sliders,
@@ -566,7 +565,6 @@ export default function MyPage() {
           )}
 
           {[
-            { Icon: Bell, label: "알림 설정", href: null },
             { Icon: Lock, label: "개인정보 처리방침", href: "/privacy" },
             { Icon: FileText, label: "서비스 이용약관", href: "/terms" },
           ].map((item, i) => {
