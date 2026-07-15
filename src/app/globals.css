@@ -252,6 +252,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   border-color: #8F7FE8;
 }
 
+/* 하단 탭바 잠자기 변형 — 페이지 배경보다 반 단계 밝은 #1B1A36 + 상단 경계선,
+   활성 탭 밝은 라벤더(#B7ABF4) + 상단 2px 인디케이터, 비활성 #8B86A3 */
+[data-theme="sleep"] .app-bottomnav {
+  background: #1B1A36;
+  border-top-color: #2C2A4C;
+}
+[data-theme="sleep"] .app-bottomnav .tab-active {
+  color: #B7ABF4;
+}
+[data-theme="sleep"] .app-bottomnav .tab-active .tab-indicator {
+  background: #B7ABF4;
+}
+[data-theme="sleep"] .app-bottomnav .tab-inactive {
+  color: #8B86A3;
+}
+
 /* 썸네일 톤 통일 — 라이트는 낮 배경 그대로, 잠자기 모드에선 밤 팔레트로 눌러줌
    (SVG 위 navy 오버레이 0.45 + 채도 다운). 라이트에선 오버레이 opacity 0으로 무영향 */
 .cover-night-overlay {
