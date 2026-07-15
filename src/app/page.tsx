@@ -5,7 +5,7 @@ import Link from "next/link";
 import { categories, type Story } from "@/data/stories";
 import { useCatalog } from "@/lib/useCatalog";
 import { useMyStories } from "@/lib/myStories";
-import { Search, Bell, Moon, Sparkles, Mic, Home } from "@/components/Icon";
+import { Search, Bell, Moon, Sparkles, Mic } from "@/components/Icon";
 import { StoryCover } from "@/components/StoryCover";
 import { StoryCard } from "@/components/StoryCard";
 import SleepModeButton from "@/components/SleepModeButton";
@@ -488,15 +488,6 @@ export default function HomePage() {
                   전체 {filtered.length}편
                 </span>
               </h2>
-              <button
-                onClick={() => {
-                  setActiveCategory("all");
-                  setSearchQuery("");
-                }}
-                className="shrink-0 inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
-              >
-                <Home size={13} /> 추천 홈
-              </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
               {filtered.map((story) => (

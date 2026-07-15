@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
+import ListenCalendar from "@/components/ListenCalendar";
 import { StoryCover } from "@/components/StoryCover";
 import {
   User,
@@ -129,7 +130,9 @@ export default function MyPage() {
         containerClassName="max-w-lg lg:max-w-[1120px] mx-auto px-5 lg:px-8"
       />
 
-      <div className="max-w-lg lg:max-w-[1120px] mx-auto px-5 lg:px-8 py-6">
+      <div className="max-w-lg lg:max-w-[1120px] mx-auto px-5 lg:px-8 py-6 lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-6 lg:items-start">
+        <aside className="lg:sticky lg:top-6">
+        {user && <ListenCalendar />}
         {user ? (
           <div className="card p-5 mb-5">
             <div className="flex items-center gap-4">
@@ -225,7 +228,9 @@ export default function MyPage() {
             )}
           </div>
         )}
+        </aside>
 
+        <div className="lg:min-w-0">
         <div className="card p-5 mb-5">
           <div className="flex items-center justify-between mb-3.5">
             <h2 className="font-bold text-sm flex items-center gap-2">
@@ -590,6 +595,7 @@ export default function MyPage() {
               </button>
             );
           })}
+        </div>
         </div>
       </div>
 

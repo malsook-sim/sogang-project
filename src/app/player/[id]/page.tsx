@@ -26,6 +26,8 @@ import {
   stopSleepMode,
 } from "@/lib/sleepMode";
 import { moralKeywords } from "@/lib/morals";
+import { recordListen } from "@/lib/listenLog";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 
 export default function PlayerPage() {
   return (
@@ -40,6 +42,15 @@ function formatVoiceDate(ms: number): string {
   const d = new Date(ms);
   return `${d.getMonth() + 1}.${d.getDate()} 녹음`;
 }
+
+// 한국어 조사 (받침 유무)
+function hasBatchim(s: string): boolean {
+  if (!s) return false;
+  const c = s.charCodeAt(s.length - 1);
+  return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0;
+}
+const subjP = (s: string) => (hasBatchim(s) ? "이" : "가"); // 이/가
+const objP = (s: string) => (hasBatchim(s) ? "을" : "를"); // 을/를
 
 function PlayerContent() {
   const params = useParams();
@@ -104,8 +115,8 @@ function PlayerContent() {
   const [activePreset, setActivePreset] = useState<number | null>(null);
   // 잠자기 타이머는 전역 스토어 사용 (페이지 이동해도 유지)
   const sleep = useSleepMode();
-  // 플레이어는 잠자리 청취가 기본 상황이라 앱 테마 토글과 무관하게 항상 밤 팔레트
-  const nightMode = true;
+  // 밤(수면) 팔레트는 전역 잠자기 모드에 따름 — 잠자기 끄면 플레이어도 밤 테마 해제
+  const nightMode = sleep.active;
   const sleepRemaining = useSleepRemaining();
   const [bgmId, setBgmId] = useState<string | null>(null);
   const [showBgmMenu, setShowBgmMenu] = useState(false);
@@ -113,6 +124,13 @@ function PlayerContent() {
   const [finished, setFinished] = useState(false);
   // bedtime: 타이머 종료 시 작별 인사 표시 (밤 모드는 전역 sleep.active 사용)
   const [bedtime, setBedtime] = useState(false);
+  const { user } = useCurrentUser();
+  const [listenRecord, setListenRecord] = useState<{ weekCount: number } | null>(
+    null
+  );
+  const listenRecordedRef = useRef<string | null>(null); // 세션당 1회 기록
+  const [recordCardClosed, setRecordCardClosed] = useState(false);
+  const childName = user?.childName ?? "";
   // 목소리 팝업 미리듣기
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -392,24 +410,16 @@ function PlayerContent() {
     setBedtime(false);
   };
 
-  // 타이머 만료 — 볼륨을 서서히 줄이며 멈춤 (스르르 잠들도록). 밤 테마는 유지.
+  // 타이머 만료 — 마지막 20초 램프(아래 effect)로 이미 볼륨이 0 근처라 조용히 멈춤. 밤 테마 유지.
   const fadeOutAndStop = () => {
     setActivePreset(null);
     setBedtime(true);
     const audio = audioRef.current;
-    if (!audio) return;
-    const startVol = audio.volume;
-    let step = 0;
-    const fade = setInterval(() => {
-      step += 1;
-      audio.volume = Math.max(0, startVol * (1 - step / 20));
-      if (step >= 20) {
-        clearInterval(fade);
-        audio.pause();
-        audio.volume = startVol; // 다음 재생을 위해 복원
-        setIsPlaying(false);
-      }
-    }, 150);
+    if (audio) {
+      audio.pause();
+      audio.volume = 1; // 다음 재생을 위해 복원
+      setIsPlaying(false);
+    }
   };
 
   // 타이머 설정 → 전역 스토어에 위임 (페이지 이동해도 유지)
@@ -428,6 +438,34 @@ function PlayerContent() {
       fadeOutAndStop();
     }
   }, [sleep.endsAt, sleep.active]);
+
+  // 잠자기 타이머 마지막 20초 볼륨 서서히 페이드 (잠든 아이를 깨우지 않도록)
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (sleep.active && sleepRemaining > 0 && sleepRemaining <= 20) {
+      audio.volume = Math.max(0.03, sleepRemaining / 20);
+    } else {
+      audio.volume = 1;
+    }
+  }, [sleep.active, sleepRemaining]);
+
+  // 완청(또는 80% 이상 청취) 시 "오늘의 기록" 남김 (세션당 1회). 내 서재 캘린더 연동.
+  useEffect(() => {
+    if (!story) return;
+    const reached80 = duration > 0 && progress / duration >= 0.8;
+    if ((finished || reached80) && listenRecordedRef.current !== story.id) {
+      listenRecordedRef.current = story.id;
+      setListenRecord(recordListen(story.id, story.title, voiceName));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished, progress, duration, story?.id]);
+
+  // 재생 재개(finished 해제) 시 완료 카드 닫힘 상태 초기화 → 다음 완청 때 다시 표시
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!finished) setRecordCardClosed(false);
+  }, [finished]);
 
   useEffect(() => {
     let active = true;
@@ -649,7 +687,7 @@ function PlayerContent() {
 
   return (
     <div
-      data-theme="sleep"
+      data-theme={sleep.active ? "sleep" : undefined}
       className="fixed inset-0 flex flex-col overflow-hidden bg-[var(--background)]"
       style={{ ["--cbh" as string]: `${controlBarH}px` } as CSSProperties}
     >
@@ -741,6 +779,10 @@ function PlayerContent() {
           <button
             onClick={() => setShowSleepMenu((v) => !v)}
             className={`h-10 px-3 rounded-full border flex items-center gap-1.5 text-xs font-bold tabular-nums transition duration-[1200ms] ${
+              sleep.active && sleepRemaining > 0 && sleepRemaining <= 20
+                ? "animate-pulse"
+                : ""
+            } ${
               nightMode
                 ? "bg-[#3D3A5C] border-white/10 text-[#F4C566]"
                 : sleep.endsAt
@@ -871,6 +913,46 @@ function PlayerContent() {
               <p className="mt-1.5 text-sm text-[#8B86A3]">
                 내일 또 재미있는 이야기를 들려줄게요
               </p>
+            </div>
+          ) : finished && listenRecord && !recordCardClosed ? (
+            <div
+              className={`flex-1 min-h-0 flex flex-col items-center justify-center text-center backdrop-blur border rounded-2xl p-6 transition-colors duration-[1200ms] ${panelCls}`}
+            >
+              <Moon
+                size={52}
+                filled
+                className="text-[#F4C566]"
+                style={{ filter: "drop-shadow(0 0 20px rgba(244,197,102,0.4))" }}
+              />
+              <p
+                className={`mt-4 text-[15px] font-bold leading-snug ${
+                  nightMode ? "text-[var(--night-surface)]" : "text-foreground"
+                }`}
+              >
+                {childName ? `${childName}${subjP(childName)} ` : ""}오늘 &lsquo;
+                {story.title}&rsquo;{objP(story.title)} 들었어요
+              </p>
+              <p className="mt-1.5 text-sm text-[var(--star)] font-semibold">
+                이번 주 {listenRecord.weekCount}일째 함께했어요 🌙
+              </p>
+              <div className="flex items-center gap-2 mt-6 w-full max-w-[300px]">
+                <button
+                  onClick={() => router.push("/")}
+                  className="flex-1 bg-primary text-white py-3 rounded-2xl text-sm font-bold hover:bg-primary-dark transition"
+                >
+                  한 편 더 듣기
+                </button>
+                <button
+                  onClick={() => setRecordCardClosed(true)}
+                  className={`flex-1 py-3 rounded-2xl text-sm font-semibold border transition ${
+                    nightMode
+                      ? "border-white/10 text-[#C9C3E8] hover:bg-white/5"
+                      : "border-border hover:bg-surface-soft"
+                  }`}
+                >
+                  오늘은 여기까지
+                </button>
+              </div>
             </div>
           ) : finished ? (
             <div

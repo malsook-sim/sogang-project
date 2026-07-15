@@ -136,8 +136,20 @@ async function generateWithGemini(apiKey: string, prompt: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { plot, childName, childAge, language, length } = await req.json();
+  const { plot, childName, childAge, language, length, previousStory } =
+    await req.json();
   const isEn = language === "en";
+  // 후속편 모드: 원작 { title, content }가 있으면 줄거리 비어도 허용
+  const prev =
+    previousStory &&
+    typeof previousStory.content === "string" &&
+    previousStory.content.trim()
+      ? {
+          title: String(previousStory.title || "이전 이야기"),
+          content: String(previousStory.content).slice(0, 4000),
+        }
+      : null;
+  const plotStr = typeof plot === "string" ? plot.trim() : "";
   const short = length === "short";
   const lenKo = short
     ? "공백 포함 1000~1500자 (최소 800자 이상, 너무 짧지 않게)"
@@ -146,14 +158,15 @@ export async function POST(req: NextRequest) {
     ? "about 800-1300 characters, comfortably filled (never too short)"
     : "about 1200-2200 characters, richly filled (never too short)";
 
-  if (!plot || plot.trim().length < 5) {
+  // 후속편 모드가 아니면 줄거리 최소 길이 필요
+  if (!prev && plotStr.length < 5) {
     return NextResponse.json(
       { error: "줄거리를 5자 이상 입력해주세요." },
       { status: 400 }
     );
   }
 
-  if (findBannedKeyword(`${plot} ${childName ?? ""}`)) {
+  if (findBannedKeyword(`${plotStr} ${childName ?? ""}`)) {
     return NextResponse.json(
       {
         blocked: true,
@@ -171,8 +184,9 @@ export async function POST(req: NextRequest) {
 
 Conditions:
 - Target age: ${childAge || "4-6"} years old
-${childName ? `- Main character's name: ${childName}` : ""}
-- Plot idea from the parent (it may be written in Korean): ${plot}
+${childName ? `- Name the main character "${childName}" and use the name naturally several times — UNLESS the plot below already specifies a different protagonist name, in which case keep that name` : ""}
+- Use only vocabulary a ${childAge || "4-6"}-year-old can understand
+- Plot idea from the parent (it may be written in Korean): ${plotStr || (prev ? "(left blank — continue naturally from the previous story)" : "")}${prev ? `\n- This is a SEQUEL to "${prev.title}". Keep the same characters, setting and tone, and continue naturally WITHOUT recapping/summarizing the previous story.\n- Previous story (for reference):\n${prev.content}` : ""}
 - Length: ${lenEn}
 - A clear beginning, middle, and end with 4-6 vivid scenes
 - Plenty of dialogue, emotion, and gentle description
@@ -199,8 +213,9 @@ Reply with ONLY this JSON, nothing else:
 
 조건:
 - 대상 연령: ${childAge || "4~6"}세
-${childName ? `- 주인공 이름: ${childName}` : ""}
-- 부모가 제시한 줄거리: ${plot}
+${childName ? `- 주인공 이름은 "${childName}"(으)로 하고 본문에 자연스럽게 여러 번 등장시킬 것. 단, 아래 줄거리에 이미 다른 주인공 이름이 명시돼 있으면 그 이름을 우선하고 "${childName}"을(를) 강제하지 말 것` : ""}
+- ${childAge || "4~6"}세 아이가 이해할 수 있는 쉬운 어휘만 사용
+- 부모가 제시한 줄거리: ${plotStr || (prev ? "(비워둠 — 전편에 자연스럽게 이어서 새 이야기를 상상해 주세요)" : "")}${prev ? `\n- 이 이야기는 "${prev.title}"의 후속편입니다. 전편의 등장인물·설정·말투를 그대로 유지하고, 전편 줄거리를 요약하며 시작하지 말고 자연스럽게 이어서 시작하세요.\n- 전편 전문(참고용):\n${prev.content}` : ""}
 - 분량: ${lenKo}
 - 줄거리가 짧게 주어져도 장면을 풍부하게 상상해서 분량을 충분히 채울 것
 - 기승전결이 뚜렷하고, 장면이 4~6개로 풍부하게 이어지도록 구성

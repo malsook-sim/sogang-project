@@ -175,23 +175,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
    변수명은 라이트와 동일, 값만 교체. html에 걸면 앱 전체, 특정 엘리먼트에 걸면
    그 하위만 밤 팔레트(플레이어가 앱 토글과 무관하게 항상 밤을 쓰는 데 사용). */
 [data-theme="sleep"] {
-  --background: #14132A;    /* night보다 한 단계 더 어둡게(썸네일 안 묻힘) */
-  /* 다크 표면 3단계: bg(#14132A) < surface < control(field/칩), 경계 보이게 border 밝힘 */
-  --surface: #211F42;       /* 카드 — 배경보다 명확히 밝게 */
-  --surface-soft: #2C2A52;
-  --surface-2: #2C2A52;     /* 칩/팝업 버튼 = control */
-  --field: #2C2A52;         /* 입력창 = control (surface보다 한 단계 밝게) */
-  --card-bg: #211F42;
+  --background: #171436;    /* 회남색 → 보라 기운 강화(그림책 밤하늘) */
+  /* 다크 표면 3단계: bg < surface < control(field/칩). 명도 유지·hue 보라·채도↑ */
+  --surface: #232048;       /* 카드 — 청보라 채도 +15% */
+  --surface-soft: #2E2A5C;
+  --surface-2: #2E2A5C;     /* 칩/팝업 버튼 = control */
+  --field: #2E2A5C;         /* 입력창 = control */
+  --card-bg: #232048;
   --night: #2C2A45;         /* 썸네일 톤은 양 모드 동일 */
-  --night-surface: #EDEBF8;
-  --foreground: #EDEBF8;    /* text */
-  --muted: #918CAD;         /* text-sub */
+  --night-surface: #F1EEFA;
+  --foreground: #F1EEFA;    /* text — 아주 살짝 웜하게 */
+  --muted: #918CAD;         /* text-sub (캡션 전용) */
   --muted-soft: #6E6890;    /* muted (placeholder) */
   --text-body: #C5BFE0;
-  --border: #383564;        /* 경계 밝혀서 표면 구분 */
-  --border-strong: #4A4680;
+  --border: #3A3568;        /* 청보라 채도 반영 */
+  --border-strong: #4C4778;
   --primary: #8F7FE8;       /* 어두운 배경 대비 두 단계 밝힘 */
-  --primary-light: #2B2850; /* primary-soft */
+  --primary-light: rgba(143, 127, 232, 0.22); /* primary-soft — 진짜 라벤더 틴트로 */
   --primary-deep: #B7ABF4;
   --star: #F4C566;          /* 양 모드 동일 */
   --night-caption: #A79FD9;
@@ -202,8 +202,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 /* 잠자기(밤) 사이드바 대비 보강 — 표면을 페이지 배경보다 반 단계 밝게(#1B1A36),
    활성 메뉴는 배경 + 3px 세로 액센트 바로 형태까지 강조, 비활성은 두 단계 어둡게 */
 [data-theme="sleep"] .app-sidebar {
-  background: #1B1A36;
-  border-right-color: #2C2A4C;
+  background: #1E1B44;
+  border-right-color: #322E5E;
 }
 [data-theme="sleep"] .app-logo-label {
   color: #6E6890;
@@ -219,14 +219,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   color: #8B86A3;
 }
 [data-theme="sleep"] .app-nav-item:hover {
-  background: #232145;
+  background: #2A2654;
   color: #C5BFE0;
 }
 [data-theme="sleep"] .app-nav-item:hover .nav-icon {
   color: #C5BFE0;
 }
 [data-theme="sleep"] .app-nav-item.is-active {
-  background: #2E2B58;
+  background: #363168;
   color: #B7ABF4;
   font-weight: 700;
 }
@@ -244,11 +244,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   background: #8F7FE8;
 }
 [data-theme="sleep"] .app-profile-card {
-  background: #211F42;
-  border-color: #2C2A4C;
+  background: #232048;
+  border-color: #322E5E;
 }
 [data-theme="sleep"] .app-profile-card:hover {
-  background: #211F42;
+  background: #232048;
   border-color: #8F7FE8;
 }
 

@@ -9,7 +9,7 @@ import { useMyVoices } from "@/lib/useMyVoices";
 import { toggleBookmark, useBookmarks } from "@/lib/bookmarks";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getVoiceById, defaultVoices, englishVoices } from "@/data/voices";
-import { Heart, Play, Pause, Pencil, Trash, Mic } from "@/components/Icon";
+import { Heart, Play, Pause, Pencil, Trash, Mic, Sparkles } from "@/components/Icon";
 import PageHeader from "@/components/PageHeader";
 import { StoryCover } from "@/components/StoryCover";
 import { VoiceAvatar } from "@/components/VoiceAvatar";
@@ -59,6 +59,7 @@ export default function StoryDetailPage() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [scrollPct, setScrollPct] = useState(0);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const rightColRef = useRef<HTMLDivElement | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const previewUrlRef = useRef<string | null>(null);
   const previewReqRef = useRef(0);
@@ -89,17 +90,28 @@ export default function StoryDetailPage() {
     }
   }, [editing, editContent]);
 
-  // 본문 스크롤 진행도 (헤더 하단 진행바)
+  // 본문 스크롤 진행도 — 데스크톱은 우측 컬럼 내부 스크롤, 모바일은 페이지(window)
   useEffect(() => {
     if (editing) return;
-    const onScroll = () => {
+    const compute = () => {
+      const col = rightColRef.current;
+      if (col && col.scrollHeight > col.clientHeight + 4) {
+        const max = col.scrollHeight - col.clientHeight;
+        setScrollPct(max > 0 ? Math.min(100, (col.scrollTop / max) * 100) : 0);
+        return;
+      }
       const el = document.documentElement;
       const max = el.scrollHeight - el.clientHeight;
       setScrollPct(max > 0 ? Math.min(100, (el.scrollTop / max) * 100) : 0);
     };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    compute();
+    const col = rightColRef.current;
+    window.addEventListener("scroll", compute, { passive: true });
+    col?.addEventListener("scroll", compute, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", compute);
+      col?.removeEventListener("scroll", compute);
+    };
   }, [editing, id]);
 
   if (!story) {
@@ -330,6 +342,11 @@ export default function StoryDetailPage() {
 
   return (
     <>
+      <div
+        className={
+          editing ? "" : "lg:h-dvh lg:flex lg:flex-col lg:overflow-hidden"
+        }
+      >
       <PageHeader
         title={editing ? "동화 수정" : story.title}
         truncateTitle
@@ -403,11 +420,15 @@ export default function StoryDetailPage() {
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto w-full px-5 lg:px-8 pt-6 pb-[104px] lg:pb-10 lg:grid lg:grid-cols-[380px_1fr] lg:gap-10 lg:items-start">
-        {/* 좌: 표지 + 제목 + 태그 + 교훈 + CTA (데스크톱 sticky 고정) */}
+      <div
+        className={`max-w-5xl mx-auto w-full px-5 lg:px-8 pt-6 pb-[104px] lg:pb-0 lg:grid lg:grid-cols-[380px_1fr] lg:gap-10 lg:items-stretch ${
+          editing ? "" : "lg:flex-1 lg:min-h-0"
+        }`}
+      >
+        {/* 좌: 표지 + 제목 + 태그 + 교훈 + CTA (데스크톱 고정, 필요 시 자체 스크롤) */}
         <div
           className={`mb-6 lg:mb-0 ${
-            editing ? "" : "lg:sticky lg:top-[112px] lg:self-start"
+            editing ? "" : "lg:min-h-0 lg:overflow-y-auto lg:pr-1"
           }`}
         >
           <div className="relative aspect-[4/3] lg:max-h-[300px] rounded-2xl bg-surface-soft overflow-hidden mb-4">
@@ -524,10 +545,25 @@ export default function StoryDetailPage() {
               )}
             </div>
           )}
+
+          {/* 이어서 만들기 — AI 생성 동화(my-)에만 노출 */}
+          {!editing && isMine && (
+            <button
+              onClick={() => router.push(`/create?sequel=${story.id}`)}
+              className="w-full mt-3 flex items-center justify-center gap-1.5 border border-primary/40 text-primary py-3 rounded-2xl text-[13px] font-bold hover:bg-primary-light/50 transition"
+            >
+              <Sparkles size={15} filled />이 다음 이야기 만들기
+            </button>
+          )}
         </div>
 
-        {/* 우: 전문 or 편집 (본문 최대 640px, 줄 길이 제한) */}
-        <div className="w-full lg:max-w-[640px]">
+        {/* 우: 전문 or 편집 (데스크톱 내부 스크롤 — 이 영역만 스크롤됨) */}
+        <div
+          ref={rightColRef}
+          className={`w-full lg:max-w-[640px] ${
+            editing ? "" : "lg:min-h-0 lg:overflow-y-auto lg:pb-8"
+          }`}
+        >
           <p className="text-[11px] uppercase tracking-[0.15em] text-muted font-bold mb-3">
             동화 이야기
           </p>
@@ -559,6 +595,7 @@ export default function StoryDetailPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
 
       {/* 모바일 하단 고정 듣기 바 (데스크탑은 좌측 sticky CTA 사용) */}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, User, FileText, Refresh } from "@/components/Icon";
 import PageHeader from "@/components/PageHeader";
 import { saveMyStory } from "@/lib/myStories";
@@ -29,7 +29,22 @@ const plotPool = [
 const MAX_PLOT = 300;
 
 export default function CreateStoryPage() {
+  return (
+    <Suspense>
+      <CreateStoryContent />
+    </Suspense>
+  );
+}
+
+function CreateStoryContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sequelId = searchParams.get("sequel");
+  const [sequelOf, setSequelOf] = useState<{
+    id: string;
+    title: string;
+    content: string;
+  } | null>(null);
 
   const [plot, setPlot] = useState("");
   const [childName, setChildName] = useState("");
@@ -61,6 +76,22 @@ export default function CreateStoryPage() {
       .catch(() => {});
   }, []);
 
+  // 후속편 모드: 원작 불러오기
+  useEffect(() => {
+    if (!sequelId) return;
+    fetch(`/api/stories/${sequelId}`)
+      .then((r) => (r.ok ? r.json() : { story: null }))
+      .then((d) => {
+        if (d.story)
+          setSequelOf({
+            id: d.story.id,
+            title: d.story.title,
+            content: d.story.content,
+          });
+      })
+      .catch(() => {});
+  }, [sequelId]);
+
   // 생성 중 페이지 이탈 방지
   useEffect(() => {
     if (!generating) return;
@@ -91,7 +122,7 @@ export default function CreateStoryPage() {
     "동화를 예쁘게 마무리하고 있어요",
   ];
 
-  const canGenerate = plot.trim().length >= 5;
+  const canGenerate = sequelOf ? true : plot.trim().length >= 5;
 
   // 예시 칩 탭 → 줄거리 채우고 텍스트영역 포커스
   const fillPlot = (text: string) => {
@@ -118,12 +149,17 @@ export default function CreateStoryPage() {
           childAge,
           language,
           length: storyLength,
+          previousStory: sequelOf
+            ? { title: sequelOf.title, content: sequelOf.content }
+            : undefined,
         }),
       });
       const data = await res.json();
       if (!data.story) {
         throw new Error(data.error || "동화 생성에 실패했어요.");
       }
+      // 후속편이면 제목 기본값을 "원작 2"로
+      if (sequelOf) data.story.title = `${sequelOf.title} 2`;
       const saved = await saveMyStory(data.story);
       if (stageTimer.current) clearInterval(stageTimer.current);
       if (!saved) throw new Error("동화를 저장하지 못했어요.");
@@ -145,6 +181,21 @@ export default function CreateStoryPage() {
 
       {/* 단일 컬럼 센터 — 위에서 아래로 한 방향 진행 */}
       <div className="max-w-[720px] mx-auto px-5 py-6 space-y-4">
+        {/* 이어서 만들기 모드 — 원작 카드 */}
+        {sequelOf && (
+          <div className="card p-4 flex items-center gap-3 border-primary/30 bg-primary-light/50">
+            <span className="w-9 h-9 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+              <Sparkles size={18} filled />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-primary">이어서 만들기</p>
+              <p className="text-sm font-bold truncate">
+                &lsquo;{sequelOf.title}&rsquo;의 다음 이야기
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* 1. 아이 프로필 바 */}
         {hasProfile && !editProfile ? (
           <div className="card relative overflow-hidden px-4 py-3 flex items-center justify-between gap-3">
@@ -162,11 +213,14 @@ export default function CreateStoryPage() {
               <circle cx="20" cy="4" r="1.2" fill="var(--star)" opacity="0.8" />
             </svg>
             <p className="text-sm text-foreground">
-              <span className="font-bold">
-                {childName}
-                {childAge ? `(${childAge}세)` : ""}
-              </span>
-              의 이야기로 만들어요
+              <span className="font-bold">{childName}</span>
+              {(() => {
+                const c = childName.charCodeAt(childName.length - 1);
+                const hasB =
+                  c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0;
+                return hasB ? "이" : "가";
+              })()}{" "}
+              주인공인 이야기를 만들어요
             </p>
             <button
               onClick={() => setEditProfile(true)}
@@ -264,7 +318,11 @@ export default function CreateStoryPage() {
           )}
           <textarea
             ref={textareaRef}
-            placeholder="줄거리를 자유롭게 적어주세요&#10;예: 숲속에서 길을 잃은 토끼가 친구들의 도움으로 집을 찾아가는 이야기"
+            placeholder={
+              sequelOf
+                ? "다음 이야기에서 무슨 일이 일어날까요?&#10;비워두면 AI가 이어서 상상해요"
+                : "줄거리를 자유롭게 적어주세요&#10;예: 숲속에서 길을 잃은 토끼가 친구들의 도움으로 집을 찾아가는 이야기"
+            }
             value={plot}
             onChange={(e) => setPlot(e.target.value.slice(0, MAX_PLOT))}
             className="w-full min-h-[150px] px-3.5 py-3 rounded-[10px] bg-field border border-border text-sm leading-relaxed resize-y text-foreground placeholder:text-[var(--muted-soft)] focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
