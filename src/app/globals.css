@@ -92,6 +92,19 @@ html, body {
   font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
   letter-spacing: -0.01em;
+  /* iOS Safari가 넓은 텍스트를 임의로 키우는 것 방지 */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* 모바일에서 입력창 탭 시 자동 확대(줌) 방지 — iOS는 폰트 16px 미만이면 포커스 때 줌인함.
+   데스크탑(≥1024px) 디자인은 그대로 두고 모바일에서만 16px로 올림 */
+@media (max-width: 1023px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
 
 body {
@@ -197,6 +210,32 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   --night-caption: #A79FD9;
   --progress-track: #2C2A4C;
   --progress-fill: var(--star); /* 밤엔 진행바가 골드(달빛 차오름) */
+}
+
+/* 마케팅/첫 진입 페이지는 잠자기 모드여도 항상 라이트 팔레트로.
+   sleep가 바꾸는 메인 토큰만 :root 라이트값으로 되돌림(요소에 직접 선언 → 상속된 밤 토큰 무력화).
+   --night 계열은 양 모드 동일해서 의도된 다크 액센트 섹션은 그대로 유지됨. */
+.force-light {
+  /* color는 상속 속성 → body(밤 텍스트색)에서 내려온 값을 끊고 진한 색을 하위에 상속 */
+  color: var(--foreground);
+  --background: #FBF9F6;
+  --surface: #FFFFFF;
+  --surface-soft: #F4F1FB;
+  --surface-2: #F4F1FB;
+  --field: #F7F6FB;
+  --card-bg: #FFFFFF;
+  --night-surface: #F8F7FC;
+  --foreground: #2C2A45;
+  --muted: #8B86A3;
+  --muted-soft: #B3AECB;
+  --text-body: #5C5680;
+  --border: #E8E4F0;
+  --border-strong: #D8D3E8;
+  --primary: #6E5FD6;
+  --primary-light: #EDE9F7;
+  --primary-deep: #4A3FA0;
+  --progress-track: var(--primary-light);
+  --progress-fill: var(--primary);
 }
 
 /* 잠자기(밤) 사이드바 대비 보강 — 표면을 페이지 배경보다 반 단계 밝게(#1B1A36),

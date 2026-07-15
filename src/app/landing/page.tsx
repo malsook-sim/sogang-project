@@ -30,7 +30,7 @@ const testimonials = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="force-light min-h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-border/60">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">

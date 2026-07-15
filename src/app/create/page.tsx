@@ -320,8 +320,8 @@ function CreateStoryContent() {
             ref={textareaRef}
             placeholder={
               sequelOf
-                ? "다음 이야기에서 무슨 일이 일어날까요?&#10;비워두면 AI가 이어서 상상해요"
-                : "줄거리를 자유롭게 적어주세요&#10;예: 숲속에서 길을 잃은 토끼가 친구들의 도움으로 집을 찾아가는 이야기"
+                ? "다음 이야기에서 무슨 일이 일어날까요?\n비워두면 AI가 이어서 상상해요"
+                : "줄거리를 자유롭게 적어주세요\n예: 숲속에서 길을 잃은 토끼가 친구들의 도움으로 집을 찾아가는 이야기"
             }
             value={plot}
             onChange={(e) => setPlot(e.target.value.slice(0, MAX_PLOT))}

@@ -67,15 +67,17 @@ export default function ListenCalendar() {
               key={i}
               onClick={() => onDay(d)}
               disabled={!listened}
-              className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-[12px] transition ${
-                isToday ? "ring-1 ring-primary" : ""
-              } ${
-                listened
-                  ? "text-foreground hover:bg-surface-soft cursor-pointer"
-                  : "text-muted/40"
+              className={`relative h-9 lg:h-auto lg:aspect-square flex flex-col items-center justify-center rounded-lg text-[12px] transition ${
+                listened ? "hover:bg-surface-soft cursor-pointer" : ""
               }`}
             >
-              <span className="leading-none">{d}</span>
+              <span
+                className={`flex items-center justify-center w-6 h-6 rounded-full leading-none ${
+                  isToday ? "ring-1 ring-primary text-primary font-bold" : ""
+                } ${listened ? "text-foreground" : "text-muted/40"}`}
+              >
+                {d}
+              </span>
               {listened && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--star)] mt-0.5" />
               )}

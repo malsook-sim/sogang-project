@@ -131,7 +131,6 @@ export default function MyPage() {
 
       <div className="max-w-lg lg:max-w-[1120px] mx-auto px-5 lg:px-8 py-6 lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-6 lg:items-start">
         <aside className="lg:sticky lg:top-6">
-        {user && <ListenCalendar />}
         {user ? (
           <div className="card p-5 mb-5">
             <div className="flex items-center gap-4">
@@ -227,6 +226,7 @@ export default function MyPage() {
             )}
           </div>
         )}
+        {user && <ListenCalendar />}
         </aside>
 
         <div className="lg:min-w-0">
