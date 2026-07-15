@@ -392,9 +392,9 @@ export default function HomePage() {
                     인기 동화
                   </h2>
                 </div>
-                <div className="flex gap-3.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-2">
+                <div className="flex gap-3.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-2 lg:mx-0 lg:px-0 lg:pb-0 lg:overflow-visible lg:grid lg:[grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]">
                   {popular.map((story) => (
-                    <StoryCard key={story.id} story={story} variant="carousel" />
+                    <StoryCard key={story.id} story={story} variant="responsive" />
                   ))}
                 </div>
               </section>
@@ -468,9 +468,9 @@ export default function HomePage() {
                   <span className="text-lg">✨</span>
                   새로 온 동화
                 </h2>
-                <div className="flex gap-3.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-2">
+                <div className="flex gap-3.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-2 lg:mx-0 lg:px-0 lg:pb-0 lg:overflow-visible lg:grid lg:[grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]">
                   {newArrivals.map((story) => (
-                    <StoryCard key={story.id} story={story} variant="carousel" />
+                    <StoryCard key={story.id} story={story} variant="responsive" />
                   ))}
                 </div>
               </section>
