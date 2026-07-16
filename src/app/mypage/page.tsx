@@ -445,8 +445,13 @@ export default function MyPage() {
                         <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
                           {entry.title}
                         </p>
-                        <p className="text-[10px] text-muted mt-0.5">
-                          시리즈 · {rep.ageMin}~{rep.ageMax}세
+                        <p className="text-[10px] text-muted mt-0.5 tabular-nums">
+                          시리즈 ·{" "}
+                          {entry.episodes.reduce(
+                            (s, e) => s + (e.durationMin || 0),
+                            0
+                          )}
+                          분
                         </p>
                       </div>
                       <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary text-white shadow-sm">
@@ -472,8 +477,8 @@ export default function MyPage() {
                       <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
                         {story.title}
                       </p>
-                      <p className="text-[10px] text-muted mt-0.5">
-                        {story.ageMin}~{story.ageMax}세
+                      <p className="text-[10px] text-muted mt-0.5 tabular-nums">
+                        {story.durationMin}분
                       </p>
                     </div>
                   </Link>
