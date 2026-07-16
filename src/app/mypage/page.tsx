@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import ListenCalendar from "@/components/ListenCalendar";
@@ -37,6 +37,26 @@ export default function MyPage() {
   const catalog = useCatalog();
   const [showAllVoices, setShowAllVoices] = useState(false);
   const [openSeriesId, setOpenSeriesId] = useState<string | null>(null);
+  // "다음 편 자동 재생" 설정 (localStorage, 기본 켬) — 플레이어 완료 화면 카운트다운에 사용
+  const [autoplayNext, setAutoplayNext] = useState(true);
+  useEffect(() => {
+    try {
+      setAutoplayNext(localStorage.getItem("mvk.autoplayNext") !== "0");
+    } catch {
+      // 무시
+    }
+  }, []);
+  const toggleAutoplayNext = () => {
+    setAutoplayNext((v) => {
+      const nv = !v;
+      try {
+        localStorage.setItem("mvk.autoplayNext", nv ? "1" : "0");
+      } catch {
+        // 무시
+      }
+      return nv;
+    });
+  };
 
   // 내가 만든 동화를 시리즈 단위로 묶음 (시리즈는 카드 1개 = 1편 대표 + N편 배지)
   type MyEntry =
@@ -534,6 +554,27 @@ export default function MyPage() {
               />
             </span>
           </button>
+
+          {/* 다음 편 자동 재생 토글 */}
+          <div className="w-full flex items-center gap-3 px-5 py-3.5 border-t border-border">
+            <Sparkles size={18} className="text-muted" />
+            <span className="text-sm">다음 편 자동 재생</span>
+            <button
+              onClick={toggleAutoplayNext}
+              role="switch"
+              aria-checked={autoplayNext}
+              aria-label="다음 편 자동 재생"
+              className={`ml-auto w-11 h-6 rounded-full transition relative shrink-0 ${
+                autoplayNext ? "bg-primary" : "bg-border-strong"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                  autoplayNext ? "left-[22px]" : "left-0.5"
+                }`}
+              />
+            </button>
+          </div>
 
           {childOpen && (
             <div className="px-5 pt-1 pb-4 border-t border-border bg-surface-soft/40">

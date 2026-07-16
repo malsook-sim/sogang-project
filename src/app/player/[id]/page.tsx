@@ -33,6 +33,7 @@ import {
 } from "@/lib/listenLog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { narrationAudio, stopNarration } from "@/lib/narrationAudio";
+import { useMyStories, seriesEpisodes } from "@/lib/myStories";
 
 export default function PlayerPage() {
   return (
@@ -165,6 +166,11 @@ function PlayerContent() {
   const listenRecordedRef = useRef<string | null>(null); // 세션당 1회 기록
   const [recordCardClosed, setRecordCardClosed] = useState(false);
   const childName = user?.childName ?? "";
+  const myStories = useMyStories();
+  // 다음 편 자동재생 카운트다운 상태 + 취소 여부 + 설정(localStorage)
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [autoCancelled, setAutoCancelled] = useState(false);
+  const [autoplayEnabled, setAutoplayEnabled] = useState(true);
   // 목소리 팝업 미리듣기
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -669,6 +675,70 @@ function PlayerContent() {
     };
   }, [voiceModalOpen]);
 
+  // ── 시리즈 다음 편 + 자동재생 판단 (story가 null일 수 있어 null-safe) ──
+  const isMyStory = idParam.startsWith("my-");
+  const seriesEps = story?.seriesId
+    ? seriesEpisodes(myStories, story.seriesId)
+    : [];
+  const curEpIdx = seriesEps.findIndex((e) => e.id === idParam);
+  const nextEpisode =
+    curEpIdx >= 0 && curEpIdx < seriesEps.length - 1
+      ? seriesEps[curEpIdx + 1]
+      : null;
+  const chainCount = Number(searchParams.get("chain")) || 0;
+  const nextLenSec = nextEpisode ? (nextEpisode.durationMin || 1) * 60 : 0;
+  // 자동재생 차단 조건: 밤이야기/잠자기모드, 타이머 남은시간<다음편 길이, 연속 2편+, 설정 OFF
+  const autoBlocked =
+    nightMode ||
+    story?.category === "bedtime" ||
+    (sleep.active && sleepRemaining > 0 && sleepRemaining < nextLenSec) ||
+    chainCount >= 2 ||
+    !autoplayEnabled;
+  const shouldAutoplay = !!nextEpisode && !autoBlocked && !autoCancelled;
+
+  const goToNextEpisode = (auto: boolean) => {
+    if (!nextEpisode) return;
+    stopNarration();
+    router.replace(
+      playerUrl(nextEpisode.id, `&autoplay=1&chain=${auto ? chainCount + 1 : 0}`)
+    );
+  };
+
+  // "다음 편 자동 재생" 설정 로드 (기본 켬)
+  useEffect(() => {
+    try {
+      setAutoplayEnabled(localStorage.getItem("mvk.autoplayNext") !== "0");
+    } catch {
+      // 무시
+    }
+  }, []);
+
+  // 완료 화면 + 다음 편 + 자동재생 조건 충족 시 5초 카운트다운
+  useEffect(() => {
+    const active = finished && !bedtime && shouldAutoplay;
+    if (!active) {
+      setCountdown(null);
+      return;
+    }
+    setCountdown(5);
+    const iv = setInterval(
+      () => setCountdown((c) => (c == null || c <= 0 ? 0 : c - 1)),
+      1000
+    );
+    return () => clearInterval(iv);
+  }, [finished, bedtime, shouldAutoplay, nextEpisode?.id]);
+
+  // 카운트다운 0 도달 → 다음 편으로 전환
+  useEffect(() => {
+    if (countdown === 0 && nextEpisode) goToNextEpisode(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countdown]);
+
+  // 동화 전환 시 자동재생 취소 상태 초기화
+  useEffect(() => {
+    setAutoCancelled(false);
+  }, [idParam]);
+
   if (!storyResolved) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1008,32 +1078,117 @@ function PlayerContent() {
               nightMode ? "text-[var(--night-surface)]" : "text-foreground"
             }`}
           >
-            {childName ? `${childName}${subjP(childName)} ` : ""}오늘 &lsquo;
-            {story.title}&rsquo;{objP(story.title)} 들었어요
+            {nextEpisode
+              ? `${story.seriesTitle ?? ""} ${nextEpisode.episodeNo}편이 기다리고 있어요`
+              : isMyStory && story.seriesId
+              ? `‘${story.seriesTitle}’의 마지막 이야기였어요`
+              : `${
+                  childName ? `${childName}${subjP(childName)} ` : ""
+                }오늘 ‘${story.title}’${objP(story.title)} 들었어요`}
           </p>
           {listenRecord && (
             <p className="mt-2 text-[15px] text-[var(--star)] font-semibold">
               {recordMessage(listenRecord)}
             </p>
           )}
-          <div className="flex items-center gap-2.5 mt-7 w-full max-w-[320px]">
-            <button
-              onClick={playNext}
-              className="cta-active flex-1 py-3.5 rounded-2xl text-sm font-bold transition-colors"
-            >
-              한 편 더 듣기
-            </button>
-            <button
-              onClick={() => router.replace(exitTo)}
-              className={`flex-1 py-3.5 rounded-2xl text-sm font-semibold border transition ${
-                nightMode
-                  ? "border-white/15 text-[#C9C3E8] hover:bg-white/5"
-                  : "border-border hover:bg-surface-soft"
-              }`}
-            >
-              오늘은 여기까지
-            </button>
-          </div>
+
+          {nextEpisode ? (
+            /* 다음 편 있음 — 다음 편 듣기(+자동재생 카운트다운) / 오늘은 여기까지 */
+            <div className="mt-7 w-full max-w-[320px] flex flex-col gap-2.5">
+              <button
+                onClick={() => goToNextEpisode(false)}
+                className="cta-active w-full py-3.5 rounded-2xl text-sm font-bold transition-colors"
+              >
+                다음 편 듣기 →
+              </button>
+              <p className="text-[12px] text-muted truncate">
+                {nextEpisode.episodeNo}편 · {nextEpisode.title}
+              </p>
+              {countdown != null && (
+                <div className="flex items-center justify-center gap-1.5 text-[13px] text-[var(--star)] font-semibold">
+                  <svg width="18" height="18" viewBox="0 0 20 20" className="shrink-0">
+                    <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                    <circle
+                      cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                      strokeDasharray={50.27}
+                      strokeDashoffset={50.27 * (1 - countdown / 5)}
+                      transform="rotate(-90 10 10)"
+                      style={{ transition: "stroke-dashoffset 1s linear" }}
+                    />
+                  </svg>
+                  {countdown}초 후 다음 편이 시작돼요
+                  <button
+                    onClick={() => setAutoCancelled(true)}
+                    className="ml-1 underline underline-offset-2 text-muted hover:text-foreground"
+                  >
+                    취소
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => router.replace(exitTo)}
+                className={`w-full py-3 rounded-2xl text-sm font-semibold border transition ${
+                  nightMode
+                    ? "border-white/15 text-[#C9C3E8] hover:bg-white/5"
+                    : "border-border hover:bg-surface-soft"
+                }`}
+              >
+                오늘은 여기까지
+              </button>
+            </div>
+          ) : isMyStory ? (
+            /* 시리즈 마지막 편(또는 단독 내 동화) — 다음 이야기 만들기 */
+            <div className="mt-7 w-full max-w-[320px] flex flex-col gap-2.5">
+              <button
+                onClick={() => router.replace(`/create?sequel=${idParam}`)}
+                className="cta-active w-full py-3.5 rounded-2xl text-sm font-bold transition-colors"
+              >
+                다음 이야기 만들기
+              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={playNext}
+                  className={`flex-1 py-3 rounded-2xl text-sm font-semibold border transition ${
+                    nightMode
+                      ? "border-white/15 text-[#C9C3E8] hover:bg-white/5"
+                      : "border-border hover:bg-surface-soft"
+                  }`}
+                >
+                  다른 동화 듣기
+                </button>
+                <button
+                  onClick={() => router.replace(exitTo)}
+                  className={`flex-1 py-3 rounded-2xl text-sm font-semibold border transition ${
+                    nightMode
+                      ? "border-white/15 text-[#C9C3E8] hover:bg-white/5"
+                      : "border-border hover:bg-surface-soft"
+                  }`}
+                >
+                  오늘은 여기까지
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* 그 외(카탈로그·비시리즈) — 기존 유지 */
+            <div className="flex items-center gap-2.5 mt-7 w-full max-w-[320px]">
+              <button
+                onClick={playNext}
+                className="cta-active flex-1 py-3.5 rounded-2xl text-sm font-bold transition-colors"
+              >
+                한 편 더 듣기
+              </button>
+              <button
+                onClick={() => router.replace(exitTo)}
+                className={`flex-1 py-3.5 rounded-2xl text-sm font-semibold border transition ${
+                  nightMode
+                    ? "border-white/15 text-[#C9C3E8] hover:bg-white/5"
+                    : "border-border hover:bg-surface-soft"
+                }`}
+              >
+                오늘은 여기까지
+              </button>
+            </div>
+          )}
           <button
             onClick={() => togglePlay()}
             className={`mt-5 text-[13px] font-semibold underline underline-offset-4 transition ${
