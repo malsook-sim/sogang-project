@@ -197,43 +197,109 @@ export async function POST(req: NextRequest) {
         }
       : null;
 
-  // 시리즈 문맥 — 전편 제목 + 줄거리 요약 + 새로 생긴 사실(전체). 3편 이상에서도 1편 설정 유지용.
-  const seriesEps: {
+  // 시리즈 문맥 — 각 편의 "구조화 요약"(제목·줄거리요약·새로 생긴 사실)만 전달.
+  // 전편 전문을 그대로 주면 AI가 줄거리가 아니라 형식(구조)을 베끼므로, 요약만 넘긴다.
+  type SeriesEp = {
+    episodeNo?: number;
     title: string;
     episodeSummary?: string;
     newFacts?: string[];
-  }[] = Array.isArray(series?.episodes)
+  };
+  const seriesEps: SeriesEp[] = Array.isArray(series?.episodes)
     ? series.episodes
-        .filter((e: unknown): e is { title: string } =>
+        .filter((e: unknown): e is SeriesEp =>
           Boolean(e && typeof (e as { title?: unknown }).title === "string")
         )
         .slice(0, 12)
     : [];
+  const factsOf = (e: SeriesEp): string[] =>
+    Array.isArray(e.newFacts)
+      ? e.newFacts
+          .filter((f) => typeof f === "string" && f.trim())
+          .map((f) => f.trim())
+      : [];
+
   const seriesInfo =
     prev && series && typeof series.title === "string" && seriesEps.length > 0
-      ? {
-          title: String(series.title),
-          episodeNo: Number(series.episodeNo) || seriesEps.length + 1,
-          list: seriesEps
-            .map(
-              (e, i) =>
-                `- ${i + 1}편 「${e.title}」${
-                  e.episodeSummary ? `: ${e.episodeSummary}` : ""
-                }${
-                  Array.isArray(e.newFacts) && e.newFacts.length
-                    ? ` (새로 생긴 것: ${e.newFacts.join(", ")})`
-                    : ""
-                }`
-            )
-            .join("\n"),
-        }
+      ? (() => {
+          const episodeNo = Number(series.episodeNo) || seriesEps.length + 1;
+          const line = (e: SeriesEp, i: number, ko: boolean) => {
+            const no = e.episodeNo ?? i + 1;
+            const sm = (e.episodeSummary || "").trim();
+            const nf = factsOf(e);
+            const nfStr = nf.length
+              ? ko
+                ? ` (이 편에서 새로 생긴 것: ${nf.join(", ")})`
+                : ` (new in this episode: ${nf.join(", ")})`
+              : "";
+            return ko
+              ? `- ${no}편 「${e.title}」${sm ? `: ${sm}` : ""}${nfStr}`
+              : `- Episode ${no} "${e.title}"${sm ? `: ${sm}` : ""}${nfStr}`;
+          };
+          const facts = (ko: boolean) =>
+            seriesEps
+              .flatMap((e, i) => {
+                const no = e.episodeNo ?? i + 1;
+                return factsOf(e).map((f) =>
+                  ko ? `- (${no}편) ${f}` : `- (Ep ${no}) ${f}`
+                );
+              })
+              .join("\n");
+          return {
+            title: String(series.title),
+            episodeNo,
+            prevEpNo: episodeNo - 1,
+            listKo: seriesEps.map((e, i) => line(e, i, true)).join("\n"),
+            listEn: seriesEps.map((e, i) => line(e, i, false)).join("\n"),
+            factsKo: facts(true),
+            factsEn: facts(false),
+          };
+        })()
       : null;
 
   const seriesKo = seriesInfo
-    ? `\n- 이 이야기는 시리즈 "${seriesInfo.title}"의 ${seriesInfo.episodeNo}편입니다.\n- 지금까지의 이야기:\n${seriesInfo.list}\n- 등장인물과 설정(이름·성격·관계·세계관)을 이전 편들과 일관되게 유지하세요.\n- 제목은 전편 제목을 재사용하거나 숫자("2편", "3" 등)를 붙이지 말고, 이번 편의 내용에 맞는 완전히 새로운 고유 제목을 지으세요.`
+    ? `
+- 이 이야기는 시리즈 "${seriesInfo.title}"의 ${seriesInfo.episodeNo}편입니다. 등장인물·설정·말투·세계관을 이전 편들과 일관되게 유지하되, 제목은 전편 제목을 재사용하거나 숫자("2편","3" 등)를 붙이지 말고 이번 편 내용에 맞는 완전히 새로운 고유 제목을 지으세요.
+
+[지금까지의 이야기 — 편별 요약]
+${seriesInfo.listKo}
+
+[이전 편들과 다른 이야기 구조로 쓸 것]
+위 요약을 보면 이전 편들이 어떤 방식으로 흘러갔는지 알 수 있습니다. 같은 구조를 그대로 반복하지 마세요. 특히 아래 패턴은 금지입니다:
+- 아침에 잠에서 깨는 장면으로 이야기를 시작하지 말 것 (앞 편들에서 이미 썼습니다). 이번 편은 이미 어떤 일이 벌어지고 있는 장면 한가운데에서 시작하세요.
+- '무언가를 시도 → 실패 → 엄마(어른)가 대신 해결해 줌 → 성공' 흐름을 반복하지 말 것.
+- 매 편 같은 인물이 같은 방식으로 문제를 해결하지 말 것.
+이번 편에서는 다음 중 최소 하나가 성립해야 합니다: 주인공이 이전 편에서 배운 것을 활용해 스스로 해결한다 / 새로운 인물이나 장소가 등장한다 / 이전 편의 결과가 이번 편의 새로운 상황을 만들어낸다.
+
+[회상은 실제로 있었던 일만]
+이전 편의 사건을 언급할 때는 아래 '실제로 있었던 사실'만 사용하세요. 목록에 없는 사건을 지어내지 마세요.
+${seriesInfo.factsKo || "- (기록된 사실 없음 — 이전 편의 구체적 사건을 새로 지어내지 말고, 인물·설정의 연속성만 유지하세요)"}
+'어제'라는 표현은 직전 편(${seriesInfo.prevEpNo}편)의 사건에만 쓰세요. 더 앞 편의 일은 '지난번에', '예전에'처럼 표현하세요.
+
+[시리즈를 진전시킬 것]
+이번 편은 시리즈 전체에서 무언가를 진전시켜야 합니다 — 새로운 인물이나 장소가 등장하거나, 이전 편에서 얻은 것이 이번 편에서 실제로 쓰이거나, 주인공이 이전 편보다 조금 더 큰 일을 해냅니다. 단순히 '소재만 바꾼 같은 이야기'를 반복하면 안 됩니다.`
     : "";
   const seriesEn = seriesInfo
-    ? `\n- This is episode ${seriesInfo.episodeNo} of the series "${seriesInfo.title}".\n- Story so far:\n${seriesInfo.list}\n- Keep characters and setting (names, personalities, relationships, world) consistent with the earlier episodes.\n- The title MUST be a brand-new, unique title that fits THIS episode's content. Do NOT reuse a previous title or append a number.`
+    ? `
+- This is episode ${seriesInfo.episodeNo} of the series "${seriesInfo.title}". Keep characters, setting, tone and world consistent with the earlier episodes, but the title MUST be a brand-new, unique title that fits THIS episode. Do NOT reuse a previous title or append a number.
+
+[Story so far — per-episode summary]
+${seriesInfo.listEn}
+
+[Write a DIFFERENT story structure from the earlier episodes]
+The summaries above show how the earlier episodes unfolded. Do not repeat the same structure. In particular, these patterns are banned:
+- Do NOT open with the character waking up in the morning (earlier episodes already did). Start this episode in the middle of something already happening.
+- Do NOT repeat the flow "try something -> fail -> a parent/adult solves it for them -> success".
+- Do NOT have the same character solve the problem the same way every episode.
+This episode must satisfy at least one of: the child solves it themselves using something learned in an earlier episode / a new character or place appears / an earlier episode's outcome creates the new situation here.
+
+[Recall only what actually happened]
+When referring to past events, use ONLY the "facts that actually happened" below. Do not invent events not on this list.
+${seriesInfo.factsEn || "- (no recorded facts — do not invent specific past events; keep only character/setting continuity)"}
+Use the word "yesterday" only for events of the immediately-previous episode (Episode ${seriesInfo.prevEpNo}). Refer to earlier episodes as "last time" or "a while ago".
+
+[Move the series forward]
+This episode must advance the overall series — a new character or place appears, something gained earlier is actually used here, or the child accomplishes something a bit bigger than before. Do not just retell the same story with a different topic.`
     : "";
   const plotStr = typeof plot === "string" ? plot.trim() : "";
   // 분량 목표·낭독 시간은 duration.ts의 실측 계수(한국어 440자/분, 영어 120단어/분)와 공유.
@@ -302,7 +368,7 @@ Conditions:
 - Target age: ${childAge || "4-6"} years old
 ${childName ? `- Name the main character "${childName}" and use the name naturally several times — UNLESS the plot below already specifies a different protagonist name, in which case keep that name` : ""}
 - Use only vocabulary a ${childAge || "4-6"}-year-old can understand
-- Plot idea from the parent (it may be written in Korean): ${plotStr || (prev ? "(left blank — continue naturally from the previous story)" : "")}${prev ? `\n- This is a SEQUEL to "${prev.title}". Keep the same characters, setting and tone, and continue naturally WITHOUT recapping/summarizing the previous story.\n- Previous story (for reference):\n${prev.content}` : ""}${seriesEn}
+- Plot idea from the parent (it may be written in Korean): ${plotStr || (prev ? "(left blank — continue naturally from the previous story)" : "")}${prev ? `\n- This is a SEQUEL to "${prev.title}". Continue naturally WITHOUT recapping/summarizing the previous story. Do NOT copy the earlier episode's wording or structure — use ONLY the structured series context below to stay consistent.` : ""}${seriesEn}
 - Length: ${lenEn}
 - The heart of the story is the character's emotions, not the plot. Show them feeling joy, curiosity, mistakes, surprise, and courage.
 - Don't narrate by explaining — let characters act and talk so the reader can vividly picture each scene.
@@ -353,7 +419,7 @@ ${moodKo}
 - 대상 연령: ${childAge || "4~6"}세
 ${childName ? `- 주인공 이름은 "${childName}"(으)로 하고 본문에 자연스럽게 여러 번 등장시킬 것. 단, 아래 줄거리에 이미 다른 주인공 이름이 명시돼 있으면 그 이름을 우선하고 "${childName}"을(를) 강제하지 말 것` : ""}
 - ${childAge || "4~6"}세 아이가 이해할 수 있는 쉬운 어휘만 사용
-- 부모가 제시한 줄거리: ${plotStr || (prev ? "(비워둠 — 전편에 자연스럽게 이어서 새 이야기를 상상해 주세요)" : "")}${prev ? `\n- 이 이야기는 "${prev.title}"의 후속편입니다. 전편의 등장인물·설정·말투를 그대로 유지하고, 전편 줄거리를 요약하며 시작하지 말고 자연스럽게 이어서 시작하세요.\n- 전편 전문(참고용):\n${prev.content}` : ""}${seriesKo}
+- 부모가 제시한 줄거리: ${plotStr || (prev ? "(비워둠 — 전편에 자연스럽게 이어서 새 이야기를 상상해 주세요)" : "")}${prev ? `\n- 이 이야기는 "${prev.title}"의 후속편입니다. 전편 줄거리를 요약하며 시작하지 말고 자연스럽게 이어서 시작하세요. 전편의 문장이나 구조를 베끼지 말고, 아래 [시리즈 문맥]의 구조화 요약만 참고해 일관성을 유지하세요.` : ""}${seriesKo}
 - 분량: ${lenKo}
 - 줄거리가 짧아도 장면을 스스로 상상해 분량을 충분히 채우되, 억지로 늘리지 말 것
 - 동화의 중심은 사건보다 등장인물의 감정입니다. 아이가 기뻐하고, 궁금해하고, 실수하고, 놀라고, 용기 내는 감정의 변화를 충분히 표현하세요

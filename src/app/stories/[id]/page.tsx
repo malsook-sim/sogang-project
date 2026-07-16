@@ -505,19 +505,24 @@ export default function StoryDetailPage() {
           </div>
 
           {!editing && summaryLines.length > 0 && (
-            <div className="mb-5">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-muted font-bold mb-1.5">
-                이 동화의 교훈
-              </p>
-              <div className="bg-primary-light border border-primary/20 rounded-[6px] px-4 py-3 space-y-1">
-                {summaryLines.map((l, i) => (
-                  <p
-                    key={i}
-                    className="text-[13px] text-[var(--primary-deep)] leading-relaxed"
-                  >
-                    {l}
-                  </p>
-                ))}
+            <div className="mb-5 flex items-start gap-2.5">
+              <span className="text-[var(--star)] shrink-0 mt-0.5">
+                <Sparkles size={16} filled />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-muted font-bold mb-1">
+                  이 동화의 교훈
+                </p>
+                <div className="space-y-0.5">
+                  {summaryLines.map((l, i) => (
+                    <p
+                      key={i}
+                      className="text-[14px] text-[var(--text-body)] leading-relaxed"
+                    >
+                      {l}
+                    </p>
+                  ))}
+                </div>
               </div>
             </div>
           )}
