@@ -506,11 +506,19 @@ function PlayerContent() {
     else bgm.pause();
   }, [isPlaying, bgmId]);
 
-  // 현재 문단을 스크립트 패널 중앙으로 부드럽게 자동 스크롤
+  // 현재 문단을 스크립트 패널 중앙으로 부드럽게 자동 스크롤.
+  // 패널(scriptRef) 내부만 스크롤한다. scrollIntoView는 문서/뷰포트까지 스크롤해
+  // 모바일에서 fixed 상단 헤더(뒤로가기·잠자기)가 밀려 잘리는 문제가 있어 직접 계산.
   useEffect(() => {
     if (finished) return;
     const el = paraRefs.current[currentParagraph];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const container = scriptRef.current;
+    if (!el || !container) return;
+    const cRect = container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    const delta =
+      eRect.top - cRect.top - (container.clientHeight - el.clientHeight) / 2;
+    container.scrollTo({ top: container.scrollTop + delta, behavior: "smooth" });
   }, [currentParagraph, finished]);
 
   useEffect(() => {
