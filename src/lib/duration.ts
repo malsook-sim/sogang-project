@@ -33,8 +33,8 @@ export function minutesForKoChars(chars: number): number {
 
 // 만들기 옵션별 목표 분량(한국어 공백 포함 글자수 범위) — 프롬프트 목표와 UI 라벨의 공통 소스
 export const LENGTH_TARGET_CHARS = {
-  short: { min: 900, max: 1100 },
-  normal: { min: 1500, max: 1800 },
+  short: { min: 1200, max: 1450 }, // 약 3분 (한국어 440자/분)
+  normal: { min: 2000, max: 2400 }, // 약 5분
 } as const;
 
 // 옵션의 대표 낭독 시간(분) — 목표 범위의 중앙값 기준

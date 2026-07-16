@@ -1,7 +1,7 @@
 // 교훈 배열에서 키워드 칩과 문장형 요약을 분리
 // (공백 포함 10자 이하 = 키워드 칩, 초과 = 문장형)
 
-// 영어 교훈 키워드 → 한글 표기 매핑 (이미 한글이거나 미매핑이면 원문 유지)
+// 영어 교훈 키워드 → 한글 표기 매핑 (앱 UI는 한국어 전용, 영문 태그 노출 금지)
 const TAG_KO: Record<string, string> = {
   kindness: "친절",
   sharing: "나눔",
@@ -13,6 +13,7 @@ const TAG_KO: Record<string, string> = {
   perseverance: "끈기",
   love: "사랑",
   gratitude: "감사",
+  manners: "예절",
   respect: "존중",
   responsibility: "책임",
   teamwork: "협동",
@@ -20,7 +21,7 @@ const TAG_KO: Record<string, string> = {
   generosity: "베풂",
   forgiveness: "용서",
   humility: "겸손",
-  diligence: "성실",
+  diligence: "끈기",
   wisdom: "지혜",
   hope: "희망",
   trust: "신뢰",
@@ -35,8 +36,32 @@ const TAG_KO: Record<string, string> = {
   dreams: "꿈",
 };
 
-export function koTag(tag: string): string {
-  return TAG_KO[tag.trim().toLowerCase()] ?? tag;
+// 태그 1개를 한글로. 매핑에 있으면 한글, 이미 한글이면 그대로,
+// 매핑에 없는 영문이면 로그만 남기고 null (표시 숨김 — 영문 태그 노출 금지)
+export function koTag(tag: string): string | null {
+  const t = tag.trim();
+  if (!t) return null;
+  const mapped = TAG_KO[t.toLowerCase()];
+  if (mapped) return mapped;
+  if (!/[a-zA-Z]/.test(t)) return t; // 이미 한글 등
+  if (typeof console !== "undefined") {
+    console.warn(`[morals] 매핑에 없는 영문 태그 숨김: "${t}"`);
+  }
+  return null;
+}
+
+// 표시용 한글 태그 배열 (매핑 실패한 영문은 제외, 최대 max개)
+export function koTags(morals: string[] | undefined, max = 3): string[] {
+  if (!morals) return [];
+  const out: string[] = [];
+  for (const m of morals) {
+    const t = m.trim();
+    if (!t || t.length > 10) continue; // 문장형 제외
+    const ko = koTag(t);
+    if (ko) out.push(ko);
+    if (out.length >= max) break;
+  }
+  return out;
 }
 
 export function moralKeywords(morals: string[] | undefined, max = 3): string[] {
@@ -65,32 +90,12 @@ export function moralSummaryLines(
   return moralSentences(morals).slice(0, max);
 }
 
-// 받침 유무 (와/과·을/를용 — josa의 ㄹ받침 예외 없이 순수 받침만 판정)
-function hasBatchim(word: string): boolean {
-  const code = word.charCodeAt(word.length - 1);
-  if (code < 0xac00 || code > 0xd7a3) return false;
-  return (code - 0xac00) % 28 !== 0;
-}
-
-// 상세용 교훈 캡션 — 문장형 요약이 있으면 그대로, 없으면 키워드로 자연스러운 한 줄 생성
-// (catalog 동화처럼 키워드 morals만 있는 경우에도 교훈이 비지 않도록)
+// 상세용 교훈 캡션 — moral_summary(또는 문장형 morals)를 그대로 출력.
+// 키워드 조립 폴백 금지: 요약이 없으면 빈 배열 → 호출부에서 교훈 섹션 숨김.
 export function moralCaption(
   morals: string[] | undefined,
   moralSummary?: string | null,
   max = 2
 ): string[] {
-  const lines = moralSummaryLines(morals, moralSummary, max);
-  if (lines.length > 0) return lines;
-
-  const keywords = moralKeywords(morals, 3);
-  if (keywords.length === 0) return [];
-
-  const joined = keywords.reduce((acc, word, i) => {
-    if (i === 0) return word;
-    const connector = hasBatchim(keywords[i - 1]) ? "과 " : "와 ";
-    return acc + connector + word;
-  }, "");
-  const last = keywords[keywords.length - 1];
-  const eulReul = hasBatchim(last) ? "을" : "를";
-  return [`${joined}${eulReul} 배울 수 있는 이야기예요`];
+  return moralSummaryLines(morals, moralSummary, max);
 }

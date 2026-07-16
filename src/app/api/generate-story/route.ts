@@ -276,7 +276,7 @@ ${childName ? `- Name the main character "${childName}" and use the name natural
 - Title: concrete, including the character and the key event (good: "Jaein and the Missing Blue Ball", "A Kite That Looked Like the Sky"; bad: "A Special Day", "A Happy Adventure")
 - Also provide a natural Korean translation in "contentKo" for young Korean children, with the SAME paragraph structure as "content" (same number of \\n\\n-separated paragraphs, each aligned 1:1)
 
-- morals_keywords (1-2 word Korean keywords, max 3, e.g. ["우정","용기"]) and moral_summary (a one-sentence Korean summary, within 40 characters) should be derived naturally from the story, not forced.
+- morals_keywords (1-2 word keywords, max 3) and moral_summary (one sentence, within 40 characters) MUST be written in KOREAN — they are shown to Korean parents in the app UI, so English is NOT allowed here even though the story body is in English. e.g. morals_keywords: ["우정","용기"], moral_summary: "작은 용기가 서툰 하루를 바꿔놓아요". Derive them naturally from the story, not forced.
 
 ${ttsEn}
 

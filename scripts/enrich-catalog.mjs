@@ -158,7 +158,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function enrichOne(story) {
   const isEn = story.category === "english" || !/[가-힣]/.test(story.content.slice(0, 200));
   const lang = isEn ? "en" : "ko";
-  const lenOk = (size) => (isEn ? size >= 350 && size <= 430 : size >= 1300 && size <= 1600);
+  // 하한 1250자: round(1250/440)=3분으로 표기돼 목표(3분) 충족 + 무료 쿼터 절약(재시도↓)
+  const lenOk = (size) => (isEn ? size >= 345 && size <= 430 : size >= 1250 && size <= 1600);
   let best = null; // 길이 충족 후보 중 의성어 최소
   let longest = null;
   for (let i = 0; i < 3; i++) {

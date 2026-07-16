@@ -25,7 +25,7 @@ import {
   startSleepTimer as startSleepGlobal,
   stopSleepMode,
 } from "@/lib/sleepMode";
-import { moralKeywords, koTag } from "@/lib/morals";
+import { koTags } from "@/lib/morals";
 import {
   recordListen,
   getListenedStoryIds,
@@ -1040,7 +1040,7 @@ function PlayerContent() {
             {story.title}
           </h1>
           <div className="flex items-center justify-center gap-1.5 flex-wrap">
-            {moralKeywords(story.morals, 2).map((m) => (
+            {koTags(story.morals, 2).map((m) => (
               <span
                 key={m}
                 className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-colors duration-[1200ms] ${
@@ -1049,7 +1049,7 @@ function PlayerContent() {
                     : "bg-primary-light text-primary"
                 }`}
               >
-                {koTag(m)}
+                {m}
               </span>
             ))}
             <span

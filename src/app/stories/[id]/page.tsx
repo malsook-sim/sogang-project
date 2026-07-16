@@ -13,7 +13,7 @@ import { Heart, Play, Pause, Pencil, Trash, Mic, Sparkles } from "@/components/I
 import PageHeader from "@/components/PageHeader";
 import { StoryCover } from "@/components/StoryCover";
 import { VoiceAvatar } from "@/components/VoiceAvatar";
-import { moralKeywords, moralCaption, koTag } from "@/lib/morals";
+import { koTags, moralCaption } from "@/lib/morals";
 import { josa } from "@/lib/josa";
 
 const MAX_CONTENT = 4000;
@@ -142,7 +142,7 @@ export default function StoryDetailPage() {
   const bookmarked = bookmarks.includes(story.id);
   const paragraphs = story.content.split("\n\n").filter((p) => p.trim());
   const lang = /[가-힣]/.test(story.content) ? "ko" : "en";
-  const keywords = moralKeywords(story.morals, 3);
+  const keywords = koTags(story.morals, 3);
   const summaryLines = moralCaption(story.morals, story.moralSummary, 2);
 
   // 마지막/기본 목소리 해석
@@ -314,6 +314,11 @@ export default function StoryDetailPage() {
     router.push(`/player/${story.id}?voiceId=${lastVoiceId}`);
   };
 
+  // 녹음 목소리가 없어도 기본 제공 목소리로 바로 듣기 (플레이어에서 목소리 변경 가능)
+  const playWithDefault = () => {
+    router.push(`/player/${story.id}?voiceId=${modalBaseVoices[0].id}`);
+  };
+
   const startEdit = () => {
     setEditTitle(story.title);
     setEditContent(story.content);
@@ -466,7 +471,7 @@ export default function StoryDetailPage() {
                 key={m}
                 className="text-xs bg-primary-light text-primary px-2.5 py-1 rounded-full font-semibold"
               >
-                {koTag(m)}
+                {m}
               </span>
             ))}
           </div>
@@ -520,30 +525,31 @@ export default function StoryDetailPage() {
                     아빠, 할머니 목소리로도 들을 수 있어요
                   </p>
                 </>
-              ) : clonedVoices.length === 0 ? (
+              ) : (
                 <>
                   <button
-                    onClick={() => router.push("/record")}
+                    onClick={
+                      clonedVoices.length === 0
+                        ? playWithDefault
+                        : () => setVoiceModalOpen(true)
+                    }
                     className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-2xl text-sm font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20"
                   >
-                    <Mic size={16} filled />
-                    목소리 녹음하고 듣기
+                    <Play size={16} filled />
+                    {clonedVoices.length === 0
+                      ? "기본 목소리로 듣기"
+                      : "목소리 선택하고 듣기"}
                   </button>
-                  <button
-                    onClick={() => setVoiceModalOpen(true)}
-                    className="w-full mt-2 text-[13px] text-muted hover:text-primary transition"
-                  >
-                    기본 목소리로 먼저 들어볼 수도 있어요
-                  </button>
+                  {clonedVoices.length === 0 && (
+                    <button
+                      onClick={() => router.push("/record")}
+                      className="w-full mt-2 flex items-center justify-center gap-1.5 text-[13px] text-muted hover:text-primary transition"
+                    >
+                      <Mic size={14} filled />
+                      내 목소리로 듣고 싶다면 녹음하기 →
+                    </button>
+                  )}
                 </>
-              ) : (
-                <button
-                  onClick={() => setVoiceModalOpen(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-2xl text-sm font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20"
-                >
-                  <Play size={16} filled />
-                  목소리 선택하고 듣기
-                </button>
               )}
             </div>
           )}
@@ -631,22 +637,31 @@ export default function StoryDetailPage() {
                 </svg>
               </button>
             </div>
-          ) : clonedVoices.length === 0 ? (
-            <button
-              onClick={() => router.push("/record")}
-              className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3.5 rounded-2xl text-sm font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20"
-            >
-              <Mic size={16} filled />
-              목소리 녹음하고 듣기
-            </button>
           ) : (
-            <button
-              onClick={() => setVoiceModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3.5 rounded-2xl text-sm font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20"
-            >
-              <Play size={16} filled />
-              목소리 선택하고 듣기
-            </button>
+            <>
+              <button
+                onClick={
+                  clonedVoices.length === 0
+                    ? playWithDefault
+                    : () => setVoiceModalOpen(true)
+                }
+                className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3.5 rounded-2xl text-sm font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20"
+              >
+                <Play size={16} filled />
+                {clonedVoices.length === 0
+                  ? "기본 목소리로 듣기"
+                  : "목소리 선택하고 듣기"}
+              </button>
+              {clonedVoices.length === 0 && (
+                <button
+                  onClick={() => router.push("/record")}
+                  className="w-full mt-1.5 flex items-center justify-center gap-1.5 text-[12px] text-muted hover:text-primary transition"
+                >
+                  <Mic size={13} filled />
+                  내 목소리로 듣고 싶다면 녹음하기 →
+                </button>
+              )}
+            </>
           )}
         </div>
       )}
