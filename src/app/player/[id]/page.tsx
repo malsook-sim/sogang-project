@@ -159,6 +159,7 @@ function PlayerContent() {
   const resumeRef = useRef(0); // 이어 들을 위치 (초)
   const lastSaveRef = useRef(0); // 마지막으로 저장한 재생 위치
   const countedRef = useRef(false); // 재생수 중복 카운트 방지
+  const playReqRef = useRef(0); // 재생 요청 토큰 — 이전(느린) 합성이 겹쳐 재생되는 것 방지
 
   // 재생 위치를 서버에 저장 (이어 듣기용)
   const saveProgress = (opts?: { ended?: boolean }) => {
@@ -181,6 +182,8 @@ function PlayerContent() {
 
   const generateAndPlay = async () => {
     if (!story) return;
+    const req = ++playReqRef.current; // 이 재생 요청 토큰
+    audioRef.current?.pause(); // 진행 중이던 오디오 정지 (겹쳐 재생 방지)
     setFinished(false);
     setLoading(true);
 
@@ -198,6 +201,8 @@ function PlayerContent() {
       if (!res.ok) throw new Error("TTS 실패");
 
       const blob = await res.blob();
+      // 그 사이 더 새로운 재생 요청이 있었으면 이 결과는 폐기 (이전 목소리 겹침 방지)
+      if (req !== playReqRef.current) return;
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
       const url = URL.createObjectURL(blob);
       audioUrlRef.current = url;
@@ -240,6 +245,10 @@ function PlayerContent() {
         saveProgress({ ended: true });
       };
 
+      if (req !== playReqRef.current) {
+        audio.pause();
+        return;
+      }
       await audio.play();
       setIsPlaying(true);
 
@@ -253,9 +262,10 @@ function PlayerContent() {
         }).catch(() => {});
       }
     } catch {
-      alert("음성 생성에 실패했어요. 다시 시도해주세요.");
+      if (req === playReqRef.current)
+        alert("음성 생성에 실패했어요. 다시 시도해주세요.");
     } finally {
-      setLoading(false);
+      if (req === playReqRef.current) setLoading(false);
     }
   };
 
@@ -341,6 +351,7 @@ function PlayerContent() {
     } catch {
       // 무시
     }
+    playReqRef.current++; // 진행 중이던 합성/재생 요청 즉시 무효화
     audioRef.current?.pause();
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
@@ -719,9 +730,9 @@ function PlayerContent() {
           }`}
           aria-hidden
         >
-          {/* 초승달 (우상단) */}
+          {/* 초승달 — 헤더의 잠자기 달 버튼(우상단)과 겹치지 않게 하늘 왼쪽 아래로 */}
           <svg
-            className="absolute top-8 right-8 w-12 h-12"
+            className="absolute top-28 left-8 w-12 h-12"
             viewBox="0 0 40 40"
             fill="none"
           >
