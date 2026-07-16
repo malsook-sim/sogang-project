@@ -111,7 +111,7 @@ async function generateWithGemini(
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: {
                 temperature,
-                maxOutputTokens: 8192,
+                maxOutputTokens: 12000,
                 responseMimeType: "application/json",
                 responseSchema: STORY_SCHEMA,
                 thinkingConfig: { thinkingBudget: 0 },

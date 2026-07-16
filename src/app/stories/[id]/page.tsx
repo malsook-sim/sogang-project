@@ -417,9 +417,9 @@ export default function StoryDetailPage() {
         }
       />
 
-      {/* 본문 스크롤 진행바 (헤더 하단, 2px) */}
+      {/* 본문 스크롤 진행바 (헤더 하단, 2px) — 모바일에선 숨김(데스크톱만) */}
       {!editing && (
-        <div className="sticky top-[56px] z-40 h-0.5 bg-transparent pointer-events-none">
+        <div className="hidden lg:block sticky top-[56px] z-40 h-0.5 bg-transparent pointer-events-none">
           <div
             className="h-full bg-primary"
             style={{ width: `${scrollPct}%` }}
@@ -481,7 +481,7 @@ export default function StoryDetailPage() {
               <p className="text-[11px] uppercase tracking-[0.12em] text-muted font-bold mb-1.5">
                 이 동화의 교훈
               </p>
-              <div className="bg-primary-light rounded-xl px-4 py-3 space-y-1">
+              <div className="bg-primary-light border border-primary/20 rounded-[6px] px-4 py-3 space-y-1">
                 {summaryLines.map((l, i) => (
                   <p
                     key={i}
