@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import BackButton from "@/components/BackButton";
 
-// 서브페이지 공통 상단 헤더 — sticky glass 바, 상단 28px / 하단 20px 패딩 통일
+// 서브페이지 공통 상단 헤더 — sticky glass 바, 상하 16px 패딩 통일
 export default function PageHeader({
   title,
   subtitle,
@@ -19,7 +19,7 @@ export default function PageHeader({
 }) {
   return (
     <header className="sticky top-0 z-50 glass border-b border-border">
-      <div className={`${containerClassName} pt-[28px] pb-5 flex items-center gap-2`}>
+      <div className={`${containerClassName} pt-4 pb-4 flex items-center gap-2`}>
         {onBack && <BackButton onClick={onBack} />}
 
         {truncateTitle ? (
