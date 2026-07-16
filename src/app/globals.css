@@ -157,6 +157,77 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   box-shadow: var(--shadow-sm);
 }
 
+/* ===== 동화 만들기 CTA — 낮/밤 테마별 명시 색상 ===== */
+/* 비활성: 무채색 회색 금지 — 연보라(낮)/청보라(밤)로 "곧 켜질 버튼"임을 암시 */
+.cta-idle {
+  background: #EDE9F7;
+  color: #8B86A3;
+  border: 1px solid #E8E4F0;
+}
+[data-theme="sleep"] .cta-idle {
+  background: #2E2A5C;
+  color: #8B86A3;
+  border-color: #3A3568;
+}
+/* 활성: 화면에서 가장 밝은 UI 요소(밤 모드) */
+.cta-active {
+  background: #6E5FD6;
+  color: #FFFFFF;
+}
+.cta-active:hover {
+  background: #4A3FA0;
+}
+[data-theme="sleep"] .cta-active {
+  background: #8F7FE8;
+}
+[data-theme="sleep"] .cta-active:hover {
+  background: #A99DF2;
+}
+/* 로딩: 활성 색 유지(회색으로 죽이지 않음), hover 변화 없음 */
+.cta-loading {
+  background: #6E5FD6;
+  color: #FFFFFF;
+}
+[data-theme="sleep"] .cta-loading {
+  background: #8F7FE8;
+}
+/* 활성 별 아이콘 — 낮은 흰색, 밤은 골드(밤 화면의 광원 문법) */
+.cta-star {
+  color: #FFFFFF;
+}
+[data-theme="sleep"] .cta-star {
+  color: #F4C566;
+}
+/* 비활성→활성 전환 시 살짝 튀어오르는 느낌 */
+@keyframes ctaPop {
+  from { transform: scale(0.98); }
+  to   { transform: scale(1); }
+}
+.cta-pop {
+  animation: ctaPop 200ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-pop {
+    animation: none;
+  }
+}
+
+/* ===== 세그먼트 컨트롤 (이야기 길이 / 분위기) ===== */
+.seg-track {
+  background: #EDE9F7;
+}
+[data-theme="sleep"] .seg-track {
+  background: #2B2850;
+}
+/* 밤 모드에서 "밤 이야기"가 선택됐을 때만 노출되는 달 아이콘(골드) */
+.seg-moon {
+  display: none;
+  color: #F4C566;
+}
+[data-theme="sleep"] .seg-moon {
+  display: inline-flex;
+}
+
 .card-interactive {
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }

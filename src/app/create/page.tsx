@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles, User, FileText, Refresh } from "@/components/Icon";
+import { Sparkles, Moon, User, FileText, Refresh } from "@/components/Icon";
 import PageHeader from "@/components/PageHeader";
 import { saveMyStory } from "@/lib/myStories";
 
@@ -12,6 +12,48 @@ function TileIcon({ children }: { children: ReactNode }) {
     <span className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center shrink-0 text-primary">
       {children}
     </span>
+  );
+}
+
+// 세그먼트 컨트롤 — 트랙 primary-soft pill, 선택 primary+흰색, 높이 34px
+function Segment<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { id: T; label: string; sub?: string; moon?: boolean }[];
+}) {
+  return (
+    <div className="seg-track flex items-center gap-0.5 rounded-full p-0.5 h-[34px] shrink-0">
+      {options.map((opt) => {
+        const active = value === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            className={`h-full inline-flex items-center gap-1 px-3 rounded-full text-xs whitespace-nowrap transition-colors ${
+              active
+                ? "bg-primary text-white font-bold"
+                : "text-[var(--text-body)] hover:text-foreground"
+            }`}
+          >
+            {/* 밤 모드 + "밤 이야기" 선택 시에만 달 아이콘(골드) — CSS로 낮 모드 숨김 */}
+            {opt.moon && active && (
+              <span className="seg-moon">
+                <Moon size={13} filled />
+              </span>
+            )}
+            {opt.label}
+            {opt.sub && (
+              <span className="tabular-nums opacity-75">{opt.sub}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -51,6 +93,7 @@ function CreateStoryContent() {
   const [childAge, setChildAge] = useState("5");
   const [language, setLanguage] = useState<"ko" | "en">("ko");
   const [storyLength, setStoryLength] = useState<"short" | "normal">("normal");
+  const [mood, setMood] = useState<"bedtime" | "day">("bedtime");
   const [exampleOffset, setExampleOffset] = useState(0);
   const [error, setError] = useState("");
 
@@ -58,8 +101,6 @@ function CreateStoryContent() {
   const [editProfile, setEditProfile] = useState(false);
 
   const [generating, setGenerating] = useState(false);
-  const [stageIndex, setStageIndex] = useState(0);
-  const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -74,6 +115,13 @@ function CreateStoryContent() {
         }
       })
       .catch(() => {});
+  }, []);
+
+  // 분위기 기본값 — 현재 시각 기준 자동 선택(밤 18시~아침 7시 → 밤 이야기)
+  // 마운트 후 설정해 SSR 하이드레이션 불일치 방지
+  useEffect(() => {
+    const h = new Date().getHours();
+    setMood(h >= 18 || h < 7 ? "bedtime" : "day");
   }, []);
 
   // 후속편 모드: 원작 불러오기
@@ -103,23 +151,11 @@ function CreateStoryContent() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [generating]);
 
-  useEffect(() => {
-    return () => {
-      if (stageTimer.current) clearInterval(stageTimer.current);
-    };
-  }, []);
-
   const examples = [
     plotPool[exampleOffset % plotPool.length],
     plotPool[(exampleOffset + 1) % plotPool.length],
     plotPool[(exampleOffset + 2) % plotPool.length],
     plotPool[(exampleOffset + 3) % plotPool.length],
-  ];
-
-  const stages = [
-    `${childName || "우리 아이"}를 위한 동화를 쓰고 있어요`,
-    "동화에 그림을 그리고 있어요",
-    "동화를 예쁘게 마무리하고 있어요",
   ];
 
   const canGenerate = sequelOf ? true : plot.trim().length >= 5;
@@ -134,10 +170,6 @@ function CreateStoryContent() {
     if (!canGenerate || generating) return;
     setError("");
     setGenerating(true);
-    setStageIndex(0);
-    stageTimer.current = setInterval(() => {
-      setStageIndex((i) => Math.min(i + 1, stages.length - 1));
-    }, 2800);
 
     try {
       const res = await fetch("/api/generate-story", {
@@ -149,6 +181,7 @@ function CreateStoryContent() {
           childAge,
           language,
           length: storyLength,
+          mood,
           previousStory: sequelOf
             ? { title: sequelOf.title, content: sequelOf.content }
             : undefined,
@@ -161,12 +194,10 @@ function CreateStoryContent() {
       // 후속편이면 제목 기본값을 "원작 2"로
       if (sequelOf) data.story.title = `${sequelOf.title} 2`;
       const saved = await saveMyStory(data.story);
-      if (stageTimer.current) clearInterval(stageTimer.current);
       if (!saved) throw new Error("동화를 저장하지 못했어요.");
       // 완성되면 상세 화면으로 (목소리는 거기서 고름)
       router.push(`/stories/${saved.id}`);
     } catch (e) {
-      if (stageTimer.current) clearInterval(stageTimer.current);
       setError(e instanceof Error ? e.message : "동화 생성에 실패했어요.");
       setGenerating(false);
     }
@@ -368,77 +399,78 @@ function CreateStoryContent() {
           </div>
         </div>
 
-        {/* 3. 이야기 길이 — 카드 없이 라벨 + 세그먼트 컨트롤 한 줄 */}
-        <div className="flex items-center justify-between gap-3 px-1">
-          <span className="text-sm font-bold text-foreground">이야기 길이</span>
-          <div className="flex gap-1 bg-field border border-border rounded-xl p-1 shrink-0">
-            {(
-              [
-                { id: "short", label: "짧게", sub: "약 3분" },
-                { id: "normal", label: "보통", sub: "약 5분" },
-              ] as const
-            ).map((opt) => {
-              const active = storyLength === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setStoryLength(opt.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs transition ${
-                    active
-                      ? "bg-primary text-white font-bold"
-                      : "text-[var(--text-body)] hover:text-foreground"
-                  }`}
-                >
-                  {opt.label}
-                  <span className="tabular-nums opacity-75"> {opt.sub}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* 3. 옵션 + CTA 한 카드 — 줄거리 카드와 동일한 surface+border, radius 12px */}
+        <div>
+          <div className="bg-surface border border-border rounded-[12px] shadow-sm p-4">
+            {/* 이야기 길이 */}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-bold text-foreground">
+                이야기 길이
+              </span>
+              <Segment
+                value={storyLength}
+                onChange={setStoryLength}
+                options={[
+                  { id: "short", label: "짧게", sub: " 약 3분" },
+                  { id: "normal", label: "보통", sub: " 약 5분" },
+                ]}
+              />
+            </div>
 
-        {/* 4. CTA — 전체 폭, 흐름의 끝 */}
-        <div className="pt-1">
-          {generating ? (
-            <>
+            {/* 분위기 — 기본값 현재 시각 기준 자동 선택 */}
+            <div className="flex items-center justify-between gap-3 mt-3">
+              <span className="text-sm font-bold text-foreground">분위기</span>
+              <Segment
+                value={mood}
+                onChange={setMood}
+                options={[
+                  { id: "bedtime", label: "밤 이야기", moon: true },
+                  { id: "day", label: "낮 이야기" },
+                ]}
+              />
+            </div>
+
+            {/* 구분선 */}
+            <div className="border-t border-border my-3.5" />
+
+            {/* 동화 만들기 버튼 — 카드 내부 풀폭, 높이 52px */}
+            {generating ? (
               <button
                 type="button"
                 disabled
-                className="w-full h-14 rounded-[14px] bg-primary text-white font-bold text-[15px] flex items-center justify-center gap-2 cursor-wait opacity-90"
+                className="cta-loading w-full h-[52px] rounded-[12px] font-bold text-[15px] flex items-center justify-center gap-2 cursor-wait"
               >
                 <span className="w-5 h-5 shrink-0 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                <span className="truncate">{stages[stageIndex]}</span>
+                <span className="truncate">동화를 만들고 있어요</span>
               </button>
-              <p className="text-center text-[12px] text-muted mt-2.5">
-                동화를 만들고 있어요 · 30초 정도 걸려요
-              </p>
-            </>
-          ) : (
-            <>
+            ) : (
               <button
                 onClick={handleGenerate}
                 disabled={!canGenerate}
-                className={`w-full h-14 rounded-[14px] font-extrabold text-[15px] transition flex items-center justify-center gap-2 ${
+                className={`w-full h-[52px] rounded-[12px] font-bold text-[15px] flex items-center justify-center gap-2 transition-colors duration-200 ${
                   canGenerate
-                    ? "bg-primary text-white hover:bg-primary-dark"
-                    : "bg-field text-muted cursor-not-allowed"
+                    ? "cta-active cta-pop cursor-pointer"
+                    : "cta-idle cursor-not-allowed"
                 }`}
               >
                 {canGenerate && (
-                  <span className="flex">
+                  <span className="cta-star flex">
                     <Sparkles size={18} filled />
                   </span>
                 )}
                 동화 만들기
               </button>
-              <p className="text-center text-[12px] text-muted mt-2.5">
-                {canGenerate
-                  ? "약 30초~1분 정도 걸려요"
-                  : "줄거리를 입력하면 만들 수 있어요"}
-              </p>
-            </>
-          )}
+            )}
+          </div>
+
+          {/* 캡션 — 카드 아래 */}
+          <p className="text-center text-[12px] text-muted mt-2.5">
+            {generating
+              ? "동화를 만들고 있어요 · 30초 정도 걸려요"
+              : canGenerate
+                ? "약 30초~1분 정도 걸려요"
+                : "줄거리를 입력하면 만들 수 있어요"}
+          </p>
         </div>
 
         {error && (

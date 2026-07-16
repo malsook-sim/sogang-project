@@ -10,21 +10,25 @@ const steps = [
   { step: "03", title: "들려주기", desc: "엄마 아빠 목소리로 동화가 시작돼요. 곁에 없어도 늘 함께예요." },
 ];
 
+// avatar: VoiceAvatar 색상 선택용 이모지(아이콘은 실루엣 고정) — 핑크/블루/민트로 분산
 const testimonials = [
   {
     quote:
       "제 목소리로 동화를 들려주니 아이 잠투정이 확 줄었어요. 출장 가서도 매일 밤 한 편씩 들려줄 수 있어 좋아요.",
     who: "5살 아이 엄마",
+    avatar: "👧", // 핑크
   },
   {
     quote:
       "녹음은 1분이면 끝나는데, 이제 아이가 매일 '아빠가 읽어주는 책'을 먼저 찾아요.",
     who: "6살 아이 아빠",
+    avatar: "👨", // 블루
   },
   {
     quote:
-      "멀리 계신 할머니 목소리로도 만들어 드렸더니 온 가족이 정말 좋아했어요.",
+      "차 타고 이동할 때 틀어주면 아이가 조용히 잘 들어요. 유튜브 대신 들려줄 게 생겨서 좋아요.",
     who: "4살 아이 엄마",
+    avatar: "👦", // 민트
   },
 ];
 
@@ -73,7 +77,7 @@ export default function LandingPage() {
               <br />
               사랑하는 목소리로,
               <br />
-              <span className="text-primary">매일 밤 동화 한 편</span>
+              <span className="text-primary">오늘도 동화 한 편</span>
             </h1>
             <p className="text-foreground/70 text-[15px] sm:text-base mb-8 leading-relaxed max-w-md mx-auto lg:mx-0">
               엄마·아빠 목소리를 1분만 녹음하면, AI가 그 목소리 그대로
@@ -84,7 +88,7 @@ export default function LandingPage() {
                 href="/login?mode=signup&next=/"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-white px-8 py-3.5 rounded-full text-[15px] font-bold hover:bg-primary-dark transition shadow-lg shadow-primary/20"
               >
-                무료로 시작하기
+                시작하기
                 <span aria-hidden>→</span>
               </Link>
               <HeroSampleButton />
@@ -192,7 +196,7 @@ export default function LandingPage() {
 
         <div className="relative grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {/* 대형: 내 목소리 만들기 */}
-          <Reveal className="sm:col-span-2 lg:col-span-1 lg:row-span-2" delay={0}>
+          <Reveal className="sm:col-span-2 lg:col-span-1" delay={0}>
             <div className="relative overflow-hidden rounded-2xl bg-[var(--night)] p-6 h-full transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg">
               <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden>
                 <g transform="translate(160 34)"><circle cx="0" cy="0" r="11" fill="#F4C566" /><circle cx="5" cy="-3" r="9" fill="#2C2A45" /></g>
@@ -249,26 +253,104 @@ export default function LandingPage() {
             </div>
           </Reveal>
 
-          {/* 와이드: 잠자기 타이머 */}
-          <Reveal className="sm:col-span-2" delay={150}>
-            <div className="relative overflow-hidden rounded-2xl bg-primary-light p-5 h-full transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
-              <svg viewBox="0 0 80 80" className="absolute -right-4 -bottom-5 w-28 h-28 opacity-40 pointer-events-none" aria-hidden>
-                <circle cx="40" cy="40" r="26" fill="#6E5FD6" opacity="0.25" />
-                <circle cx="50" cy="33" r="22" fill="#EDE9F7" />
-              </svg>
-              <div className="relative z-10 flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-white text-primary flex items-center justify-center shrink-0">
-                  <Moon size={20} filled />
-                </div>
-                <div>
-                  <h3 className="font-bold text-[15px] mb-0.5">잠자기 타이머</h3>
-                  <p className="text-sm text-[var(--text-body)] leading-relaxed">
-                    정한 시간이 지나면 저절로 멈춰요. 잠자리 동화에 딱이에요.
-                  </p>
+        </div>
+      </section>
+
+      {/* 낮/밤 테마 — "밤 전용 앱" 오해 제거: 낮에도 쓰는 제품임을 시각적으로 */}
+      <section className="px-6 py-16 max-w-5xl mx-auto w-full">
+        <Reveal>
+          <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted font-semibold mb-1.5">
+            Day &amp; Night
+          </p>
+          <h2 className="text-center text-[26px] font-extrabold mb-2 tracking-tight">
+            낮에도, 밤에도
+          </h2>
+          <p className="text-center text-sm text-[var(--text-body)] mb-9 max-w-md mx-auto leading-relaxed">
+            놀이 시간엔 신나는 모험을, 잠들기 전엔 포근한 이야기를
+          </p>
+        </Reveal>
+
+        <div className="relative grid sm:grid-cols-2 gap-4 sm:gap-6">
+          {/* 낮 테마 목업 — 크림 배경 */}
+          <Reveal delay={0}>
+            <div className="h-full rounded-2xl border border-[#F0E6D2] bg-[#FFF8EC] p-5">
+              <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-b from-[#FFE9B8] to-[#FFF6E2]">
+                {/* 해 */}
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 150" aria-hidden>
+                  <circle cx="150" cy="42" r="18" fill="#F6B93B" />
+                  <g stroke="#F6B93B" strokeWidth="3" strokeLinecap="round">
+                    <path d="M150 12v-8M150 80v-8M188 42h8M104 42h8M177 15l6-6M117 69l6-6M177 69l6-6M117 15l6-6" />
+                  </g>
+                  {/* 언덕 + 새싹 */}
+                  <path d="M0 150 V110 Q60 86 120 104 T200 100 V150 Z" fill="#BBE3A6" />
+                  <path d="M0 150 V126 Q70 108 140 122 T200 120 V150 Z" fill="#9FD68A" />
+                </svg>
+                {/* 밝은 재생 버튼 */}
+                <div className="absolute left-3 bottom-3 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-white/90 text-[#E08A2B] flex items-center justify-center shadow">
+                    <Play size={14} filled />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#8a5a1e] bg-white/70 rounded-full px-2 py-0.5">
+                    신나는 모험
+                  </span>
                 </div>
               </div>
+              <p className="text-[13px] font-semibold text-[#8a5a1e] mt-3 text-center">
+                낮 · 밝고 활기찬 이야기
+              </p>
             </div>
           </Reveal>
+
+          {/* 밤(잠자기) 목업 — 밤 팔레트 */}
+          <Reveal delay={80}>
+            <div className="h-full rounded-2xl border border-[#3A3568] bg-[#232048] p-5">
+              <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-b from-[#2C2A55] to-[#1B1840]">
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 150" aria-hidden>
+                  {/* 초승달 */}
+                  <g transform="translate(150 40)">
+                    <circle cx="0" cy="0" r="16" fill="#F4C566" />
+                    <circle cx="6" cy="-4" r="13" fill="#232048" />
+                  </g>
+                  {/* 별 */}
+                  <circle cx="40" cy="30" r="1.6" fill="#EDE9F7" opacity="0.9" />
+                  <circle cx="80" cy="20" r="1.2" fill="#F4C566" opacity="0.9" />
+                  <circle cx="60" cy="55" r="1.3" fill="#EDE9F7" opacity="0.6" />
+                  <circle cx="24" cy="66" r="1.2" fill="#B7ABF4" opacity="0.7" />
+                  {/* 언덕 실루엣 */}
+                  <path d="M0 150 V116 Q60 96 120 110 T200 106 V150 Z" fill="#35325A" opacity="0.8" />
+                  <path d="M0 150 V130 Q70 114 140 126 T200 124 V150 Z" fill="#3D3A63" opacity="0.7" />
+                </svg>
+                {/* 골드 재생 버튼 + 타이머 칩 */}
+                <div className="absolute left-3 bottom-3 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#F4C566] text-[#2C2A45] flex items-center justify-center shadow">
+                    <Play size={14} filled />
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#F1EEFA] bg-white/10 rounded-full px-2 py-0.5">
+                    <Moon size={11} filled />
+                    타이머 30분
+                  </span>
+                </div>
+              </div>
+              <p className="text-[13px] font-semibold text-[#C9C3E8] mt-3 text-center leading-relaxed">
+                밤 · 차분하고 포근한 이야기,
+                <br className="sm:hidden" /> 잠자기 타이머로 저절로 멈춰요
+              </p>
+            </div>
+          </Reveal>
+
+          {/* 가운데 해→달 경계 배지 (데스크톱) */}
+          <div className="hidden sm:flex absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 z-10 items-center gap-1 rounded-full bg-white shadow-md border border-border px-2.5 py-1.5">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+              <circle cx="12" cy="12" r="5" fill="#F6B93B" />
+              <g stroke="#F6B93B" strokeWidth="2" strokeLinecap="round">
+                <path d="M12 3v2M12 19v2M21 12h-2M5 12H3M18 6l-1.4 1.4M7.4 16.6L6 18M18 18l-1.4-1.4M7.4 7.4L6 6" />
+              </g>
+            </svg>
+            <span className="text-muted text-[11px]" aria-hidden>
+              →
+            </span>
+            <Moon size={15} className="text-primary" filled />
+          </div>
         </div>
       </section>
 
@@ -361,16 +443,7 @@ export default function LandingPage() {
                 “{t.quote}”
               </p>
               <div className="flex items-center gap-2 mt-4">
-                <VoiceAvatar
-                  emoji={
-                    t.who.includes("아빠")
-                      ? "👨"
-                      : t.who.includes("할머니")
-                      ? "👵"
-                      : "👩"
-                  }
-                  size={28}
-                />
+                <VoiceAvatar emoji={t.avatar} size={28} />
                 <p className="text-xs text-muted font-semibold">{t.who}</p>
               </div>
             </div>
@@ -379,53 +452,39 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA — 연보라 틴트 솔리드 */}
-      <section className="relative overflow-hidden bg-primary-light px-6 py-16 text-center">
+      {/* Final CTA — 밤하늘로 마무리(브랜드 각인 + 골드 CTA 대비 확보) */}
+      <section className="relative overflow-hidden bg-[#2C2A45] px-6 py-20 text-center">
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          <span
-            className="lp-twinkle absolute w-2 h-2 rounded-full bg-[#F4C566]"
-            style={{ top: "22%", left: "16%" }}
-          />
-          <span
-            className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#CEC7EE]"
-            style={{ top: "30%", right: "20%", animationDelay: "0.8s" }}
-          />
-          {/* 초승달 */}
+          {/* 별 — 골드 / 라일락, opacity 0.3~1.0 */}
+          <span className="lp-twinkle absolute w-2 h-2 rounded-full bg-[#F4C566]" style={{ top: "20%", left: "16%", opacity: 1 }} />
+          <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#B7ABF4]" style={{ top: "30%", right: "20%", opacity: 0.8, animationDelay: "0.8s" }} />
+          <span className="lp-twinkle absolute w-1 h-1 rounded-full bg-[#F4C566]" style={{ top: "62%", left: "10%", opacity: 0.6, animationDelay: "1.2s" }} />
+          <span className="lp-twinkle absolute w-1 h-1 rounded-full bg-[#B7ABF4]" style={{ bottom: "22%", right: "14%", opacity: 0.45, animationDelay: "0.4s" }} />
+          <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#EDE9F7]" style={{ top: "48%", right: "8%", opacity: 0.3, animationDelay: "1.6s" }} />
+          <span className="lp-twinkle absolute w-1 h-1 rounded-full bg-[#EDE9F7]" style={{ bottom: "34%", left: "22%", opacity: 0.5, animationDelay: "2s" }} />
+          {/* 달 일러스트 */}
           <svg
-            className="lp-float absolute w-9 h-9"
-            style={{ top: "18%", left: "10%" }}
+            className="lp-float absolute w-12 h-12"
+            style={{ top: "16%", left: "9%" }}
             viewBox="0 0 40 40"
             aria-hidden
           >
-            <circle cx="20" cy="20" r="13" fill="#F4C566" opacity="0.9" />
-            <circle cx="25" cy="16" r="11" fill="#EDE9F7" />
-          </svg>
-          <svg
-            className="lp-float absolute w-14 h-10"
-            style={{ top: "16%", right: "12%" }}
-            viewBox="0 0 200 120"
-            fill="none"
-            stroke="#CEC7EE"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M80 40 L180 15 L150 85 L130 55 L80 40 Z" />
-            <path d="M130 55 L180 15" />
+            <circle cx="20" cy="20" r="14" fill="#F4C566" opacity="0.95" />
+            <circle cx="26" cy="15" r="11" fill="#2C2A45" />
           </svg>
         </div>
         <div className="relative z-10 max-w-xl mx-auto">
-          <h2 className="text-[26px] sm:text-[30px] font-extrabold mb-3 tracking-tight text-foreground">
-            오늘 밤, 한 편 들려줄까요?
+          <h2 className="text-[26px] sm:text-[30px] font-extrabold mb-3 tracking-tight text-white">
+            오늘, 한 편 들려줄까요?
           </h2>
-          <p className="text-sm text-[var(--text-body)] mb-7 leading-relaxed">
+          <p className="text-sm mb-7 leading-relaxed" style={{ color: "#A79FD9" }}>
             지금 가입하면 바로 우리 아이만의 동화를 시작할 수 있어요.
           </p>
           <Link
             href="/login?mode=signup&next=/"
-            className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3.5 rounded-full text-[15px] font-bold hover:bg-primary-dark transition"
+            className="inline-flex items-center gap-2 bg-[#F4C566] text-[#4A3A12] px-8 py-3.5 rounded-full text-[15px] font-bold hover:bg-[#F7D68A] transition"
           >
-            오늘 밤부터 함께하기
+            지금 시작하기
             <span aria-hidden>→</span>
           </Link>
         </div>
