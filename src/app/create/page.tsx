@@ -4,7 +4,9 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Moon, User, FileText, Refresh } from "@/components/Icon";
 import PageHeader from "@/components/PageHeader";
+import BrandLoader from "@/components/BrandLoader";
 import { saveMyStory } from "@/lib/myStories";
+import { targetMinutes } from "@/lib/duration";
 
 // 섹션 제목 아이콘 배지 — primary-soft 원 + primary 아이콘 (라이트/다크 토큰 자동 대응)
 function TileIcon({ children }: { children: ReactNode }) {
@@ -205,6 +207,7 @@ function CreateStoryContent() {
 
   return (
     <>
+      {generating && <BrandLoader text="동화를 만들고 있어요" />}
       <PageHeader
         title="동화 만들기"
         subtitle="줄거리만 알려주면 AI가 동화로 만들어드려요"
@@ -411,8 +414,8 @@ function CreateStoryContent() {
                 value={storyLength}
                 onChange={setStoryLength}
                 options={[
-                  { id: "short", label: "짧게", sub: " 약 3분" },
-                  { id: "normal", label: "보통", sub: " 약 5분" },
+                  { id: "short", label: "짧게", sub: ` 약 ${targetMinutes("short")}분` },
+                  { id: "normal", label: "보통", sub: ` 약 ${targetMinutes("normal")}분` },
                 ]}
               />
             </div>
