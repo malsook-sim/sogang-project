@@ -765,7 +765,7 @@ function PlayerContent() {
             router.back();
           }}
         />
-        <div className="text-center min-w-0">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center max-w-[58%] pointer-events-none">
           <p
             className={`text-[10px] uppercase tracking-[0.18em] font-semibold transition-colors duration-[1200ms] ${
               nightMode ? "text-[#C9C3E8]/70" : "text-muted"
@@ -784,25 +784,20 @@ function PlayerContent() {
         <div className="relative shrink-0">
           <button
             onClick={() => setShowSleepMenu((v) => !v)}
-            className={`h-10 px-3 rounded-full border flex items-center gap-1.5 text-xs font-bold tabular-nums transition duration-[1200ms] ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition duration-[1200ms] ${
               sleep.active && sleepRemaining > 0 && sleepRemaining <= 20
                 ? "animate-pulse"
                 : ""
             } ${
               nightMode
-                ? "bg-[#3D3A5C] border-white/10 text-[#F4C566]"
+                ? "text-[#F4C566] hover:bg-white/10"
                 : sleep.endsAt
-                ? "bg-primary-light border-primary/30 text-primary"
-                : "bg-surface/70 border-border text-foreground/80 hover:bg-surface"
+                ? "text-primary hover:bg-surface/60"
+                : "text-foreground/70 hover:bg-surface/60"
             }`}
             aria-label="잠자기 타이머"
           >
-            <Moon size={15} filled={!!sleep.endsAt} />
-            {sleep.endsAt
-              ? sleepRemaining >= 60
-                ? `${Math.floor(sleepRemaining / 60)}분`
-                : "곧 끝나요"
-              : "잠자기"}
+            <Moon size={20} filled={!!sleep.endsAt} />
           </button>
           {showSleepMenu && (
             <>
@@ -851,17 +846,17 @@ function PlayerContent() {
       </header>
 
       {/* 본문 2열 */}
-      <div className="relative z-10 flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[38%_1fr] lg:gap-10 lg:items-stretch max-w-6xl mx-auto w-full px-5 lg:px-8 pt-10 lg:pt-16 pb-[calc(var(--cbh)_+_16px)] lg:pb-2">
+      <div className="relative z-10 flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[38%_1fr] lg:gap-10 lg:items-stretch max-w-6xl mx-auto w-full px-5 lg:px-8 pt-4 lg:pt-16 pb-[calc(var(--cbh)_+_16px)] lg:pb-2">
         {/* 좌: 앨범아트 + 제목 */}
         <div className="shrink-0 flex flex-col items-center lg:justify-center text-center">
           <div
-            className="w-full max-w-[180px] lg:max-w-[320px] aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-white/60 transition-[filter] duration-[1200ms] ease-in-out"
+            className="w-full max-w-[104px] lg:max-w-[320px] aspect-square rounded-2xl lg:rounded-3xl overflow-hidden shadow-lg lg:shadow-2xl border-2 lg:border-4 border-white/60 transition-[filter] duration-[1200ms] ease-in-out"
             style={nightMode ? { filter: "brightness(0.75)" } : undefined}
           >
             <StoryCover story={story} className="w-full h-full" />
           </div>
           <h1
-            className={`text-xl lg:text-2xl font-extrabold mt-4 mb-2 tracking-tight transition-colors duration-[1200ms] ${
+            className={`text-base lg:text-2xl font-extrabold mt-2.5 lg:mt-4 mb-1.5 lg:mb-2 tracking-tight transition-colors duration-[1200ms] ${
               nightMode ? "text-[var(--night-surface)]" : "text-foreground"
             }`}
           >
@@ -907,7 +902,7 @@ function PlayerContent() {
         </div>
 
         {/* 우: 스크립트 or 추천 */}
-        <div className="flex-1 min-h-0 mt-4 lg:mt-0 flex flex-col">
+        <div className="flex-1 min-h-0 mt-3 lg:mt-0 flex flex-col">
           {bedtime ? (
             <div
               className={`flex-1 min-h-0 flex flex-col items-center justify-center text-center backdrop-blur border rounded-2xl p-6 transition-colors duration-[1200ms] ${panelCls}`}
