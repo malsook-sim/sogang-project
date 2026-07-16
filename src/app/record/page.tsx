@@ -483,19 +483,14 @@ export default function RecordPage() {
       <div className={`${containerW} mx-auto px-5 py-6`}>
         {mode === "list" && (
           <>
-            {/* 새 목소리 등록 히어로 */}
-            <div className="relative overflow-hidden rounded-2xl bg-[var(--night)] p-5 sm:p-6 mb-6">
-              <svg
-                viewBox="0 0 300 160"
-                preserveAspectRatio="xMidYMid slice"
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                aria-hidden
-              >
-                <circle cx="28" cy="26" r="2" fill="#F4C566" />
-                <circle cx="58" cy="46" r="1.4" fill="#EDE9F7" opacity="0.9" />
-                <circle cx="86" cy="22" r="1.2" fill="#EDE9F7" opacity="0.7" />
-                <circle cx="44" cy="70" r="1.6" fill="#F4C566" opacity="0.8" />
-              </svg>
+            {/* 새 목소리 등록 히어로 — 목소리가 하나라도 있을 때만.
+                비어 있으면 아래 "첫 목소리를 등록해보세요" 안내만 노출 */}
+            {voices.length > 0 && (
+            <div className="record-hero relative overflow-hidden rounded-2xl bg-[var(--primary-light)] p-5 sm:p-6 mb-6">
+              {/* 우상단 마이크 워터마크 */}
+              <div className="absolute top-3 right-4 text-primary opacity-[0.12] pointer-events-none">
+                <Mic size={64} filled />
+              </div>
               {/* 우측 파형 그래픽 */}
               <div className="absolute right-5 sm:right-7 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-[4px] h-10 pointer-events-none">
                 {[14, 26, 38, 22, 32, 18].map((h, i) => (
@@ -508,10 +503,10 @@ export default function RecordPage() {
               </div>
               <div className="relative z-10 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="text-white font-extrabold text-[17px] mb-1">
+                  <h2 className="text-[#3C3489] font-extrabold text-[17px] mb-1">
                     새 목소리 등록하기
                   </h2>
-                  <p className="text-[13px] text-[var(--night-text)] leading-relaxed">
+                  <p className="text-[13px] text-[#5C5680] leading-relaxed">
                     조용한 곳에서 30초면 충분해요
                     <br className="sm:hidden" /> · 가족 누구든 좋아요
                   </p>
@@ -525,6 +520,7 @@ export default function RecordPage() {
                 </button>
               </div>
             </div>
+            )}
 
             {voices.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

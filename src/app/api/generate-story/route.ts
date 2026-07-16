@@ -223,8 +223,7 @@ export async function POST(req: NextRequest) {
   // 소리내어 읽기(TTS) 규칙
   const ttsKo = `소리내어 읽기 규칙 (성우가 소리 내어 읽어줍니다):
 - 괄호·이모지·특수문자·영어 단어를 쓰지 마세요. 숫자는 한글로 풀어 쓰세요 (예: 세 개, 열 밤).
-- 의성어·의태어를 적극 활용하세요 (살금살금, 반짝반짝, 쿨쿨).
-- 같은 구절이 두세 번 반복되는 리듬 구조를 환영합니다 (귀로 들을 때 아이가 좋아해요).
+- 의성어·의태어는 동화 전체에서 4~6개만 사용하세요. 모든 문단에 하나씩 균등하게 넣지 말고, 인상적인 장면에만 집중해서 쓰세요. 절반 이상의 문단에는 의성어·의태어가 아예 없어야 자연스럽습니다.
 - 한 문장은 소리 내어 읽었을 때 한 호흡에 끝나는 길이로 쓰세요.`;
 
   const moodEn = isBedtime
@@ -232,8 +231,7 @@ export async function POST(req: NextRequest) {
     : "This story is heard while the child is awake. Use a bright, lively tone; the ending may show the character accomplishing something or discovering something new. Avoid overly intense or scary developments.";
   const ttsEn = `Read-aloud rules (a voice actor reads it out loud):
 - No parentheses, emojis, or special characters; write numbers as words.
-- Use plenty of onomatopoeia and playful sound words.
-- Repeating a phrase two or three times for rhythm is welcome (children enjoy it by ear).
+- Use onomatopoeia or mimetic words only 4-6 times in the WHOLE story. Do not put one in every paragraph; concentrate them in the few most striking moments. More than half of the paragraphs should have none at all.
 - Keep each sentence short enough to read aloud in a single breath.
 - The Korean "contentKo" translation must follow the same rules: no special characters or emojis, and write numbers as Korean words.`;
 
@@ -251,8 +249,17 @@ ${childName ? `- Name the main character "${childName}" and use the name natural
 - The heart of the story is the character's emotions, not the plot. Show them feeling joy, curiosity, mistakes, surprise, and courage.
 - Don't narrate by explaining — let characters act and talk so the reader can vividly picture each scene.
 - Natural dialogue should make up roughly 20-30% of the text.
+- Do not use any word or its variants more than three times in the whole story (e.g. "sparkle", "sparkling", "sparkled" all count as one word). Watch especially for repeated words like "sparkle", "pretty", or "carefully"; use different vocabulary for the same idea.
+- Limit exclamations like "Wow!", "Yay!", "So pretty!" to at most two in the whole story. Have characters think, ask, or suggest something in dialogue rather than just exclaiming.
+- Do NOT use AI-sounding cliché transitions such as "Just then,", "And that was when...", "A little while later,", "One day,...", or "...was what happened." When a scene changes, use a natural connector or move straight into the next scene with no transition phrase.
+- Not every scene should go smoothly. Include at least two small, unexpected situations the child can solve alone (e.g. what they were looking for is suddenly out of sight / it slips from their hand / it is colder than expected / something else looks more tempting and they hesitate / a friend grabs it first). These must be everyday-sized hiccups, never big, scary, or dangerous events.
+- If a parent or family member appears in the plot, do not leave them as a bystander. Have them do something meaningful at least once — suggest an idea, try together, or encourage after a failure — but they must NOT solve the problem for the child; they only help the child do it themselves. Since a parent reads this story aloud in their own voice, the parent character must have actual lines of dialogue to read.
 - Keep sentences short and easy to read; avoid long run-on sentences.
-- A clear beginning, middle, and end across 4-6 scenes.
+- Follow this four-part structure and keep each part's share of the length:
+  1) Setup (~20%) — the main character and today's goal. Compress preparation like waking up or traveling into at most one paragraph.
+  2) Attempts and small failures (~30%) — they try but it does not go as planned. At least twice.
+  3) Turn (~30%) — they change their approach, find courage, or get help, then try again.
+  4) Resolution (~20%) — they reach the goal and express their feelings to close. The setup must never exceed half of the whole story.
 - Style: simple, warm English suitable for reading aloud to a young child
 - Separate paragraphs with a blank line
 - Never include violent, scary, or inappropriate content
@@ -291,8 +298,17 @@ ${childName ? `- 주인공 이름은 "${childName}"(으)로 하고 본문에 자
 - 동화의 중심은 사건보다 등장인물의 감정입니다. 아이가 기뻐하고, 궁금해하고, 실수하고, 놀라고, 용기 내는 감정의 변화를 충분히 표현하세요
 - 상황을 설명으로 서술하지 말고, 등장인물이 직접 행동하고 대화를 주고받으며 눈앞에 장면이 그려질 만큼 생생하게 쓰세요
 - 등장인물 간 자연스러운 대화가 본문의 약 20~30%를 차지하도록 하세요
+- 같은 단어나 그 변형을 동화 전체에서 세 번을 넘겨 쓰지 마세요 ('반짝반짝', '반짝이는', '반짝였죠'는 모두 같은 단어로 셉니다). 특히 '반짝', '예쁘다', '조심조심' 같은 표현의 반복에 주의하고, 같은 뜻이라도 다른 어휘로 바꿔 쓰세요
+- '우와!', '야호!', '예뻐!' 같은 감탄사는 동화 전체에서 두 개 이하로 제한하세요. 대사는 감탄이 아니라 인물이 생각하거나, 묻거나, 무언가를 제안하는 내용으로 쓰세요
+- 다음 표현은 사용하지 마세요 (AI가 쓴 티가 나는 상투구입니다): '그때였어요', '바로 그때였어요', '잠시 후였어요', '그러던 어느 날이었어요', '~하는 것이었어요'. 장면 전환이 필요하면 '그런데', '문득', '한참을 ~하다가' 같은 자연스러운 연결로 쓰거나, 연결어 없이 바로 다음 장면으로 넘어가세요
+- 모든 장면이 순조롭게 흘러가면 안 됩니다. 아이가 스스로 해결할 수 있는 작고 예상치 못한 상황을 두 개 이상 넣으세요 (예: 찾던 것이 갑자기 안 보인다 / 손에서 놓친다 / 생각보다 차갑다 / 다른 것이 더 좋아 보여 고민한다 / 친구가 먼저 가져간다). 큰 사건이 아니라 아이 일상 크기의 사소한 변수여야 하며, 무섭거나 위험한 상황은 넣지 마세요
+- 줄거리에 부모나 가족이 등장하면 관망자로 두지 마세요. 최소 한 번은 의미 있는 행동을 하게 하세요 — 방법을 제안하거나, 함께 시도하거나, 실패했을 때 격려하거나. 단, 문제를 대신 해결해 주면 안 되고 주인공이 스스로 해내도록 거드는 역할이어야 합니다. 이 동화는 부모가 자기 목소리로 읽어주므로 부모 캐릭터에게 실제로 읽을 대사가 있어야 합니다
 - ${ageGuideKo}
-- 기승전결이 뚜렷하고 장면이 4~6개로 이어지도록 구성하세요
+- 아래 네 단계 구조를 지키고 각 단계의 분량 비중을 준수하세요:
+  1) 도입 (약 20%) — 주인공과 오늘의 목표를 보여주세요. 아침에 일어나기, 이동하기 같은 준비 과정은 최대 한 문단으로 압축하세요
+  2) 시도와 작은 실패 (약 30%) — 시도하지만 뜻대로 되지 않습니다. 최소 두 번
+  3) 전환 (약 30%) — 방법을 바꾸거나, 용기를 내거나, 도움을 받아 다시 시도합니다
+  4) 해결 (약 20%) — 목표를 이루고 감정을 표현하며 마무리합니다. 도입이 전체의 절반을 넘으면 안 됩니다
 - 문체: 아이에게 읽어주는 부드러운 구어체 ("~했어요", "~했답니다")
 - 문단은 빈 줄로 구분하세요
 - 폭력적이거나 무서운 장면, 선정적인 표현은 절대 넣지 마세요

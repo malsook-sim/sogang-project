@@ -178,10 +178,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   background: #4A3FA0;
 }
 [data-theme="sleep"] .cta-active {
-  background: #8F7FE8;
+  background: #F4C566;
+  color: #4A3A12;
 }
 [data-theme="sleep"] .cta-active:hover {
-  background: #A99DF2;
+  background: #F7D68A;
 }
 /* 로딩: 활성 색 유지(회색으로 죽이지 않음), hover 변화 없음 */
 .cta-loading {
@@ -189,14 +190,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   color: #FFFFFF;
 }
 [data-theme="sleep"] .cta-loading {
-  background: #8F7FE8;
+  background: #F4C566;
+  color: #4A3A12;
 }
-/* 활성 별 아이콘 — 낮은 흰색, 밤은 골드(밤 화면의 광원 문법) */
+/* 활성 별 아이콘 — 낮은 흰색, 밤은 골드 배경 위라 진한 갈색 */
 .cta-star {
   color: #FFFFFF;
 }
 [data-theme="sleep"] .cta-star {
-  color: #F4C566;
+  color: #4A3A12;
 }
 /* 비활성→활성 전환 시 살짝 튀어오르는 느낌 */
 @keyframes ctaPop {
@@ -274,13 +276,35 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   --text-body: #C5BFE0;
   --border: #3A3568;        /* 청보라 채도 반영 */
   --border-strong: #4C4778;
-  --primary: #8F7FE8;       /* 어두운 배경 대비 두 단계 밝힘 */
-  --primary-light: rgba(143, 127, 232, 0.22); /* primary-soft — 진짜 라벤더 틴트로 */
-  --primary-deep: #B7ABF4;
+  /* 골드를 주요 액센트로 승격 — 보라는 배경/표면·비활성 전용 (대비 확보) */
+  --primary: #F4C566;                          /* 활성/CTA/액센트 = 골드 */
+  --primary-dark: #F7D68A;                     /* 골드 hover */
+  --primary-deep: #F7D68A;
+  --primary-light: rgba(143, 127, 232, 0.22);  /* 비활성 soft 틴트는 보라 유지 */
   --star: #F4C566;          /* 양 모드 동일 */
   --night-caption: #A79FD9;
   --progress-track: #2C2A4C;
   --progress-fill: var(--star); /* 밤엔 진행바가 골드(달빛 차오름) */
+}
+
+/* 잠자기: 골드 배경(bg-primary) 위 텍스트·아이콘은 진한 갈색으로 (명도 대비 확보) */
+[data-theme="sleep"] .bg-primary,
+[data-theme="sleep"] .bg-primary svg {
+  color: #4A3A12;
+}
+[data-theme="sleep"] .bg-primary:hover {
+  background-color: #F7D68A;
+}
+
+/* record 배너: 낮은 연보라 틴트(컴포넌트 클래스), 잠자기에선 네이비 유지 */
+[data-theme="sleep"] .record-hero {
+  background: var(--night);
+}
+[data-theme="sleep"] .record-hero h2 {
+  color: #FFFFFF;
+}
+[data-theme="sleep"] .record-hero p {
+  color: var(--night-text);
 }
 
 /* 마케팅/첫 진입 페이지는 잠자기 모드여도 항상 라이트 팔레트로.
@@ -337,11 +361,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 [data-theme="sleep"] .app-nav-item.is-active {
   background: #363168;
-  color: #B7ABF4;
+  color: #F4C566;
   font-weight: 700;
 }
 [data-theme="sleep"] .app-nav-item.is-active .nav-icon {
-  color: #B7ABF4;
+  color: #F4C566;
 }
 [data-theme="sleep"] .app-nav-item.is-active::before {
   content: "";
@@ -351,7 +375,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   bottom: 0;
   width: 3px;
   border-radius: 0;
-  background: #8F7FE8;
+  background: #F4C566;
 }
 [data-theme="sleep"] .app-profile-card {
   background: #232048;
@@ -369,10 +393,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   border-top-color: #2C2A4C;
 }
 [data-theme="sleep"] .app-bottomnav .tab-active {
-  color: #B7ABF4;
+  color: #F4C566;
 }
 [data-theme="sleep"] .app-bottomnav .tab-active .tab-indicator {
-  background: #B7ABF4;
+  background: #F4C566;
 }
 [data-theme="sleep"] .app-bottomnav .tab-inactive {
   color: #8B86A3;

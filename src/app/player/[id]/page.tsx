@@ -25,7 +25,7 @@ import {
   startSleepTimer as startSleepGlobal,
   stopSleepMode,
 } from "@/lib/sleepMode";
-import { moralKeywords } from "@/lib/morals";
+import { moralKeywords, koTag } from "@/lib/morals";
 import { recordListen } from "@/lib/listenLog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
@@ -699,13 +699,11 @@ function PlayerContent() {
       className="fixed inset-0 flex flex-col overflow-hidden bg-[var(--background)]"
       style={{ ["--cbh" as string]: `${controlBarH}px` } as CSSProperties}
     >
-      {/* 배경: 동화 틴트 ↔ 밤 모드 크로스페이드 */}
+      {/* 배경: 낮=크림(--background) / 밤=밤하늘. 낮 모드에선 블러 커버 앰비언트를 숨겨 홈과 동일한 크림 배경 유지 */}
       <div className="absolute inset-0 z-0">
-        {/* 동화별 배경 틴트 */}
+        {/* 동화별 배경 틴트 — 밤 모드에서만 노출(낮 모드는 opacity 0으로 크림 배경 유지) */}
         <div
-          className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${
-            nightMode ? "opacity-0" : "opacity-100"
-          }`}
+          className="absolute inset-0 transition-opacity duration-[1200ms] ease-in-out opacity-0"
         >
           <StoryCover
             story={story}
@@ -879,7 +877,7 @@ function PlayerContent() {
                     : "bg-primary-light text-primary"
                 }`}
               >
-                {m}
+                {koTag(m)}
               </span>
             ))}
             <span

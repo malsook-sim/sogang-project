@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Story } from "@/data/stories";
 import { StoryCover } from "@/components/StoryCover";
-import { moralKeywords } from "@/lib/morals";
+import { moralKeywords, koTag } from "@/lib/morals";
 
 // 동화 카드 — 홈 큐레이션 / 탐색(/stories) 공용
 export function StoryCard({
@@ -49,7 +49,7 @@ export function StoryCard({
               key={moral}
               className="text-[10px] bg-primary-light text-primary px-2 py-0.5 rounded-full font-semibold"
             >
-              {moral}
+              {koTag(moral)}
             </span>
           ))}
         </div>

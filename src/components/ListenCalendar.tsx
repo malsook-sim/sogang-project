@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   getListenDates,
   listensOn,
@@ -27,6 +28,29 @@ export default function ListenCalendar() {
   }, []);
 
   if (!cursor) return null; // 첫(서버) 렌더에선 그리지 않음 (hydration 안전)
+
+  // 전체 듣기 기록이 하나도 없으면 캘린더 대신 안내 카드
+  if (dates.size === 0) {
+    return (
+      <div className="card p-4 mb-5">
+        <div className="flex flex-col items-center text-center py-6">
+          <span className="text-2xl mb-2" aria-hidden>
+            🌙
+          </span>
+          <p className="font-bold text-sm mb-1">아직 함께한 기록이 없어요</p>
+          <p className="text-[12px] text-muted mb-4">
+            첫 동화를 들려주면 여기에 쌓여요
+          </p>
+          <Link
+            href="/"
+            className="text-[13px] font-medium text-primary hover:underline"
+          >
+            동화 들으러 가기
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const { y, m } = cursor;
   const startDow = new Date(y, m, 1).getDay(); // 0=일

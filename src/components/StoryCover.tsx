@@ -1,45 +1,65 @@
-import { useId } from "react";
 import type { Story } from "@/data/stories";
 
-type Pal = { sky: [string, string]; back: string; front: string };
+type Pal = { sky: string; back: string; front: string };
 
-const palettes: Record<string, Pal> = {
-  "1": { sky: ["#F4BD8E", "#D86F4A"], back: "#9DBA6E", front: "#80A356" },
-  "2": { sky: ["#EBBC68", "#494376"], back: "#3F3B64", front: "#2F2C4E" },
-  "3": { sky: ["#CBB4E6", "#6E5F9E"], back: "#9683C2", front: "#7E6CA8" },
-  "4": { sky: ["#BBD2A8", "#6E8C5C"], back: "#8DAF70", front: "#6F9457" },
-  "5": { sky: ["#A9C9DD", "#425972"], back: "#3C5870", front: "#314A60" },
-  "6": { sky: ["#EECB89", "#B98F42"], back: "#A6C27D", front: "#88A661" },
-  "7": { sky: ["#F0BAC8", "#A85F77"], back: "#9C5A72", front: "#854B61" },
-  "8": { sky: ["#E6BD93", "#9A7350"], back: "#BC9468", front: "#9E7850" },
-  "9": { sky: ["#9B99C9", "#373260"], back: "#322E58", front: "#262247" },
-};
+// ── 하늘: 플랫 단색 4종 (그라데이션 금지) ──────────────────
+const SKY = {
+  dawn: "#DCD7F0", // 새벽
+  noon: "#CFE0F2", // 한낮
+  dusk: "#F0D9C8", // 노을
+  night: "#3A3760", // 밤
+} as const;
 
-const fallbackPalettes: Pal[] = [
-  { sky: ["#F4BD8E", "#D86F4A"], back: "#9DBA6E", front: "#80A356" },
-  { sky: ["#A9C9DD", "#425972"], back: "#3C5870", front: "#314A60" },
-  { sky: ["#CBB4E6", "#6E5F9E"], back: "#9683C2", front: "#7E6CA8" },
-  { sky: ["#BBD2A8", "#6E8C5C"], back: "#8DAF70", front: "#6F9457" },
-  { sky: ["#F0BAC8", "#A85F77"], back: "#9C5A72", front: "#854B61" },
-  { sky: ["#EECB89", "#B98F42"], back: "#A6C27D", front: "#88A661" },
-  { sky: ["#9B99C9", "#373260"], back: "#322E58", front: "#262247" },
-  { sky: ["#8FC7C2", "#3F7E79"], back: "#4C8B7F", front: "#3D7569" },
-  { sky: ["#F2C078", "#DC6F4E"], back: "#C58A57", front: "#A06D44" },
-  { sky: ["#AEC4EA", "#56699E"], back: "#566596", front: "#46527E" },
-];
+// ── 언덕/지면 허용 3색 (초록 채도 #8FA882 초과 금지) ────────
+const HILL = {
+  green: "#C9D9C0", // 연녹
+  sand: "#E0D5C4", // 모래
+  slate: "#B8C4E0", // 청회
+} as const;
 
-// 밤하늘/황혼 계열 씬 id (웜톤 보정 필터에서 제외)
-const NIGHT_IDS = new Set(["2", "5", "9"]);
+// 해·달은 항상 골드
+const GOLD = "#F4C566";
 
-// 신규 생성 동화(my-*)에 쓰는 네이비-라벤더 야간 팔레트
-const nightPalettes: Pal[] = [
-  { sky: ["#9B99C9", "#373260"], back: "#322E58", front: "#262247" },
-  { sky: ["#A9C9DD", "#425972"], back: "#3C5870", front: "#314A60" },
-  { sky: ["#CBB4E6", "#6E5F9E"], back: "#9683C2", front: "#7E6CA8" },
-];
+// 오브젝트 채도: 손그림 씬 전체를 완만하게 탈채도
+const DESAT_FILTER = "saturate(0.82)";
 
-// 웜톤 보정: 밤하늘 계열은 제외하고 주황/노을 계열만 살짝 눌러 새 팔레트와 조화
-const WARM_TONE_FILTER = "saturate(0.85) hue-rotate(-8deg) brightness(0.97)";
+// back을 front보다 살짝 어둡게 만들기 위한 shade 값(rgb 각 채널 - amt)
+function shade(hex: string, amt: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, ((n >> 16) & 0xff) - amt);
+  const g = Math.max(0, ((n >> 8) & 0xff) - amt);
+  const b = Math.max(0, (n & 0xff) - amt);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+}
+
+// 하늘색 → 어울리는 언덕 색 (front) 매핑
+function hillFor(sky: string): { back: string; front: string } {
+  let front: string;
+  if (sky === SKY.night) front = HILL.slate; // 밤 → 청회
+  else if (sky === SKY.dusk) front = HILL.sand; // 노을 → 모래
+  else front = HILL.green; // 그 외 → 연녹
+  return { front, back: shade(front, 22) };
+}
+
+// story.category / id 기반 하늘색 결정 (deterministic)
+function skyFor(story: { id: string; category?: string }): string {
+  const c = story.category;
+  if (c === "bedtime") return SKY.night;
+  if (c === "adventure" || c === "nature") return SKY.noon;
+  if (c === "classic") return SKY.dusk;
+  // world / english / undefined / 생성동화(my-*) → 새벽
+  return SKY.dawn;
+}
+
+// id만 아는 컨텍스트(coverColor 등)에서 하늘색 결정
+function skyForId(id: string, category?: string): string {
+  return skyFor({ id, category });
+}
+
+// 밤하늘 계열인지 (별/달 씬 판단용)
+function isNightSky(sky: string): boolean {
+  return sky === SKY.night;
+}
 
 function hashId(id: string): number {
   let h = 0;
@@ -47,14 +67,6 @@ function hashId(id: string): number {
     h = (h * 31 + id.charCodeAt(i)) >>> 0;
   }
   return h;
-}
-
-// 밤하늘 계열인지 (웜톤 보정 필터 제외 대상)
-function isNightScene(id: string): boolean {
-  if (id.startsWith("my-")) return true; // 신규 생성 동화는 네이비-라벤더 야간 톤
-  if (NIGHT_IDS.has(id)) return true;
-  if (!palettes[id]) return hashId(id) % 3 === 1; // 기본 표지의 밤하늘 변형
-  return false;
 }
 
 function Hills({ back, front }: { back: string; front: string }) {
@@ -93,17 +105,17 @@ function Sun({
   cx,
   cy,
   r,
-  fill = "#FFDD7A",
 }: {
   cx: number;
   cy: number;
   r: number;
+  // fill prop은 호환을 위해 받아들이되 무시 — 해·달은 항상 골드
   fill?: string;
 }) {
   return (
     <>
-      <circle cx={cx} cy={cy} r={r + 9} fill={fill} opacity={0.22} />
-      <circle cx={cx} cy={cy} r={r} fill={fill} />
+      <circle cx={cx} cy={cy} r={r + 9} fill={GOLD} opacity={0.22} />
+      <circle cx={cx} cy={cy} r={r} fill={GOLD} />
     </>
   );
 }
@@ -206,10 +218,10 @@ function Scene({
     case "2":
       return (
         <>
-          <Sun cx={46} cy={48} r={18} fill="#FFD45E" />
-          <circle cx="156" cy="44" r="15" fill="#ECE6F2" />
-          <circle cx="151" cy="40" r="3" fill="#D6CFE4" />
-          <circle cx="160" cy="49" r="2.2" fill="#D6CFE4" />
+          <Sun cx={46} cy={48} r={18} />
+          <circle cx="156" cy="44" r="15" fill={GOLD} />
+          <circle cx="151" cy="40" r="3" fill={shade(GOLD, 24)} />
+          <circle cx="160" cy="49" r="2.2" fill={shade(GOLD, 24)} />
           <Spark x={172} y={80} s={0.8} fill="#FFF6D6" />
           <Spark x={138} y={28} s={0.6} fill="#FFF6D6" />
           <Spark x={180} y={112} s={0.55} fill="#FFF6D6" />
@@ -353,10 +365,10 @@ function Scene({
     case "5":
       return (
         <>
-          <circle cx="148" cy="52" r="22" fill="#F1ECD8" opacity="0.25" />
-          <circle cx="148" cy="52" r="22" fill="#F1ECD8" />
-          <circle cx="142" cy="46" r="3.6" fill="#DED7BE" />
-          <circle cx="154" cy="58" r="2.6" fill="#DED7BE" />
+          <circle cx="148" cy="52" r="22" fill={GOLD} opacity="0.25" />
+          <circle cx="148" cy="52" r="22" fill={GOLD} />
+          <circle cx="142" cy="46" r="3.6" fill={shade(GOLD, 24)} />
+          <circle cx="154" cy="58" r="2.6" fill={shade(GOLD, 24)} />
           <Spark x={70} y={40} s={0.6} fill="#FBF4D6" />
           <Spark x={108} y={28} s={0.5} fill="#FBF4D6" />
           <circle cx="44" cy="58" r="1.6" fill="#FFFFFF" opacity="0.8" />
@@ -523,7 +535,7 @@ function Scene({
         <>
           <path
             d="M52 26 A20 20 0 1 0 52 66 A15 15 0 1 1 52 26 Z"
-            fill="#F0E9C6"
+            fill={GOLD}
           />
           <Spark x={156} y={40} s={0.8} fill="#FFF0C2" />
           <Spark x={172} y={88} s={0.55} fill="#FFF0C2" />
@@ -556,7 +568,8 @@ function Scene({
 
     // 그 외 동화 — id 해시로 다양한 기본 풍경 (my-* 등 야간 강제 시 밤하늘 고정)
     default: {
-      const variant = forceNight ? 1 : hashId(id) % 3;
+      // 밤 하늘이면 밤 씬(variant 1), 아니면 낮 씬 2종 중 결정적으로 선택
+      const variant = forceNight ? 1 : hashId(id) % 2 === 0 ? 0 : 2;
 
       if (variant === 1) {
         // 밤하늘
@@ -564,7 +577,7 @@ function Scene({
           <>
             <path
               d="M52 26 A20 20 0 1 0 52 66 A15 15 0 1 1 52 26 Z"
-              fill="#F0E9C6"
+              fill={GOLD}
             />
             <Spark x={150} y={44} s={0.7} fill="#FFF0C2" />
             <Spark x={118} y={30} s={0.5} fill="#FFF0C2" />
@@ -638,11 +651,9 @@ function Scene({
   }
 }
 
-// 동화별 대표색 (표지 그라데이션의 진한 쪽) — 틴트 시스템에서 사용
+// 동화별 대표색(플랫 하늘색) — 틴트 시스템에서 사용. 시그니처 유지.
 export function coverColor(id: string): string {
-  const pal =
-    palettes[id] ?? fallbackPalettes[hashId(id) % fallbackPalettes.length];
-  return pal.sky[1];
+  return skyForId(id);
 }
 
 export function StoryCover({
@@ -654,36 +665,28 @@ export function StoryCover({
   className?: string;
   showTitle?: boolean;
 }) {
-  const gradId = useId();
-  const isMy = story.id.startsWith("my-");
-  const night = isNightScene(story.id);
-  const pal = isMy
-    ? nightPalettes[hashId(story.id) % nightPalettes.length]
-    : palettes[story.id] ??
-      fallbackPalettes[hashId(story.id) % fallbackPalettes.length];
+  const sky = skyFor(story);
+  const night = isNightSky(sky);
+  const { back, front } = hillFor(sky);
+  const pal: Pal = { sky, back, front };
 
   return (
     <svg
       viewBox="0 0 200 200"
       preserveAspectRatio="xMidYMid slice"
       className={`story-cover ${className ?? ""}`}
-      style={night ? undefined : { filter: WARM_TONE_FILTER }}
+      style={{ filter: DESAT_FILTER }}
       role="img"
       aria-label={story.title}
     >
-      <defs>
-        <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={pal.sky[0]} />
-          <stop offset="100%" stopColor={pal.sky[1]} />
-        </linearGradient>
-      </defs>
-      <rect width="200" height="200" fill={`url(#${gradId})`} />
+      {/* 하늘: 플랫 단색 */}
+      <rect width="200" height="200" fill={sky} />
 
       <circle cx="34" cy="32" r="46" fill="#FFFFFF" opacity="0.08" />
       <circle cx="178" cy="176" r="54" fill="#FFFFFF" opacity="0.06" />
 
       {showTitle ? (
-        <Scene id={story.id} pal={pal} forceNight={isMy} />
+        <Scene id={story.id} pal={pal} forceNight={night} />
       ) : (
         <Hills back={pal.back} front={pal.front} />
       )}

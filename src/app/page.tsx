@@ -15,7 +15,7 @@ import { StoryCover } from "@/components/StoryCover";
 import { StoryCard } from "@/components/StoryCard";
 import { StoryGridSkeleton, CatalogError } from "@/components/CatalogStates";
 import SleepModeButton from "@/components/SleepModeButton";
-import { moralKeywords } from "@/lib/morals";
+import { moralKeywords, koTag } from "@/lib/morals";
 
 // 나이대 필터 — 동화 권장연령의 중간값으로 한 묶음에만 속하게 분류
 const ageGroups = [
@@ -385,7 +385,7 @@ export default function HomePage() {
                           key={m}
                           className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold whitespace-nowrap"
                         >
-                          {m}
+                          {koTag(m)}
                         </span>
                       ))}
                     </div>
