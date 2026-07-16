@@ -218,7 +218,7 @@ export default function HomePage() {
   return (
     <>
       <header className="sticky top-0 z-50 glass border-b border-border">
-        <div className="max-w-lg lg:max-w-[1280px] mx-auto px-5 lg:px-8 pt-[28px] pb-3">
+        <div className="max-w-lg lg:max-w-[1280px] mx-auto px-5 lg:px-8 pt-5 pb-3">
           <div className="flex items-start justify-between mb-4 gap-3">
             <div className="min-w-0">
               <h1 className="text-[19px] sm:text-[20px] lg:text-[22px] font-extrabold text-foreground tracking-tight leading-snug">
