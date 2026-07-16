@@ -90,12 +90,30 @@ export function moralSummaryLines(
   return moralSentences(morals).slice(0, max);
 }
 
-// 상세용 교훈 캡션 — moral_summary(또는 문장형 morals)를 그대로 출력.
-// 키워드 조립 폴백 금지: 요약이 없으면 빈 배열 → 호출부에서 교훈 섹션 숨김.
+// 받침 유무 (와/과·을/를 조사용)
+function hasBatchim(word: string): boolean {
+  const code = word.charCodeAt(word.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return false;
+  return (code - 0xac00) % 28 !== 0;
+}
+
+// 상세용 교훈 캡션 — moral_summary(또는 문장형 morals) 우선.
+// 없으면 "한글" 태그로 한 줄 생성(영문 조립이 문제였던 것 → koTags로 한글화해 해결).
+// 태그조차 없을 때만 빈 배열 → 섹션 숨김.
 export function moralCaption(
   morals: string[] | undefined,
   moralSummary?: string | null,
   max = 2
 ): string[] {
-  return moralSummaryLines(morals, moralSummary, max);
+  const lines = moralSummaryLines(morals, moralSummary, max);
+  if (lines.length > 0) return lines;
+
+  const kw = koTags(morals, 3); // 한글 태그만 (영문은 걸러짐)
+  if (kw.length === 0) return [];
+  const joined = kw.reduce((acc, w, i) => {
+    if (i === 0) return w;
+    return acc + (hasBatchim(kw[i - 1]) ? "과 " : "와 ") + w;
+  }, "");
+  const last = kw[kw.length - 1];
+  return [`${joined}${hasBatchim(last) ? "을" : "를"} 배울 수 있는 이야기예요`];
 }
