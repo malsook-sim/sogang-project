@@ -50,17 +50,45 @@ function weekCount(list: ListenEntry[], now: Date): number {
   return days.size;
 }
 
-// 동화 완청 기록 → { 이번 주 며칠째 } 반환
+// 오늘부터 거슬러 이어진 연속 청취 일수 (오늘 포함)
+function streakDays(list: ListenEntry[], now: Date): number {
+  const dates = new Set(list.map((e) => e.date));
+  let streak = 0;
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  while (dates.has(dateKey(d))) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+export interface ListenRecord {
+  weekCount: number; // 이번 주 며칠째
+  streak: number; // 연속 일수 (오늘 포함)
+  isFirstEver: boolean; // 생애 첫 기록인지
+}
+
+// 동화 완청 기록 → 기록 요약 반환
 export function recordListen(
   storyId: string,
   title: string,
   voiceName?: string
-): { weekCount: number } {
+): ListenRecord {
   const now = new Date();
   const list = load();
+  const isFirstEver = list.length === 0;
   list.push({ date: dateKey(now), storyId, title, voiceName, ts: now.getTime() });
   save(list);
-  return { weekCount: weekCount(list, now) };
+  return {
+    weekCount: weekCount(list, now),
+    streak: streakDays(list, now),
+    isFirstEver,
+  };
+}
+
+// 지금까지 들은 적 있는 동화 id 집합 (다음 편 추천 시 제외용)
+export function getListenedStoryIds(): Set<string> {
+  return new Set(load().map((e) => e.storyId));
 }
 
 // 이번 달 동화를 들은 서로 다른 날 수

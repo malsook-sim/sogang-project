@@ -40,6 +40,7 @@
   --text-body: #5C5680;
   --muted-soft: #B3AECB;
   --star: #F4C566;
+  --on-star: #4A3A12; /* 골드 배경 위 텍스트/아이콘 (양 테마 동일) */
   --primary-deep: #4A3FA0;
 
   --radius-sm: 10px;
@@ -157,49 +158,85 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   box-shadow: var(--shadow-sm);
 }
 
+/* ===== 플레이어 스크립트 문장 — 좌측 액센트 바 방식 ===== */
+.script-line {
+  padding-left: 14px;
+  border-left: 3px solid transparent; /* 자리 확보 → 현재 문장 전환 시 밀림 없음 */
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+.script-line.is-current {
+  border-left-color: var(--primary); /* 낮=보라 / 잠자기=골드(승격됨) */
+  color: var(--foreground);
+  font-weight: 600;
+}
+/* 탭 가능 힌트 — hover 지원 기기(데스크탑)에서만 옅은 바 프리뷰 */
+@media (hover: hover) {
+  .script-line:hover:not(.is-current) {
+    border-left-color: rgba(110, 95, 214, 0.35);
+  }
+  [data-theme="sleep"] .script-line:hover:not(.is-current) {
+    border-left-color: rgba(244, 197, 102, 0.35);
+  }
+}
+
 /* ===== 동화 만들기 CTA — 낮/밤 테마별 명시 색상 ===== */
 /* 비활성: 무채색 회색 금지 — 연보라(낮)/청보라(밤)로 "곧 켜질 버튼"임을 암시 */
 .cta-idle {
-  background: #EDE9F7;
-  color: #8B86A3;
-  border: 1px solid #E8E4F0;
+  background: var(--primary-light);
+  color: #8B86A3; /* 양 테마 동일한 고정 회보라 (곧 켜질 버튼 힌트) */
+  border: 1px solid var(--border);
 }
 [data-theme="sleep"] .cta-idle {
-  background: #2E2A5C;
+  background: var(--surface-2);
   color: #8B86A3;
-  border-color: #3A3568;
 }
 /* 활성: 화면에서 가장 밝은 UI 요소(밤 모드) */
 .cta-active {
-  background: #6E5FD6;
+  background: var(--primary);
   color: #FFFFFF;
 }
 .cta-active:hover {
-  background: #4A3FA0;
+  background: var(--primary-deep);
 }
 [data-theme="sleep"] .cta-active {
-  background: #F4C566;
-  color: #4A3A12;
+  background: var(--star);
+  color: var(--on-star);
 }
 [data-theme="sleep"] .cta-active:hover {
-  background: #F7D68A;
+  background: #F7D68A; /* 골드 hover 셰이드 (별도 토큰 없음) */
 }
 /* 로딩: 활성 색 유지(회색으로 죽이지 않음), hover 변화 없음 */
 .cta-loading {
-  background: #6E5FD6;
+  background: var(--primary);
   color: #FFFFFF;
 }
 [data-theme="sleep"] .cta-loading {
-  background: #F4C566;
-  color: #4A3A12;
+  background: var(--star);
+  color: var(--on-star);
 }
 /* 활성 별 아이콘 — 낮은 흰색, 밤은 골드 배경 위라 진한 갈색 */
 .cta-star {
   color: #FFFFFF;
 }
 [data-theme="sleep"] .cta-star {
-  color: #4A3A12;
+  color: var(--on-star);
 }
+/* 재생 완료 화면 전환 — 300ms 페이드 인 (급격한 전환 방지) */
+@keyframes cmplFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* 완료 화면 배경 별 점 — 낮 0.15 / 잠자기 0.25 */
+.cmpl-star {
+  background: var(--star);
+  opacity: 0.15;
+}
+[data-theme="sleep"] .cmpl-star {
+  opacity: 0.25;
+}
+
 /* 비활성→활성 전환 시 살짝 튀어오르는 느낌 */
 @keyframes ctaPop {
   from { transform: scale(0.98); }
@@ -216,15 +253,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 /* ===== 세그먼트 컨트롤 (이야기 길이 / 분위기) ===== */
 .seg-track {
-  background: #EDE9F7;
+  background: var(--primary-light);
 }
 [data-theme="sleep"] .seg-track {
-  background: #2B2850;
+  background: #2B2850; /* 잠자기 전용 다크 트랙 (별도 토큰 없음) */
 }
 /* 밤 모드에서 "밤 이야기"가 선택됐을 때만 노출되는 달 아이콘(골드) */
 .seg-moon {
   display: none;
-  color: #F4C566;
+  color: var(--star);
 }
 [data-theme="sleep"] .seg-moon {
   display: inline-flex;

@@ -26,7 +26,11 @@ import {
   stopSleepMode,
 } from "@/lib/sleepMode";
 import { moralKeywords, koTag } from "@/lib/morals";
-import { recordListen } from "@/lib/listenLog";
+import {
+  recordListen,
+  getListenedStoryIds,
+  type ListenRecord,
+} from "@/lib/listenLog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 export default function PlayerPage() {
@@ -51,6 +55,37 @@ function hasBatchim(s: string): boolean {
 }
 const subjP = (s: string) => (hasBatchim(s) ? "이" : "가"); // 이/가
 const objP = (s: string) => (hasBatchim(s) ? "을" : "를"); // 을/를
+
+// 완료 화면 기록 문구 — 첫 기록 > 연속 3일+ > 1일째 > 이번 주 N일째
+function recordMessage(r: ListenRecord): string {
+  if (r.isFirstEver) return "첫 이야기를 함께했어요 🌙";
+  if (r.streak >= 3) return `${r.streak}일 연속이에요 🌙`;
+  if (r.weekCount <= 1) return "오늘도 함께했어요 🌙";
+  return `이번 주 ${r.weekCount}일째 함께했어요 🌙`;
+}
+
+// "한 편 더 듣기" 다음 편 선택 — 같은 분위기(잠자리/일반) 우선, 최근 들은 것·현재 편 제외
+function pickNextStory(
+  catalog: Story[],
+  current: Story,
+  heard: Set<string>
+): Story | null {
+  const isBed = current.category === "bedtime";
+  const base = catalog.filter(
+    (s) => s.id !== current.id && !s.id.startsWith("my-")
+  );
+  const moodMatch = base.filter((s) => (s.category === "bedtime") === isBed);
+  const byPlays = (arr: Story[]) =>
+    [...arr].sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0));
+  const pools = [
+    moodMatch.filter((s) => !heard.has(s.id)), // 같은 분위기 + 안 들은 것
+    base.filter((s) => !heard.has(s.id)), // 안 들은 것
+    moodMatch, // 같은 분위기 (다 들었으면)
+    base, // 아무거나
+  ];
+  for (const p of pools) if (p.length) return byPlays(p)[0];
+  return null;
+}
 
 function PlayerContent() {
   const params = useParams();
@@ -125,9 +160,7 @@ function PlayerContent() {
   // bedtime: 타이머 종료 시 작별 인사 표시 (밤 모드는 전역 sleep.active 사용)
   const [bedtime, setBedtime] = useState(false);
   const { user } = useCurrentUser();
-  const [listenRecord, setListenRecord] = useState<{ weekCount: number } | null>(
-    null
-  );
+  const [listenRecord, setListenRecord] = useState<ListenRecord | null>(null);
   const listenRecordedRef = useRef<string | null>(null); // 세션당 1회 기록
   const [recordCardClosed, setRecordCardClosed] = useState(false);
   const childName = user?.childName ?? "";
@@ -160,6 +193,7 @@ function PlayerContent() {
   const lastSaveRef = useRef(0); // 마지막으로 저장한 재생 위치
   const countedRef = useRef(false); // 재생수 중복 카운트 방지
   const playReqRef = useRef(0); // 재생 요청 토큰 — 이전(느린) 합성이 겹쳐 재생되는 것 방지
+  const userScrollUntilRef = useRef(0); // 이 시각 전까지는 수동 스크롤 중으로 보고 자동 스크롤 정지
 
   // 재생 위치를 서버에 저장 (이어 듣기용)
   const saveProgress = (opts?: { ended?: boolean }) => {
@@ -286,6 +320,18 @@ function PlayerContent() {
       setIsPlaying(true);
       setFinished(false);
       setBedtime(false);
+    }
+  };
+
+  // "한 편 더 듣기" — 홈으로 가지 않고 바로 다음 편 재생(목소리 유지, 최근 들은 것 제외)
+  const playNext = () => {
+    if (!story) return;
+    const next = pickNextStory(catalog, story, getListenedStoryIds());
+    audioRef.current?.pause();
+    if (next) {
+      router.push(`/player/${next.id}?voiceId=${voiceId}&autoplay=1`);
+    } else {
+      router.push("/");
     }
   };
 
@@ -474,9 +520,40 @@ function PlayerContent() {
 
   // 재생 재개(finished 해제) 시 완료 카드 닫힘 상태 초기화 → 다음 완청 때 다시 표시
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!finished) setRecordCardClosed(false);
   }, [finished]);
+
+  // 다음 편으로 전환(idParam 변경) 시 재생 상태 완전 초기화 — 같은 컴포넌트가 유지되므로 수동 리셋
+  useEffect(() => {
+    playReqRef.current++;
+    audioRef.current?.pause();
+    audioRef.current = null;
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+    listenRecordedRef.current = null;
+    countedRef.current = false;
+    resumeRef.current = 0;
+    lastSaveRef.current = 0;
+    setFinished(false);
+    setBedtime(false);
+    setListenRecord(null);
+    setProgress(0);
+    setCurrentParagraph(0);
+    setIsPlaying(false);
+    setRecordCardClosed(false);
+  }, [idParam]);
+
+  // autoplay=1 (한 편 더 듣기로 진입) 시 동화 로드되면 바로 재생
+  const autoplayedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (searchParams.get("autoplay") !== "1") return;
+    if (!story || autoplayedRef.current === idParam) return;
+    autoplayedRef.current = idParam;
+    void generateAndPlay();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story, idParam, searchParams]);
 
   useEffect(() => {
     let active = true;
@@ -522,6 +599,7 @@ function PlayerContent() {
   // 모바일에서 fixed 상단 헤더(뒤로가기·잠자기)가 밀려 잘리는 문제가 있어 직접 계산.
   useEffect(() => {
     if (finished) return;
+    if (Date.now() < userScrollUntilRef.current) return; // 수동 스크롤 중이면 자동 스크롤 정지
     const el = paraRefs.current[currentParagraph];
     const container = scriptRef.current;
     if (!el || !container) return;
@@ -531,6 +609,21 @@ function PlayerContent() {
       eRect.top - cRect.top - (container.clientHeight - el.clientHeight) / 2;
     container.scrollTo({ top: container.scrollTop + delta, behavior: "smooth" });
   }, [currentParagraph, finished]);
+
+  // 사용자가 스크립트 패널을 직접 스크롤(휠/터치)하면 3초간 자동 스크롤 일시정지
+  useEffect(() => {
+    const c = scriptRef.current;
+    if (!c) return;
+    const pause = () => {
+      userScrollUntilRef.current = Date.now() + 3000;
+    };
+    c.addEventListener("wheel", pause, { passive: true });
+    c.addEventListener("touchmove", pause, { passive: true });
+    return () => {
+      c.removeEventListener("wheel", pause);
+      c.removeEventListener("touchmove", pause);
+    };
+  }, [story, finished, bedtime]);
 
   useEffect(() => {
     return () => {
@@ -704,6 +797,10 @@ function PlayerContent() {
     )
     .slice(0, 3);
 
+  // 완청(자연 종료) 시 플레이어 전체를 완료 화면으로 전환.
+  // 잠자기 타이머로 끝난 경우(bedtime)는 제외 — 어두운 작별 화면 유지.
+  const showComplete = finished && !bedtime;
+
   return (
     <div
       data-theme={sleep.active ? "sleep" : undefined}
@@ -767,7 +864,8 @@ function PlayerContent() {
         </div>
       </div>
 
-      {/* 상단 바 */}
+      {/* 상단 바 — 완료 화면에선 숨김 */}
+      {!showComplete && (
       <header className="relative z-20 shrink-0 flex items-center justify-between gap-3 px-5 lg:px-8 h-14 mt-[calc(env(safe-area-inset-top)+12px)] max-w-6xl mx-auto w-full">
         <BackButton
           night={nightMode}
@@ -855,8 +953,76 @@ function PlayerContent() {
           )}
         </div>
       </header>
+      )}
 
-      {/* 본문 2열 */}
+      {showComplete ? (
+        /* ── 완료 화면 — 전체 화면 전환(300ms 페이드), 중앙 정렬 ── */
+        <div
+          className="relative z-10 flex-1 min-h-0 flex flex-col items-center justify-center text-center px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+28px)]"
+          style={{ animation: "cmplFade 300ms ease" }}
+        >
+          {/* 배경 옅은 별 (낮 0.15 / 밤 0.25 — CSS로 분기) */}
+          <div className="absolute inset-0 pointer-events-none" aria-hidden>
+            <span className="cmpl-star absolute w-1.5 h-1.5 rounded-full" style={{ top: "22%", left: "18%" }} />
+            <span className="cmpl-star absolute w-1 h-1 rounded-full" style={{ top: "30%", right: "20%" }} />
+            <span className="cmpl-star absolute w-1.5 h-1.5 rounded-full" style={{ top: "64%", left: "24%" }} />
+            <span className="cmpl-star absolute w-1 h-1 rounded-full" style={{ bottom: "24%", right: "22%" }} />
+          </div>
+
+          {/* 방금 들은 동화 썸네일 72px + 달 배지 */}
+          <div className="relative shrink-0">
+            <div className="w-[72px] h-[72px] rounded-[12px] overflow-hidden shadow-lg border border-[var(--border)]">
+              <StoryCover story={story} className="w-full h-full" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center shadow-md">
+              <Moon size={15} filled className="text-[var(--star)]" />
+            </div>
+          </div>
+
+          <p
+            className={`mt-5 text-lg font-extrabold leading-snug max-w-[300px] ${
+              nightMode ? "text-[var(--night-surface)]" : "text-foreground"
+            }`}
+          >
+            {childName ? `${childName}${subjP(childName)} ` : ""}오늘 &lsquo;
+            {story.title}&rsquo;{objP(story.title)} 들었어요
+          </p>
+          {listenRecord && (
+            <p className="mt-2 text-[15px] text-[var(--star)] font-semibold">
+              {recordMessage(listenRecord)}
+            </p>
+          )}
+          <div className="flex items-center gap-2.5 mt-7 w-full max-w-[320px]">
+            <button
+              onClick={playNext}
+              className="cta-active flex-1 py-3.5 rounded-2xl text-sm font-bold transition-colors"
+            >
+              한 편 더 듣기
+            </button>
+            <button
+              onClick={() => router.push("/")}
+              className={`flex-1 py-3.5 rounded-2xl text-sm font-semibold border transition ${
+                nightMode
+                  ? "border-white/15 text-[#C9C3E8] hover:bg-white/5"
+                  : "border-border hover:bg-surface-soft"
+              }`}
+            >
+              오늘은 여기까지
+            </button>
+          </div>
+          <button
+            onClick={() => togglePlay()}
+            className={`mt-5 text-[13px] font-semibold underline underline-offset-4 transition ${
+              nightMode
+                ? "text-[#8B86A3] hover:text-[#C9C3E8]"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            처음부터 다시 듣기
+          </button>
+        </div>
+      ) : (
+      /* 본문 2열 */
       <div className="relative z-10 flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[38%_1fr] lg:gap-10 lg:items-stretch max-w-6xl mx-auto w-full px-5 lg:px-8 pt-4 lg:pt-16 pb-[calc(var(--cbh)_+_16px)] lg:pb-2">
         {/* 좌: 앨범아트 + 제목 */}
         <div className="shrink-0 flex flex-col items-center lg:justify-center text-center">
@@ -1039,9 +1205,9 @@ function PlayerContent() {
                       paraRefs.current[i] = el;
                     }}
                     onClick={() => seekTo(i / paragraphs.length)}
-                    className={`text-[15px] lg:text-base leading-[1.8] rounded-lg px-2 py-1 cursor-pointer transition-colors duration-300 ${
+                    className={`script-line text-[15px] lg:text-base leading-[1.8] py-1 ${
                       i === currentParagraph
-                        ? "text-foreground font-semibold bg-[#8F7FE833]"
+                        ? "is-current"
                         : i < currentParagraph
                         ? "text-[var(--muted-soft)]"
                         : "text-[var(--text-body)]"
@@ -1064,8 +1230,10 @@ function PlayerContent() {
           )}
         </div>
       </div>
+      )}
 
-      {/* 하단 컨트롤 바 — 모바일: 뷰포트 하단 고정 / 데스크톱: 하단 도킹 유지 */}
+      {/* 하단 컨트롤 바 — 완료 화면에선 숨김(재생 끝났는데 재생 버튼 남으면 혼란) */}
+      {!showComplete && (
       <div
         ref={controlBarRef}
         className={`fixed inset-x-0 bottom-0 z-30 shrink-0 backdrop-blur border-t transition-colors duration-[1200ms] lg:relative lg:inset-x-auto lg:bottom-auto lg:z-20 ${
@@ -1077,18 +1245,18 @@ function PlayerContent() {
         <div className="max-w-4xl mx-auto px-5 lg:px-8 pt-3 pb-[calc(env(safe-area-inset-bottom)_+_20px)] lg:pb-4">
           {/* 진행바 */}
           <div
-            className="w-full h-1.5 rounded-full cursor-pointer relative bg-[#2C2A4C]"
+            className="w-full h-1.5 rounded-full cursor-pointer relative bg-[var(--progress-track)]"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               seekTo((e.clientX - rect.left) / rect.width);
             }}
           >
             <div
-              className="absolute left-0 top-0 h-full bg-[var(--star)] rounded-full"
+              className="absolute left-0 top-0 h-full bg-[var(--progress-fill)] rounded-full"
               style={{ width: `${progressPct}%` }}
             />
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[var(--star)] rounded-full shadow-md"
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[var(--progress-fill)] rounded-full shadow-md"
               style={{ left: `calc(${progressPct}% - 8px)` }}
             />
           </div>
@@ -1130,6 +1298,7 @@ function PlayerContent() {
           )}
         </div>
       </div>
+      )}
 
       {/* 목소리 변경 팝업 (모바일 바텀시트 / 768px+ 중앙 다이얼로그) */}
       {voiceModalOpen && (
