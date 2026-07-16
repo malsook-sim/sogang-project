@@ -1099,7 +1099,7 @@ function PlayerContent() {
           >
             <span>{formatTime(progress)}</span>
             <span>
-              {duration > 0 ? formatTime(duration) : `~${story.durationMin}:00`}
+              {duration > 0 ? formatTime(duration) : `약 ${story.durationMin}분`}
             </span>
           </div>
 
