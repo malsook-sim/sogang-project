@@ -835,18 +835,18 @@ function PlayerContent() {
           >
             <path
               d="M28 6 A15 15 0 1 0 28 34 A11.5 11.5 0 1 1 28 6 Z"
-              fill="#F4C566"
+              fill="var(--star)"
             />
           </svg>
           {/* 별 (은은한 twinkle, reduced-motion 시 정지) */}
           {[
-            { top: "14%", left: "12%", s: 2, c: "#F4C566", d: "0s" },
+            { top: "14%", left: "12%", s: 2, c: "var(--star)", d: "0s" },
             { top: "22%", left: "78%", s: 1.5, c: "#EDE9F7", d: "0.6s" },
             { top: "38%", left: "30%", s: 1, c: "#EDE9F7", d: "1.2s" },
-            { top: "48%", left: "88%", s: 2, c: "#F4C566", d: "0.3s" },
+            { top: "48%", left: "88%", s: 2, c: "var(--star)", d: "0.3s" },
             { top: "62%", left: "18%", s: 1.5, c: "#EDE9F7", d: "1.6s" },
             { top: "70%", left: "60%", s: 1, c: "#EDE9F7", d: "0.9s" },
-            { top: "80%", left: "40%", s: 2, c: "#F4C566", d: "2s" },
+            { top: "80%", left: "40%", s: 2, c: "var(--star)", d: "2s" },
           ].map((st, i) => (
             <span
               key={i}
@@ -899,7 +899,7 @@ function PlayerContent() {
                 : ""
             } ${
               nightMode
-                ? "text-[#F4C566] hover:bg-white/10"
+                ? "text-[var(--star)] hover:bg-white/10"
                 : sleep.endsAt
                 ? "text-primary hover:bg-surface/60"
                 : "text-foreground/70 hover:bg-surface/60"
@@ -1084,7 +1084,7 @@ function PlayerContent() {
             <div
               className={`flex-1 min-h-0 flex flex-col items-center justify-center text-center backdrop-blur border rounded-2xl p-6 transition-colors duration-[1200ms] ${panelCls}`}
             >
-              <Moon size={44} filled className="text-[#F4C566]" />
+              <Moon size={44} filled className="text-[var(--star)]" />
               <p className="mt-4 text-lg font-extrabold text-[var(--night-surface)]">
                 오늘은 여기까지, 잘 자요
               </p>
@@ -1099,7 +1099,7 @@ function PlayerContent() {
               <Moon
                 size={52}
                 filled
-                className="text-[#F4C566]"
+                className="text-[var(--star)]"
                 style={{ filter: "drop-shadow(0 0 20px rgba(244,197,102,0.4))" }}
               />
               <p
@@ -1163,7 +1163,7 @@ function PlayerContent() {
                       <p
                         className={`text-xs font-bold truncate mt-1.5 transition-colors ${
                           nightMode
-                            ? "text-[#C9C3E8] group-hover:text-[#F4C566]"
+                            ? "text-[#C9C3E8] group-hover:text-[var(--star)]"
                             : "group-hover:text-primary"
                         }`}
                       >
@@ -1365,7 +1365,7 @@ function PlayerContent() {
                             {v.name}
                           </span>
                           {v.isDefault && (
-                            <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#F4C566] text-[#5C4400]">
+                            <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--star)] text-[#5C4400]">
                               기본
                             </span>
                           )}

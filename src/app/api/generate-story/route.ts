@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  LENGTH_TARGET_CHARS,
+  minutesForKoChars,
+  EN_WORDS_PER_MIN,
+} from "@/lib/duration";
 
 // 아이용 동화로 부적절한 키워드 (선정적 / 고어 / 약물 / 욕설)
 const BANNED_KEYWORDS = [
@@ -179,14 +184,15 @@ export async function POST(req: NextRequest) {
         }
       : null;
   const plotStr = typeof plot === "string" ? plot.trim() : "";
-  // 한국어 낭독 속도 약 300~350자/분 기준 (UI 표기: 짧게 약 3분 / 보통 약 5분)
+  // 분량 목표·낭독 시간은 duration.ts의 실측 계수(한국어 440자/분, 영어 120단어/분)와 공유.
+  // UI "약 N분" 라벨과 동일한 값이 나오도록 같은 소스에서 계산.
   const short = length === "short";
-  const lenKo = short
-    ? "공백 포함 900~1100자 (약 3분 낭독 분량, 너무 짧지 않게)"
-    : "공백 포함 1500~1800자 (약 5분 낭독 분량, 이보다 짧으면 안 됨)";
-  const lenEn = short
-    ? "about 700-1000 characters (roughly a 3-minute read)"
-    : "about 1200-1600 characters (roughly a 5-minute read)";
+  const lenTarget = LENGTH_TARGET_CHARS[short ? "short" : "normal"];
+  const koMin = minutesForKoChars((lenTarget.min + lenTarget.max) / 2);
+  const lenKo = `공백 포함 ${lenTarget.min}~${lenTarget.max}자 (약 ${koMin}분 낭독 분량, 이보다 짧으면 안 됨)`;
+  // 영어는 단어수 기준 — 한국어와 같은 낭독 시간(분)에 맞춰 단어수 목표 산출
+  const enWords = koMin * EN_WORDS_PER_MIN;
+  const lenEn = `about ${enWords - 40}-${enWords + 40} words (about a ${koMin}-minute read aloud)`;
 
   // 후속편 모드가 아니면 줄거리 최소 길이 필요
   if (!prev && plotStr.length < 5) {

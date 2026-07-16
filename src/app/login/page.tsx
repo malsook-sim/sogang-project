@@ -122,7 +122,7 @@ function LoginContent() {
           className="absolute top-10 right-10 w-14 h-14 pointer-events-none z-10"
           aria-hidden
         >
-          <circle cx="24" cy="24" r="24" fill="#F4C566" />
+          <circle cx="24" cy="24" r="24" fill="var(--star)" />
           <circle cx="33" cy="18" r="21" fill="#2C2A45" />
         </svg>
         <svg
@@ -132,12 +132,12 @@ function LoginContent() {
           aria-hidden
         >
           <circle cx="70" cy="70" r="1.6" fill="#EDE9F7" />
-          <circle cx="120" cy="52" r="1.2" fill="#F4C566" />
+          <circle cx="120" cy="52" r="1.2" fill="var(--star)" />
           <circle cx="52" cy="150" r="1.4" fill="#EDE9F7" opacity="0.8" />
-          <circle cx="250" cy="120" r="1.3" fill="#F4C566" opacity="0.9" />
+          <circle cx="250" cy="120" r="1.3" fill="var(--star)" opacity="0.9" />
           <circle cx="180" cy="96" r="1" fill="#EDE9F7" opacity="0.7" />
           <circle cx="330" cy="180" r="1.5" fill="#EDE9F7" opacity="0.8" />
-          <circle cx="96" cy="240" r="1.2" fill="#F4C566" opacity="0.7" />
+          <circle cx="96" cy="240" r="1.2" fill="var(--star)" opacity="0.7" />
           <circle cx="286" cy="250" r="1.1" fill="#EDE9F7" opacity="0.6" />
         </svg>
 

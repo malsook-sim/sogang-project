@@ -49,12 +49,12 @@ function OnboardingContent() {
         {/* 별/달 장식 */}
         <svg width="72" height="40" viewBox="0 0 72 40" className="mb-6" aria-hidden>
           <g transform="translate(16 18)">
-            <circle cx="0" cy="0" r="13" fill="#F4C566" />
+            <circle cx="0" cy="0" r="13" fill="var(--star)" />
             <circle cx="6" cy="-4" r="11" fill="var(--color-bg)" />
           </g>
           <path
             d="M44 8 l1.6 3.6 3.6 1.6 -3.6 1.6 -1.6 3.6 -1.6 -3.6 -3.6 -1.6 3.6 -1.6z"
-            fill="#F4C566"
+            fill="var(--star)"
           />
           <circle cx="58" cy="24" r="2" fill="#CEC7EE" />
           <circle cx="38" cy="28" r="1.6" fill="#CEC7EE" />

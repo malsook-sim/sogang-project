@@ -1,6 +1,15 @@
+import type { ReactNode } from "react";
 import type { Story } from "@/data/stories";
+import {
+  pickTemplate,
+  pickAnimal,
+  variation,
+  type TemplateId,
+  type AnimalId,
+} from "@/lib/coverScene";
 
 type Pal = { sky: string; back: string; front: string };
+type Var = ReturnType<typeof variation>;
 
 // ── 하늘: 플랫 단색 4종 (그라데이션 금지) ──────────────────
 const SKY = {
@@ -17,7 +26,7 @@ const HILL = {
   slate: "#B8C4E0", // 청회
 } as const;
 
-// 해·달은 항상 골드
+// 해·달은 항상 골드 (테마 무관 — 일러스트 전용, --star와 동일값. shade() 계산에 쓰여 hex 유지)
 const GOLD = "#F4C566";
 
 // 오브젝트 채도: 손그림 씬 전체를 완만하게 탈채도
@@ -59,14 +68,6 @@ function skyForId(id: string, category?: string): string {
 // 밤하늘 계열인지 (별/달 씬 판단용)
 function isNightSky(sky: string): boolean {
   return sky === SKY.night;
-}
-
-function hashId(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) {
-    h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  }
-  return h;
 }
 
 function Hills({ back, front }: { back: string; front: string }) {
@@ -157,15 +158,383 @@ function Bear({
   );
 }
 
-function Scene({
+// ═══════════ 8종 씬 템플릿 엔진 (id 1~9 커스텀 씬 외 전부 여기로) ═══════════
+const SIL = "#6E6152"; // 오브젝트 실루엣 단색 톤다운
+
+// 해/달 — 위치(좌/중/우)·낮밤 반영
+function Light({ pos, night }: { pos: Var["lightPos"]; night: boolean }) {
+  const cx = pos === "left" ? 46 : pos === "right" ? 156 : 100;
+  return night ? (
+    <>
+      <circle cx={cx} cy={46} r={19} fill={GOLD} opacity={0.22} />
+      <circle cx={cx} cy={46} r={17} fill={GOLD} />
+      <circle cx={cx - 5} cy={42} r={3.2} fill={shade(GOLD, 24)} />
+      <circle cx={cx + 4} cy={51} r={2.2} fill={shade(GOLD, 24)} />
+    </>
+  ) : (
+    <Sun cx={cx} cy={46} r={17} />
+  );
+}
+
+function Stars({ n }: { n: number }) {
+  const pts = [
+    [72, 34], [120, 28], [168, 54], [40, 62], [148, 82],
+  ];
+  return (
+    <>
+      {pts.slice(0, n).map(([x, y], i) => (
+        <Spark key={i} x={x} y={y} s={0.5} fill="#FFF0C2" />
+      ))}
+    </>
+  );
+}
+
+function treeXs(n: number): number[] {
+  if (n <= 1) return [100];
+  const step = 116 / (n - 1);
+  return Array.from({ length: n }, (_, i) => 42 + i * step);
+}
+
+function Forest({ pal, v, night }: { pal: Pal; v: Var; night: boolean }) {
+  return (
+    <>
+      <Light pos={v.lightPos} night={night} />
+      {night && <Stars n={v.starCount} />}
+      <Hills back={pal.back} front={pal.front} />
+      {treeXs(v.treeCount).map((x, i) => (
+        <g key={i}>
+          <rect x={x - 3} y={116} width={6} height={30} rx={3} fill="#6E5A44" />
+          <path d={`M${x} 80 L${x - 20} 124 L${x + 20} 124 Z`} fill="#5E8C4A" />
+          <path d={`M${x} 96 L${x - 15} 128 L${x + 15} 128 Z`} fill="#73A35C" />
+        </g>
+      ))}
+    </>
+  );
+}
+
+function HillPath({ pal, v, night }: { pal: Pal; v: Var; night: boolean }) {
+  return (
+    <>
+      <Light pos={v.lightPos} night={night} />
+      {night && <Stars n={v.starCount} />}
+      {v.hillLayers >= 3 && (
+        <ellipse cx="36" cy="206" rx="128" ry="76" fill={shade(pal.back, 16)} />
+      )}
+      <ellipse cx="150" cy="218" rx="130" ry="74" fill={pal.back} />
+      <ellipse cx="86" cy="236" rx="142" ry="70" fill={pal.front} />
+      <path
+        d="M98 200 Q58 170 100 150 Q142 130 104 104"
+        stroke="#F2E6C8"
+        strokeWidth="13"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M98 200 Q58 170 100 150 Q142 130 104 104"
+        stroke="#E4D3AE"
+        strokeWidth="13"
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray="1 12"
+      />
+    </>
+  );
+}
+
+function Waterside({ pal, v, night }: { pal: Pal; v: Var; night: boolean }) {
+  const refX = v.lightPos === "left" ? 70 : v.lightPos === "right" ? 130 : 100;
+  return (
+    <>
+      <Light pos={v.lightPos} night={night} />
+      {night && <Stars n={v.starCount} />}
+      <Hills back={pal.back} front={pal.front} />
+      <ellipse cx="100" cy="176" rx="66" ry="21" fill="#6D9BBD" />
+      <ellipse cx="100" cy="171" rx="56" ry="13" fill="#86B0CC" opacity="0.6" />
+      <ellipse cx={refX} cy="178" rx="12" ry="3.4" fill="#F1ECD8" opacity="0.5" />
+      {[52, 61, 150, 160].map((x, i) => (
+        <g key={i}>
+          <path
+            d={`M${x} 176 Q${x - 4} 150 ${x + 2} 132`}
+            stroke="#3F5E4F"
+            strokeWidth="3"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <ellipse cx={x + 2} cy="132" rx="3" ry="7.2" fill="#5A4632" />
+        </g>
+      ))}
+    </>
+  );
+}
+
+function Mountain({ pal, v, night }: { pal: Pal; v: Var; night: boolean }) {
+  return (
+    <>
+      <Light pos={v.lightPos} night={night} />
+      {night && <Stars n={v.starCount} />}
+      <path d="M-10 152 L54 96 L120 152 Z" fill={shade(pal.back, 12)} />
+      {v.hillLayers >= 3 && (
+        <path d="M96 158 L156 104 L214 158 Z" fill={shade(pal.back, 4)} />
+      )}
+      <path d="M28 178 L104 108 L184 178 Z" fill={pal.front} />
+      <path
+        d="M104 108 L90 122 L99 124 L93 132 L115 132 L109 124 L118 122 Z"
+        fill="#F1ECDD"
+        opacity="0.78"
+      />
+      <Hills back={pal.back} front={pal.front} />
+    </>
+  );
+}
+
+function Field({ pal, v, night }: { pal: Pal; v: Var; night: boolean }) {
+  const flowers = [
+    [46, 158], [70, 168], [96, 160], [124, 170],
+    [150, 158], [172, 166], [58, 178], [134, 182],
+  ];
+  return (
+    <>
+      <Light pos={v.lightPos} night={night} />
+      {night && <Stars n={v.starCount} />}
+      <ellipse cx="100" cy="232" rx="150" ry="72" fill={pal.front} />
+      {v.treeCount >= 4 && (
+        <g>
+          <rect x={155} y={120} width={6} height={28} rx={3} fill="#6E5A44" />
+          <circle cx={158} cy={112} r={18} fill="#5E8C4A" />
+        </g>
+      )}
+      {flowers.map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r="2.6" fill={i % 2 ? "#F2C0D0" : "#FBE39A"} />
+          <circle cx={x} cy={y} r="1" fill="#FFFFFF" />
+        </g>
+      ))}
+    </>
+  );
+}
+
+function Village({ pal, v, night }: { pal: Pal; v: Var; night: boolean }) {
+  const houses: [number, string][] = [
+    [46, "#B5654A"], [86, "#9A7B52"], [126, "#A85C46"], [162, "#8F6A4A"],
+  ];
+  return (
+    <>
+      <Light pos={v.lightPos} night={night} />
+      {night && <Stars n={v.starCount} />}
+      <Hills back={pal.back} front={pal.front} />
+      {houses.slice(0, v.hillLayers >= 3 ? 4 : 3).map(([x, roof], i) => (
+        <g key={i}>
+          <rect x={x - 15} y={128} width={30} height={30} fill="#EFE3CC" />
+          <path d={`M${x - 19} 128 L${x} 108 L${x + 19} 128 Z`} fill={roof} />
+          <rect
+            x={x - 5}
+            y={138}
+            width={10}
+            height={11}
+            rx={1.5}
+            fill={night ? "#F6CB5C" : "#8B5A3B"}
+          />
+        </g>
+      ))}
+    </>
+  );
+}
+
+function SkyScene({ pal, v, night }: { pal: Pal; v: Var; night: boolean }) {
+  const clouds: [number, number, number][] = [
+    [64, 88, 1], [138, 70, 0.8], [104, 120, 0.7],
+  ];
+  return (
+    <>
+      <Light pos={v.lightPos} night={night} />
+      {night && <Stars n={Math.max(3, v.starCount)} />}
+      {clouds.map(([x, y, s], i) => (
+        <g
+          key={i}
+          transform={`translate(${x} ${y}) scale(${s})`}
+          fill="#FFFFFF"
+          opacity={night ? 0.5 : 0.85}
+        >
+          <ellipse cx="0" cy="0" rx="22" ry="12" />
+          <circle cx="-14" cy="2" r="9" />
+          <circle cx="12" cy="1" r="11" />
+          <circle cx="-2" cy="-7" r="10" />
+        </g>
+      ))}
+      <ellipse cx="100" cy="240" rx="150" ry="58" fill={pal.front} />
+    </>
+  );
+}
+
+function Sea({ v, night }: { pal: Pal; v: Var; night: boolean }) {
+  const refX = v.lightPos === "left" ? 46 : v.lightPos === "right" ? 156 : 100;
+  return (
+    <>
+      <Light pos={v.lightPos} night={night} />
+      {night && <Stars n={v.starCount} />}
+      <rect x="0" y="128" width="200" height="72" fill="#5E93B4" />
+      <rect x="0" y="128" width="200" height="10" fill="#76A8C6" />
+      {[150, 168, 186].slice(0, v.hillLayers >= 3 ? 3 : 2).map((y, i) => (
+        <path
+          key={i}
+          d={`M0 ${y} Q25 ${y - 6} 50 ${y} T100 ${y} T150 ${y} T200 ${y}`}
+          stroke="#9AC3DB"
+          strokeWidth="2.4"
+          fill="none"
+          opacity="0.7"
+        />
+      ))}
+      <ellipse cx={refX} cy="150" rx="10" ry="20" fill="#F1ECD8" opacity="0.28" />
+    </>
+  );
+}
+
+const TEMPLATES: Record<
+  TemplateId,
+  (p: { pal: Pal; v: Var; night: boolean }) => ReactNode
+> = {
+  forest: Forest,
+  hillpath: HillPath,
+  waterside: Waterside,
+  mountain: Mountain,
+  field: Field,
+  village: Village,
+  sky: SkyScene,
+  sea: Sea,
+};
+
+// 동물 실루엣 (단색, 캔버스 15% 이하)
+function Animal({
   id,
+  x,
+  y,
+  s,
+  flip,
+}: {
+  id: AnimalId;
+  x: number;
+  y: number;
+  s: number;
+  flip: boolean;
+}) {
+  const t = `translate(${x} ${y}) scale(${flip ? -s : s} ${s})`;
+  switch (id) {
+    case "rabbit":
+      return (
+        <g transform={t} fill={SIL}>
+          <ellipse cx="0" cy="6" rx="9" ry="7" />
+          <circle cx="8" cy="-1" r="5" />
+          <ellipse cx="6" cy="-11" rx="1.8" ry="6.5" />
+          <ellipse cx="10" cy="-11" rx="1.8" ry="6.5" />
+          <circle cx="-9" cy="7" r="2.6" />
+        </g>
+      );
+    case "turtle":
+      return (
+        <g transform={t} fill={SIL}>
+          <path d="M-13 6 Q-13 -8 0 -8 Q13 -8 13 6 Z" />
+          <ellipse cx="0" cy="7" rx="14" ry="3.5" />
+          <circle cx="15" cy="3" r="3.4" />
+          <rect x="-12" y="7" width="3.5" height="5" rx="1.5" />
+          <rect x="9" y="7" width="3.5" height="5" rx="1.5" />
+        </g>
+      );
+    case "bear":
+      return (
+        <g transform={t} fill={SIL}>
+          <circle cx="0" cy="4" r="10" />
+          <circle cx="0" cy="-8" r="7" />
+          <circle cx="-6" cy="-14" r="3" />
+          <circle cx="6" cy="-14" r="3" />
+        </g>
+      );
+    case "fox":
+      return (
+        <g transform={t} fill={SIL}>
+          <path d="M-12 8 Q-17 -3 -8 -2 L6 6 Z" />
+          <ellipse cx="2" cy="4" rx="9" ry="6" />
+          <path d="M8 -2 L16 2 L9 7 Z" />
+          <path d="M6 -4 L9 -11 L11 -4 Z" />
+          <path d="M11 -3 L14 -10 L15 -3 Z" />
+        </g>
+      );
+    case "tiger":
+      return (
+        <g transform={t} fill={SIL}>
+          <ellipse cx="-2" cy="4" rx="12" ry="7" />
+          <circle cx="10" cy="-1" r="6" />
+          <path d="M6 -6 L8 -11 L11 -7 Z" />
+          <path d="M12 -7 L15 -11 L16 -6 Z" />
+          <path
+            d="M-13 2 Q-20 -2 -17 6"
+            stroke={SIL}
+            strokeWidth="2.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </g>
+      );
+    case "sheep":
+      return (
+        <g transform={t} fill={SIL}>
+          <circle cx="-4" cy="2" r="5" />
+          <circle cx="2" cy="-2" r="6" />
+          <circle cx="6" cy="4" r="5.5" />
+          <circle cx="-2" cy="6" r="5.5" />
+          <circle cx="10" cy="-2" r="3.4" />
+          <rect x="-4" y="9" width="2" height="4" />
+          <rect x="5" y="9" width="2" height="4" />
+        </g>
+      );
+    case "bird":
+      return (
+        <g transform={t} fill={SIL}>
+          <ellipse cx="0" cy="0" rx="7" ry="4" />
+          <circle cx="6" cy="-3" r="3" />
+          <path d="M8 -3 L12 -2 L8 -1 Z" />
+          <path d="M-2 -1 Q-8 -8 -12 -4 Q-6 -2 -2 -1 Z" />
+        </g>
+      );
+  }
+}
+
+function TemplateScene({
+  story,
+  pal,
+  night,
+}: {
+  story: Story;
+  pal: Pal;
+  night: boolean;
+}) {
+  const t = pickTemplate(story);
+  const animal = pickAnimal(story);
+  const v = variation(story.id);
+  const Tpl = TEMPLATES[t];
+  const ax = v.flip ? 140 : 60;
+  return (
+    <>
+      <Tpl pal={pal} v={v} night={night} />
+      {animal &&
+        (animal === "bird" ? (
+          <Animal id="bird" x={v.flip ? 150 : 50} y={64} s={1.2} flip={v.flip} />
+        ) : (
+          <Animal id={animal} x={ax} y={152} s={1.15} flip={v.flip} />
+        ))}
+    </>
+  );
+}
+
+function Scene({
+  story,
   pal,
   forceNight,
 }: {
-  id: string;
+  story: Story;
   pal: Pal;
   forceNight?: boolean;
 }) {
+  const id = story.id;
   const hills = <Hills back={pal.back} front={pal.front} />;
 
   switch (id) {
@@ -566,88 +935,9 @@ function Scene({
         </>
       );
 
-    // 그 외 동화 — id 해시로 다양한 기본 풍경 (my-* 등 야간 강제 시 밤하늘 고정)
-    default: {
-      // 밤 하늘이면 밤 씬(variant 1), 아니면 낮 씬 2종 중 결정적으로 선택
-      const variant = forceNight ? 1 : hashId(id) % 2 === 0 ? 0 : 2;
-
-      if (variant === 1) {
-        // 밤하늘
-        return (
-          <>
-            <path
-              d="M52 26 A20 20 0 1 0 52 66 A15 15 0 1 1 52 26 Z"
-              fill={GOLD}
-            />
-            <Spark x={150} y={44} s={0.7} fill="#FFF0C2" />
-            <Spark x={118} y={30} s={0.5} fill="#FFF0C2" />
-            {[
-              [86, 36],
-              [162, 78],
-              [40, 96],
-              [128, 92],
-            ].map(([x, y]) => (
-              <circle
-                key={`${x}-${y}`}
-                cx={x}
-                cy={y}
-                r="1.7"
-                fill="#FFFFFF"
-                opacity="0.85"
-              />
-            ))}
-            {hills}
-          </>
-        );
-      }
-
-      if (variant === 2) {
-        // 숲속 들판
-        return (
-          <>
-            <Sun cx={150} cy={48} r={16} fill="#FFE08A" />
-            <Spark x={54} y={42} s={0.7} fill="#FFF3C4" />
-            {hills}
-            {[42, 100, 158].map((x) => (
-              <g key={x}>
-                <rect
-                  x={x - 3.5}
-                  y="118"
-                  width="7"
-                  height="32"
-                  rx="3"
-                  fill="#6E5A44"
-                />
-                <path
-                  d={`M${x} 82 L${x - 21} 126 L${x + 21} 126 Z`}
-                  fill="#5E8C4A"
-                />
-                <path
-                  d={`M${x} 98 L${x - 16} 130 L${x + 16} 130 Z`}
-                  fill="#73A35C"
-                />
-              </g>
-            ))}
-          </>
-        );
-      }
-
-      // 기본 낮 풍경
-      return (
-        <>
-          <Sun cx={152} cy={46} r={17} fill="#FFE08A" />
-          <Spark x={48} y={44} s={0.8} fill="#FFF3C4" />
-          <Spark x={100} y={30} s={0.55} fill="#FFF3C4" />
-          <Spark x={36} y={94} s={0.6} fill="#FFF3C4" />
-          {hills}
-          <path
-            d="M58 70 Q66 62 72 70 Q78 62 86 70 Q78 69 72 78 Q66 69 58 70 Z"
-            fill="#FFFFFF"
-            opacity="0.7"
-          />
-        </>
-      );
-    }
+    // 그 외 동화(id 10+, 생성 동화 등) — 8종 템플릿 엔진으로 결정론적 배정
+    default:
+      return <TemplateScene story={story} pal={pal} night={!!forceNight} />;
   }
 }
 
@@ -686,7 +976,7 @@ export function StoryCover({
       <circle cx="178" cy="176" r="54" fill="#FFFFFF" opacity="0.06" />
 
       {showTitle ? (
-        <Scene id={story.id} pal={pal} forceNight={night} />
+        <Scene story={story} pal={pal} forceNight={night} />
       ) : (
         <Hills back={pal.back} front={pal.front} />
       )}

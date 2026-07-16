@@ -28,7 +28,7 @@ export function StoryCard({
           className="w-full h-full transition-transform duration-500 group-hover:scale-105"
         />
         {story.isPremium && (
-          <span className="absolute top-2 left-2 bg-[#F4C566] text-[#5C4400] text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider">
+          <span className="absolute top-2 left-2 bg-[var(--star)] text-[#5C4400] text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider">
             PRO
           </span>
         )}

@@ -403,11 +403,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 [data-theme="sleep"] .app-nav-item.is-active {
   background: #363168;
-  color: #F4C566;
+  color: var(--star);
   font-weight: 700;
 }
 [data-theme="sleep"] .app-nav-item.is-active .nav-icon {
-  color: #F4C566;
+  color: var(--star);
 }
 [data-theme="sleep"] .app-nav-item.is-active::before {
   content: "";
@@ -417,7 +417,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   bottom: 0;
   width: 3px;
   border-radius: 0;
-  background: #F4C566;
+  background: var(--star);
 }
 [data-theme="sleep"] .app-profile-card {
   background: #232048;
@@ -435,10 +435,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   border-top-color: #2C2A4C;
 }
 [data-theme="sleep"] .app-bottomnav .tab-active {
-  color: #F4C566;
+  color: var(--star);
 }
 [data-theme="sleep"] .app-bottomnav .tab-active .tab-indicator {
-  background: #F4C566;
+  background: var(--star);
 }
 [data-theme="sleep"] .app-bottomnav .tab-inactive {
   color: #8B86A3;

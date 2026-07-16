@@ -451,7 +451,7 @@ export default function HomePage() {
                   className="absolute top-2.5 right-3 pointer-events-none"
                   aria-hidden
                 >
-                  <circle cx="10" cy="10" r="7" fill="#F4C566" />
+                  <circle cx="10" cy="10" r="7" fill="var(--star)" />
                   <circle cx="13" cy="8" r="6" fill="var(--night)" />
                 </svg>
               </Link>

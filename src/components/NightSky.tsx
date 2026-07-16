@@ -3,13 +3,13 @@ import type { ReactNode } from "react";
 // 밤하늘 풀스크린 배경 — 404/에러 화면 공용.
 // fixed inset-0 로 사이드바·탭바 위를 덮어 로그인 여부·레이아웃과 무관하게 단독 표시.
 const STARS = [
-  { top: "15%", left: "13%", s: 2.5, c: "#F4C566", d: "0s" },
+  { top: "15%", left: "13%", s: 2.5, c: "var(--star)", d: "0s" },
   { top: "23%", left: "82%", s: 2, c: "#EDE9F7", d: "0.6s" },
   { top: "38%", left: "27%", s: 1.5, c: "#EDE9F7", d: "1.2s" },
-  { top: "57%", left: "85%", s: 2.5, c: "#F4C566", d: "0.3s" },
+  { top: "57%", left: "85%", s: 2.5, c: "var(--star)", d: "0.3s" },
   { top: "67%", left: "16%", s: 2, c: "#EDE9F7", d: "1.6s" },
   { top: "78%", left: "63%", s: 1.5, c: "#EDE9F7", d: "0.9s" },
-  { top: "33%", left: "55%", s: 1.5, c: "#F4C566", d: "2s" },
+  { top: "33%", left: "55%", s: 1.5, c: "var(--star)", d: "2s" },
   { top: "85%", left: "38%", s: 2, c: "#EDE9F7", d: "1.1s" },
 ];
 
@@ -22,7 +22,7 @@ export function NightSky({ children }: { children: ReactNode }) {
         viewBox="0 0 48 48"
         aria-hidden
       >
-        <circle cx="24" cy="24" r="24" fill="#F4C566" />
+        <circle cx="24" cy="24" r="24" fill="var(--star)" />
         <circle cx="33" cy="18" r="21" fill="#2C2A45" />
       </svg>
 

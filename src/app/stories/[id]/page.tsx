@@ -65,7 +65,9 @@ export default function StoryDetailPage() {
   const previewReqRef = useRef(0);
 
   useEffect(() => {
+    // 마운트 시 저장된 목소리 1회 읽기 (hydration 불일치 방지 — 의도된 setState)
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLastVoiceId(localStorage.getItem("mvk.lastVoiceId"));
     } catch {
       setLastVoiceId(null);
@@ -266,7 +268,7 @@ export default function StoryDetailPage() {
               {v.isDefault && (
                 <span
                   className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap"
-                  style={{ background: "#F4C566", color: "#5C4400" }}
+                  style={{ background: "var(--star)", color: "#5C4400" }}
                 >
                   기본
                 </span>
@@ -434,7 +436,7 @@ export default function StoryDetailPage() {
           <div className="relative aspect-[4/3] lg:max-h-[300px] rounded-2xl bg-surface-soft overflow-hidden mb-4">
             <StoryCover story={story} className="w-full h-full" />
             {story.isPremium && (
-              <span className="absolute top-3 left-3 bg-[#F4C566] text-[#5C4400] text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider">
+              <span className="absolute top-3 left-3 bg-[var(--star)] text-[#5C4400] text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider">
                 PRO
               </span>
             )}

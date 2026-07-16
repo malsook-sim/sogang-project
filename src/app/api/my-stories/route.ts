@@ -3,6 +3,7 @@ import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { rowToMyStory } from "@/lib/storyRow";
+import { estimateDuration } from "@/lib/duration";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const min = Number(ageMin) || 4;
   const max = Number(ageMax) || 7;
-  const durationMin = Math.max(1, Math.round(String(content).length / 320));
+  const durationMin = estimateDuration(String(content));
   const summary =
     typeof moralSummary === "string" && moralSummary.trim()
       ? moralSummary.trim().slice(0, 200)

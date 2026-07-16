@@ -1,5 +1,6 @@
 import type { RowDataPacket } from "mysql2";
 import type { Story } from "@/data/stories";
+import { estimateDuration } from "@/lib/duration";
 
 export function parseMorals(value: unknown): string[] {
   if (Array.isArray(value)) return value as string[];
@@ -26,7 +27,7 @@ export function rowToCatalogStory(r: RowDataPacket): Story {
     moralSummary: r.moral_summary ?? undefined,
     isPremium: Boolean(r.is_premium),
     category: r.category,
-    durationMin: r.duration_min,
+    durationMin: estimateDuration(r.content),
     playCount: r.play_count ?? 0,
   };
 }
@@ -44,7 +45,7 @@ export function rowToMyStory(r: RowDataPacket): Story & { createdAt: number } {
     moralSummary: r.moral_summary ?? undefined,
     isPremium: false,
     category: "custom",
-    durationMin: r.duration_min,
+    durationMin: estimateDuration(r.content),
     createdAt: Number(r.created_at) * 1000,
   };
 }

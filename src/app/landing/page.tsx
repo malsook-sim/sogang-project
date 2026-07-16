@@ -67,7 +67,7 @@ export default function LandingPage() {
           {/* 좌: 카피 */}
           <div className="text-center lg:text-left mb-14 lg:mb-0">
             <span className="inline-flex items-center gap-1.5 bg-surface border border-border text-foreground/80 text-[11px] font-semibold tracking-wider px-3 py-1 rounded-full mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F4C566]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--star)]" />
               엄마·아빠 목소리로 듣는 AI 동화
             </span>
             <h1 className="text-[clamp(28px,5vw,44px)] font-extrabold leading-[1.18] tracking-tight mb-4">
@@ -103,14 +103,14 @@ export default function LandingPage() {
                 aria-hidden
               >
                 <circle cx="40" cy="26" r="1.3" fill="#EDE9F7" opacity="0.8" />
-                <circle cx="90" cy="16" r="1.1" fill="#F4C566" opacity="0.8" />
+                <circle cx="90" cy="16" r="1.1" fill="var(--star)" opacity="0.8" />
               </svg>
               <div className="relative z-10">
                 <div className="relative aspect-video rounded-xl overflow-hidden mb-4 bg-[#3D3A5C] flex items-center justify-center">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="none" aria-hidden>
                     <path
                       d="M20 14.5A8 8 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"
-                      fill="#F4C566"
+                      fill="var(--star)"
                       opacity="0.9"
                     />
                   </svg>
@@ -132,7 +132,7 @@ export default function LandingPage() {
                         className="w-[3px] rounded-full"
                         style={{
                           height: `${h}px`,
-                          background: i === 4 || i === 10 ? "#F4C566" : "#8B7FE0",
+                          background: i === 4 || i === 10 ? "var(--star)" : "#8B7FE0",
                           animation: `eq-bar 1100ms ease-in-out ${i * 70}ms infinite`,
                           transformOrigin: "bottom",
                         }}
@@ -141,11 +141,11 @@ export default function LandingPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#F4C566] text-[#2C2A45] flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-[var(--star)] text-[#2C2A45] flex items-center justify-center shrink-0">
                     <Play size={16} filled />
                   </div>
                   <div className="flex-1 h-1 rounded-full bg-white/15 overflow-hidden">
-                    <div className="h-full w-2/5 bg-[#F4C566] rounded-full" />
+                    <div className="h-full w-2/5 bg-[var(--star)] rounded-full" />
                   </div>
                 </div>
               </div>
@@ -177,10 +177,10 @@ export default function LandingPage() {
       {/* Features — 벤토 그리드 */}
       <section className="relative overflow-hidden px-6 py-16 max-w-5xl mx-auto w-full">
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#F4C566]" style={{ top: "12%", left: "3%" }} />
+          <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[var(--star)]" style={{ top: "12%", left: "3%" }} />
           <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#CEC7EE]" style={{ top: "68%", left: "5%", animationDelay: "1s" }} />
           <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#CEC7EE]" style={{ top: "20%", right: "4%", animationDelay: "0.6s" }} />
-          <span className="lp-twinkle absolute w-2 h-2 rounded-full bg-[#F4C566]" style={{ bottom: "14%", right: "3%", animationDelay: "1.4s" }} />
+          <span className="lp-twinkle absolute w-2 h-2 rounded-full bg-[var(--star)]" style={{ bottom: "14%", right: "3%", animationDelay: "1.4s" }} />
         </div>
 
         <Reveal>
@@ -197,9 +197,9 @@ export default function LandingPage() {
           <Reveal className="sm:col-span-2 lg:col-span-1" delay={0}>
             <div className="relative overflow-hidden rounded-2xl bg-[var(--night)] p-6 h-full transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg">
               <svg viewBox="0 0 200 260" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden>
-                <g transform="translate(160 34)"><circle cx="0" cy="0" r="11" fill="#F4C566" /><circle cx="5" cy="-3" r="9" fill="#2C2A45" /></g>
+                <g transform="translate(160 34)"><circle cx="0" cy="0" r="11" fill="var(--star)" /><circle cx="5" cy="-3" r="9" fill="#2C2A45" /></g>
                 <circle cx="40" cy="30" r="1.4" fill="#EDE9F7" opacity="0.8" />
-                <circle cx="110" cy="20" r="1.1" fill="#F4C566" opacity="0.8" />
+                <circle cx="110" cy="20" r="1.1" fill="var(--star)" opacity="0.8" />
                 <circle cx="30" cy="120" r="1.2" fill="#EDE9F7" opacity="0.5" />
               </svg>
               <div className="relative z-10 flex flex-col h-full">
@@ -212,7 +212,7 @@ export default function LandingPage() {
                 </p>
                 <div className="flex items-end gap-[3px] h-8 mb-5">
                   {[12, 20, 30, 18, 26, 34, 20, 28, 16, 24, 12, 22, 30, 16].map((h, i) => (
-                    <span key={i} className="w-[3px] rounded-full" style={{ height: `${h}px`, background: i === 5 ? "#F4C566" : "#8B7FE0", animation: `eq-bar 1100ms ease-in-out ${i * 70}ms infinite`, transformOrigin: "bottom" }} />
+                    <span key={i} className="w-[3px] rounded-full" style={{ height: `${h}px`, background: i === 5 ? "var(--star)" : "#8B7FE0", animation: `eq-bar 1100ms ease-in-out ${i * 70}ms infinite`, transformOrigin: "bottom" }} />
                   ))}
                 </div>
                 <div className="flex items-center gap-1.5 mt-auto">
@@ -306,12 +306,12 @@ export default function LandingPage() {
                 <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 150" aria-hidden>
                   {/* 초승달 */}
                   <g transform="translate(150 40)">
-                    <circle cx="0" cy="0" r="16" fill="#F4C566" />
+                    <circle cx="0" cy="0" r="16" fill="var(--star)" />
                     <circle cx="6" cy="-4" r="13" fill="#232048" />
                   </g>
                   {/* 별 */}
                   <circle cx="40" cy="30" r="1.6" fill="#EDE9F7" opacity="0.9" />
-                  <circle cx="80" cy="20" r="1.2" fill="#F4C566" opacity="0.9" />
+                  <circle cx="80" cy="20" r="1.2" fill="var(--star)" opacity="0.9" />
                   <circle cx="60" cy="55" r="1.3" fill="#EDE9F7" opacity="0.6" />
                   <circle cx="24" cy="66" r="1.2" fill="#B7ABF4" opacity="0.7" />
                   {/* 언덕 실루엣 */}
@@ -320,7 +320,7 @@ export default function LandingPage() {
                 </svg>
                 {/* 골드 재생 버튼 + 타이머 칩 */}
                 <div className="absolute left-3 bottom-3 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#F4C566] text-[#2C2A45] flex items-center justify-center shadow">
+                  <div className="w-8 h-8 rounded-full bg-[var(--star)] text-[#2C2A45] flex items-center justify-center shadow">
                     <Play size={14} filled />
                   </div>
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#F1EEFA] bg-white/10 rounded-full px-2 py-0.5">
@@ -362,14 +362,14 @@ export default function LandingPage() {
           aria-hidden
         >
           <g transform="translate(58 52)">
-            <circle cx="0" cy="0" r="12" fill="#F4C566" />
+            <circle cx="0" cy="0" r="12" fill="var(--star)" />
             <circle cx="5" cy="-3" r="10" fill="#2C2A45" />
           </g>
           <circle cx="330" cy="40" r="1.6" fill="#EDE9F7" opacity="0.8" />
-          <circle cx="120" cy="28" r="1.3" fill="#F4C566" opacity="0.9" />
+          <circle cx="120" cy="28" r="1.3" fill="var(--star)" opacity="0.9" />
           <circle cx="264" cy="66" r="1.2" fill="#EDE9F7" opacity="0.6" />
           <circle cx="360" cy="150" r="1.4" fill="#EDE9F7" opacity="0.7" />
-          <circle cx="44" cy="210" r="1.2" fill="#F4C566" opacity="0.7" />
+          <circle cx="44" cy="210" r="1.2" fill="var(--star)" opacity="0.7" />
           <circle cx="200" cy="250" r="1.1" fill="#EDE9F7" opacity="0.5" />
         </svg>
         {/* 언덕 실루엣 */}
@@ -402,7 +402,7 @@ export default function LandingPage() {
               >
                 <div
                   className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-extrabold mb-4"
-                  style={{ background: "#F4C566", color: "#5C4400" }}
+                  style={{ background: "var(--star)", color: "#5C4400" }}
                 >
                   {item.step}
                 </div>
@@ -422,7 +422,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden px-6 py-16 max-w-5xl mx-auto w-full">
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
           <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#CEC7EE]" style={{ top: "18%", left: "3%" }} />
-          <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#F4C566]" style={{ bottom: "20%", right: "4%", animationDelay: "0.9s" }} />
+          <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[var(--star)]" style={{ bottom: "20%", right: "4%", animationDelay: "0.9s" }} />
         </div>
         <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted font-semibold mb-1.5">
           Voices
@@ -434,7 +434,7 @@ export default function LandingPage() {
           {testimonials.map((t, i) => (
             <Reveal key={t.who} delay={i * 50}>
             <div className="card p-5 flex flex-col h-full">
-              <div className="text-[#F4C566] text-sm mb-3 tracking-wider">
+              <div className="text-[var(--star)] text-sm mb-3 tracking-wider">
                 ★★★★★
               </div>
               <p className="text-sm text-[var(--text-body)] leading-relaxed flex-1">
@@ -454,9 +454,9 @@ export default function LandingPage() {
       <section className="relative overflow-hidden bg-[#2C2A45] px-6 py-20 text-center">
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
           {/* 별 — 골드 / 라일락, opacity 0.3~1.0 */}
-          <span className="lp-twinkle absolute w-2 h-2 rounded-full bg-[#F4C566]" style={{ top: "20%", left: "16%", opacity: 1 }} />
+          <span className="lp-twinkle absolute w-2 h-2 rounded-full bg-[var(--star)]" style={{ top: "20%", left: "16%", opacity: 1 }} />
           <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#B7ABF4]" style={{ top: "30%", right: "20%", opacity: 0.8, animationDelay: "0.8s" }} />
-          <span className="lp-twinkle absolute w-1 h-1 rounded-full bg-[#F4C566]" style={{ top: "62%", left: "10%", opacity: 0.6, animationDelay: "1.2s" }} />
+          <span className="lp-twinkle absolute w-1 h-1 rounded-full bg-[var(--star)]" style={{ top: "62%", left: "10%", opacity: 0.6, animationDelay: "1.2s" }} />
           <span className="lp-twinkle absolute w-1 h-1 rounded-full bg-[#B7ABF4]" style={{ bottom: "22%", right: "14%", opacity: 0.45, animationDelay: "0.4s" }} />
           <span className="lp-twinkle absolute w-1.5 h-1.5 rounded-full bg-[#EDE9F7]" style={{ top: "48%", right: "8%", opacity: 0.3, animationDelay: "1.6s" }} />
           <span className="lp-twinkle absolute w-1 h-1 rounded-full bg-[#EDE9F7]" style={{ bottom: "34%", left: "22%", opacity: 0.5, animationDelay: "2s" }} />
@@ -467,7 +467,7 @@ export default function LandingPage() {
             viewBox="0 0 40 40"
             aria-hidden
           >
-            <circle cx="20" cy="20" r="14" fill="#F4C566" opacity="0.95" />
+            <circle cx="20" cy="20" r="14" fill="var(--star)" opacity="0.95" />
             <circle cx="26" cy="15" r="11" fill="#2C2A45" />
           </svg>
         </div>
@@ -480,7 +480,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/login?mode=signup&next=/"
-            className="inline-flex items-center gap-2 bg-[#F4C566] text-[#4A3A12] px-8 py-3.5 rounded-full text-[15px] font-bold hover:bg-[#F7D68A] transition"
+            className="inline-flex items-center gap-2 bg-[var(--star)] text-[#4A3A12] px-8 py-3.5 rounded-full text-[15px] font-bold hover:bg-[#F7D68A] transition"
           >
             지금 시작하기
             <span aria-hidden>→</span>

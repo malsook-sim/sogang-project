@@ -155,7 +155,7 @@ export function VoiceCard({
               {voice.isDefault && (
                 <span
                   className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap"
-                  style={{ background: "#F4C566", color: "#5C4400" }}
+                  style={{ background: "var(--star)", color: "#5C4400" }}
                 >
                   기본
                 </span>

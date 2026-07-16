@@ -43,7 +43,7 @@ export default function PageHeader({
                 >
                   <path
                     d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
-                    fill="#F4C566"
+                    fill="var(--star)"
                   />
                 </svg>
                 <span className="truncate">{subtitle}</span>

@@ -496,7 +496,7 @@ export default function RecordPage() {
                 {[14, 26, 38, 22, 32, 18].map((h, i) => (
                   <span
                     key={i}
-                    className="w-[3px] rounded-full bg-[#6E5FD6]/50"
+                    className="w-[3px] rounded-full bg-primary/50"
                     style={{ height: `${h}px` }}
                   />
                 ))}
@@ -561,7 +561,7 @@ export default function RecordPage() {
                             {v.isDefault && (
                               <span
                                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap"
-                                style={{ background: "#F4C566", color: "#5C4400" }}
+                                style={{ background: "var(--star)", color: "#5C4400" }}
                               >
                                 기본
                               </span>
