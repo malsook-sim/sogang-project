@@ -345,6 +345,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 [data-theme="sleep"] .app-logo-name {
   color: #B7ABF4;
 }
+/* 브랜드 로고(네이비 SVG) — 잠자기 다크 배경에서 보이도록 밝은 실루엣으로 */
+[data-theme="sleep"] .brand-logo {
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+}
 [data-theme="sleep"] .app-nav-item {
   color: #8B86A3;
   background: transparent;

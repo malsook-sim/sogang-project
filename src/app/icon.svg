@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="마이보이스스토리">
+  <title>MyVoiceStory for Kids</title>
+  <rect width="512" height="512" rx="114" fill="#2C2A45"/>
+  <path d="M312 112 A144 144 0 1 0 312 400 A114 114 0 1 1 312 112 Z" fill="#8F7FE8"/>
+  <rect x="228" y="232" width="15" height="48" rx="7.5" fill="#F4C566"/>
+  <rect x="264" y="204" width="15" height="104" rx="7.5" fill="#F4C566"/>
+  <rect x="300" y="240" width="15" height="32" rx="7.5" fill="#F4C566"/>
+</svg>

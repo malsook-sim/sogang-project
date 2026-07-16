@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="마이보이스스토리 심볼">
+  <title>MyVoiceStory symbol</title>
+  <path d="M100 16 A72 72 0 1 0 100 144 A57 57 0 1 1 100 16 Z" fill="#2C2A45"/>
+  <rect x="58" y="68" width="7" height="24" rx="3.5" fill="#F4C566"/>
+  <rect x="75" y="54" width="7" height="52" rx="3.5" fill="#F4C566"/>
+  <rect x="92" y="72" width="7" height="16" rx="3.5" fill="#F4C566"/>
+</svg>

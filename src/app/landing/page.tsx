@@ -38,14 +38,12 @@ export default function LandingPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-border/60">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-          <div className="leading-tight">
-            <p className="text-[9px] uppercase tracking-[0.22em] text-muted font-semibold">
-              MyVoiceStory
-            </p>
-            <p className="text-[17px] font-extrabold text-primary tracking-tight">
-              마이보이스스토리
-            </p>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-horizontal.svg"
+            alt="마이보이스스토리"
+            className="h-9 w-auto"
+          />
           <div className="flex items-center gap-2">
             <Link
               href="/login?next=/"

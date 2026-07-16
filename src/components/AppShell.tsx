@@ -35,12 +35,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="lg:pl-[220px]">
       <aside className="app-sidebar hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[220px] bg-surface border-r border-border px-3.5 py-6 z-50">
         <Link href="/" className="block px-3 mb-8">
-          <p className="app-logo-label text-[10px] uppercase tracking-[0.2em] text-muted font-semibold mb-0.5">
-            MyVoiceStory
-          </p>
-          <p className="app-logo-name text-lg font-extrabold text-primary tracking-tight leading-tight">
-            마이보이스스토리
-          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-horizontal.svg"
+            alt="마이보이스스토리"
+            className="brand-logo h-9 w-auto"
+          />
         </Link>
 
         <nav className="flex flex-col gap-1">

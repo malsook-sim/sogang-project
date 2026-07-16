@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120" role="img" aria-label="마이보이스스토리">
+  <title>MyVoiceStory for Kids</title>
+  <path d="M76 20 A44 44 0 1 0 76 108 A35 35 0 1 1 76 20 Z" fill="#2C2A45"/>
+  <rect x="50" y="52" width="4.5" height="15" rx="2.25" fill="#F4C566"/>
+  <rect x="61" y="43" width="4.5" height="33" rx="2.25" fill="#F4C566"/>
+  <rect x="72" y="55" width="4.5" height="10" rx="2.25" fill="#F4C566"/>
+  <text x="134" y="59" font-family="Pretendard, system-ui, -apple-system, sans-serif" font-size="34" font-weight="700" fill="#2C2A45" letter-spacing="-1">마이보이스스토리</text>
+  <text x="136" y="84" font-family="Pretendard, system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#8B86A3" letter-spacing="2.6">MY VOICE STORY FOR KIDS</text>
+</svg>
