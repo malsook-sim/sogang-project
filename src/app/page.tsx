@@ -152,19 +152,29 @@ export default function HomePage() {
   // 연령 칩은 뷰를 바꾸지 않고 각 섹션/결과를 필터링만 함.
   const isCuration = activeCategory === "all" && searchQuery.trim() === "";
 
-  // 이어 듣기 — 듣다 만 동화 (진행률 3~95%), 최대 6개 (개인 진행이라 연령 필터 제외)
+  // 이어 듣기 — 듣다 만 동화 (진행률 3~95%), 최대 6개 (개인 진행이라 연령 필터 제외).
+  // 같은 시리즈는 카드 하나만(가장 최근 진행 편이 대표) — 같은 시리즈 카드가 여러 개 깔리지 않게.
   const continueList = isCuration
-    ? history
-        .map((h) => {
+    ? (() => {
+        const seenSeries = new Set<string>();
+        const out: { story: Story; pct: number }[] = [];
+        for (const h of history) {
           const story = h.storyId.startsWith("my-")
             ? myStories.find((s) => s.id === h.storyId)
             : catalog.find((s) => s.id === h.storyId);
+          if (!story) continue;
           const pct =
             h.durationSec > 0 ? (h.progressSec / h.durationSec) * 100 : 0;
-          return story && pct > 3 && pct < 95 ? { story, pct } : null;
-        })
-        .filter((x): x is { story: Story; pct: number } => x !== null)
-        .slice(0, 6)
+          if (!(pct > 3 && pct < 95)) continue;
+          if (story.seriesId) {
+            if (seenSeries.has(story.seriesId)) continue;
+            seenSeries.add(story.seriesId);
+          }
+          out.push({ story, pct });
+          if (out.length >= 6) break;
+        }
+        return out;
+      })()
     : [];
 
   // 오늘의 추천 — 연령 범위 + 시간대 적합도로 고른 뒤 날짜 기준으로 매일 바뀜.
@@ -547,6 +557,11 @@ function ContinueCard({ story, pct }: { story: Story; pct: number }) {
         />
       </div>
       <div className="p-2.5">
+        {story.seriesId && (
+          <p className="text-[10px] font-bold text-primary truncate mb-0.5">
+            {story.seriesTitle} · {story.episodeNo}편
+          </p>
+        )}
         <h3 className="font-bold text-xs mb-1.5 group-hover:text-primary transition-colors truncate">
           {story.title}
         </h3>

@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCatalog, useCatalogLoaded } from "@/lib/useCatalog";
-import { useMyStories, editMyStory, removeMyStory } from "@/lib/myStories";
+import {
+  useMyStories,
+  editMyStory,
+  removeMyStory,
+  seriesEpisodes,
+} from "@/lib/myStories";
 import { useMyVoices } from "@/lib/useMyVoices";
 import { toggleBookmark, useBookmarks } from "@/lib/bookmarks";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -144,6 +149,13 @@ export default function StoryDetailPage() {
   const lang = /[가-힣]/.test(story.content) ? "ko" : "en";
   const keywords = koTags(story.morals, 3);
   const summaryLines = moralCaption(story.morals, story.moralSummary, 2);
+
+  // 시리즈(이어 만들기) — 편 목록·현재 위치·다음 편·마지막 편 여부
+  const episodes = seriesEpisodes(myStories, story.seriesId);
+  const epIdx = episodes.findIndex((e) => e.id === id);
+  // 다음 편이 있으면 "다음 편 카드", 없으면(마지막 편/단독) "이어 만들기" 버튼
+  const nextEpisode =
+    epIdx >= 0 && epIdx < episodes.length - 1 ? episodes[epIdx + 1] : null;
 
   // 마지막/기본 목소리 해석
   const clonedMatch = clonedVoices.find((v) => v.id === lastVoiceId);
@@ -310,13 +322,22 @@ export default function StoryDetailPage() {
     );
   };
 
+  // 플레이어 진입은 push(히스토리에 한 번만 쌓임). from으로 뒤로가기 목적지(이 상세) 지정.
   const playWithLast = () => {
-    router.push(`/player/${story.id}?voiceId=${lastVoiceId}`);
+    router.push(
+      `/player/${story.id}?voiceId=${lastVoiceId}&from=${encodeURIComponent(
+        `/stories/${story.id}`
+      )}`
+    );
   };
 
   // 녹음 목소리가 없어도 기본 제공 목소리로 바로 듣기 (플레이어에서 목소리 변경 가능)
   const playWithDefault = () => {
-    router.push(`/player/${story.id}?voiceId=${modalBaseVoices[0].id}`);
+    router.push(
+      `/player/${story.id}?voiceId=${modalBaseVoices[0].id}&from=${encodeURIComponent(
+        `/stories/${story.id}`
+      )}`
+    );
   };
 
   const startEdit = () => {
@@ -454,9 +475,16 @@ export default function StoryDetailPage() {
               className="w-full h-11 px-3.5 mb-3 rounded-[10px] bg-field border border-border text-[16px] font-bold text-foreground focus:outline-none focus:border-[1.5px] focus:border-primary focus:ring-[3px] focus:ring-primary-light transition"
             />
           ) : (
-            <h2 className="text-2xl font-extrabold mb-2.5 tracking-tight">
-              {story.title}
-            </h2>
+            <>
+              {story.seriesId && (
+                <p className="text-[12px] font-bold text-primary mb-1">
+                  {story.seriesTitle} · {story.episodeNo}편
+                </p>
+              )}
+              <h2 className="text-2xl font-extrabold mb-2.5 tracking-tight">
+                {story.title}
+              </h2>
+            </>
           )}
 
           <div className="flex items-center gap-1.5 flex-wrap mb-4">
@@ -554,14 +582,72 @@ export default function StoryDetailPage() {
             </div>
           )}
 
-          {/* 이어서 만들기 — AI 생성 동화(my-)에만 노출 */}
+          {/* 시리즈 — 편 탭 + 다음 편 카드 + (마지막 편일 때만) 이어 만들기 */}
           {!editing && isMine && (
-            <button
-              onClick={() => router.push(`/create?sequel=${story.id}`)}
-              className="w-full mt-3 flex items-center justify-center gap-1.5 border border-primary/40 text-primary py-3 rounded-2xl text-[13px] font-bold hover:bg-primary-light/50 transition"
-            >
-              <Sparkles size={15} filled />이 다음 이야기 만들기
-            </button>
+            <div className="mt-4 space-y-3">
+              {episodes.length > 1 && (
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-muted font-bold mb-1.5">
+                    이 시리즈
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {episodes.map((ep) => {
+                      const cur = ep.id === id;
+                      return (
+                        <button
+                          key={ep.id}
+                          onClick={() =>
+                            !cur && router.push(`/stories/${ep.id}`)
+                          }
+                          className={`text-xs px-3 py-1.5 rounded-full font-semibold transition ${
+                            cur
+                              ? "bg-primary text-white"
+                              : "bg-surface border border-border text-foreground/70 hover:border-primary hover:text-primary"
+                          }`}
+                        >
+                          {ep.episodeNo}편
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {nextEpisode ? (
+                <button
+                  onClick={() => router.push(`/stories/${nextEpisode.id}`)}
+                  className="w-full flex items-center gap-3 p-2.5 rounded-2xl border border-border hover:border-primary hover:bg-primary-light/30 transition text-left"
+                >
+                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
+                    <StoryCover
+                      story={nextEpisode}
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold text-primary">
+                      다음 편 · {nextEpisode.episodeNo}편
+                    </p>
+                    <p className="text-sm font-bold truncate">
+                      {nextEpisode.title}
+                    </p>
+                    <p className="text-[11px] text-muted tabular-nums">
+                      {nextEpisode.durationMin}분
+                    </p>
+                  </div>
+                  <span className="text-muted shrink-0 pr-1" aria-hidden>
+                    →
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push(`/create?sequel=${story.id}`)}
+                  className="w-full flex items-center justify-center gap-1.5 border border-primary/40 text-primary py-3 rounded-2xl text-[13px] font-bold hover:bg-primary-light/50 transition"
+                >
+                  <Sparkles size={15} filled />이 다음 이야기 만들기
+                </button>
+              )}
+            </div>
           )}
         </div>
 

@@ -77,6 +77,9 @@ const STORY_SCHEMA = {
     contentKo: { type: "STRING" },
     morals_keywords: { type: "ARRAY", items: { type: "STRING" } },
     moral_summary: { type: "STRING" },
+    // 후속편 문맥용 — 모든 동화가 생성 시 함께 만듦(단독도 시리즈 1편이 될 수 있으므로)
+    episode_summary: { type: "STRING" },
+    new_facts: { type: "ARRAY", items: { type: "STRING" } },
     ageMin: { type: "INTEGER" },
     ageMax: { type: "INTEGER" },
   },
@@ -85,6 +88,7 @@ const STORY_SCHEMA = {
     "content",
     "morals_keywords",
     "moral_summary",
+    "episode_summary",
     "ageMin",
     "ageMax",
   ],
@@ -147,6 +151,15 @@ async function generateWithGemini(
                     : typeof story.moralSummary === "string"
                     ? story.moralSummary
                     : undefined,
+                episodeSummary:
+                  typeof story.episode_summary === "string"
+                    ? story.episode_summary
+                    : undefined,
+                newFacts: Array.isArray(story.new_facts)
+                  ? story.new_facts
+                      .filter((f: unknown) => typeof f === "string" && f.trim())
+                      .slice(0, 8)
+                  : [],
               };
             }
           }
@@ -168,7 +181,7 @@ async function generateWithGemini(
 }
 
 export async function POST(req: NextRequest) {
-  const { plot, childName, childAge, language, length, previousStory, mood } =
+  const { plot, childName, childAge, language, length, previousStory, mood, series } =
     await req.json();
   const isEn = language === "en";
   const isBedtime = mood === "bedtime"; // 기본(미지정)=낮 이야기
@@ -183,6 +196,45 @@ export async function POST(req: NextRequest) {
           content: String(previousStory.content).slice(0, 4000),
         }
       : null;
+
+  // 시리즈 문맥 — 전편 제목 + 줄거리 요약 + 새로 생긴 사실(전체). 3편 이상에서도 1편 설정 유지용.
+  const seriesEps: {
+    title: string;
+    episodeSummary?: string;
+    newFacts?: string[];
+  }[] = Array.isArray(series?.episodes)
+    ? series.episodes
+        .filter((e: unknown): e is { title: string } =>
+          Boolean(e && typeof (e as { title?: unknown }).title === "string")
+        )
+        .slice(0, 12)
+    : [];
+  const seriesInfo =
+    prev && series && typeof series.title === "string" && seriesEps.length > 0
+      ? {
+          title: String(series.title),
+          episodeNo: Number(series.episodeNo) || seriesEps.length + 1,
+          list: seriesEps
+            .map(
+              (e, i) =>
+                `- ${i + 1}편 「${e.title}」${
+                  e.episodeSummary ? `: ${e.episodeSummary}` : ""
+                }${
+                  Array.isArray(e.newFacts) && e.newFacts.length
+                    ? ` (새로 생긴 것: ${e.newFacts.join(", ")})`
+                    : ""
+                }`
+            )
+            .join("\n"),
+        }
+      : null;
+
+  const seriesKo = seriesInfo
+    ? `\n- 이 이야기는 시리즈 "${seriesInfo.title}"의 ${seriesInfo.episodeNo}편입니다.\n- 지금까지의 이야기:\n${seriesInfo.list}\n- 등장인물과 설정(이름·성격·관계·세계관)을 이전 편들과 일관되게 유지하세요.\n- 제목은 전편 제목을 재사용하거나 숫자("2편", "3" 등)를 붙이지 말고, 이번 편의 내용에 맞는 완전히 새로운 고유 제목을 지으세요.`
+    : "";
+  const seriesEn = seriesInfo
+    ? `\n- This is episode ${seriesInfo.episodeNo} of the series "${seriesInfo.title}".\n- Story so far:\n${seriesInfo.list}\n- Keep characters and setting (names, personalities, relationships, world) consistent with the earlier episodes.\n- The title MUST be a brand-new, unique title that fits THIS episode's content. Do NOT reuse a previous title or append a number.`
+    : "";
   const plotStr = typeof plot === "string" ? plot.trim() : "";
   // 분량 목표·낭독 시간은 duration.ts의 실측 계수(한국어 440자/분, 영어 120단어/분)와 공유.
   // UI "약 N분" 라벨과 동일한 값이 나오도록 같은 소스에서 계산.
@@ -250,7 +302,7 @@ Conditions:
 - Target age: ${childAge || "4-6"} years old
 ${childName ? `- Name the main character "${childName}" and use the name naturally several times — UNLESS the plot below already specifies a different protagonist name, in which case keep that name` : ""}
 - Use only vocabulary a ${childAge || "4-6"}-year-old can understand
-- Plot idea from the parent (it may be written in Korean): ${plotStr || (prev ? "(left blank — continue naturally from the previous story)" : "")}${prev ? `\n- This is a SEQUEL to "${prev.title}". Keep the same characters, setting and tone, and continue naturally WITHOUT recapping/summarizing the previous story.\n- Previous story (for reference):\n${prev.content}` : ""}
+- Plot idea from the parent (it may be written in Korean): ${plotStr || (prev ? "(left blank — continue naturally from the previous story)" : "")}${prev ? `\n- This is a SEQUEL to "${prev.title}". Keep the same characters, setting and tone, and continue naturally WITHOUT recapping/summarizing the previous story.\n- Previous story (for reference):\n${prev.content}` : ""}${seriesEn}
 - Length: ${lenEn}
 - The heart of the story is the character's emotions, not the plot. Show them feeling joy, curiosity, mistakes, surprise, and courage.
 - Don't narrate by explaining — let characters act and talk so the reader can vividly picture each scene.
@@ -277,6 +329,7 @@ ${childName ? `- Name the main character "${childName}" and use the name natural
 - Also provide a natural Korean translation in "contentKo" for young Korean children, with the SAME paragraph structure as "content" (same number of \\n\\n-separated paragraphs, each aligned 1:1)
 
 - morals_keywords (1-2 word keywords, max 3) and moral_summary (one sentence, within 40 characters) MUST be written in KOREAN — they are shown to Korean parents in the app UI, so English is NOT allowed here even though the story body is in English. e.g. morals_keywords: ["우정","용기"], moral_summary: "작은 용기가 서툰 하루를 바꿔놓아요". Derive them naturally from the story, not forced.
+- episode_summary: summarize THIS episode's plot in at most three sentences (used to continue the next episode). new_facts: list up to five short phrases of what newly happened this episode (things gained, friends made, lessons learned, places visited), e.g. "lost the blue ball", "befriended a firefly", "went to the creek". Be accurate so the next episode stays consistent. (These two may be in English.)
 
 ${ttsEn}
 
@@ -287,6 +340,8 @@ Reply with ONLY this JSON, nothing else:
   "contentKo": "Korean translation, same paragraph structure as content",
   "morals_keywords": ["우정", "용기"],
   "moral_summary": "작은 용기가 서툰 하루를 바꿔놓아요",
+  "episode_summary": "this episode's plot in <= 3 sentences",
+  "new_facts": ["lost the blue ball", "befriended a firefly"],
   "ageMin": start age as a number,
   "ageMax": end age as a number
 }`
@@ -298,7 +353,7 @@ ${moodKo}
 - 대상 연령: ${childAge || "4~6"}세
 ${childName ? `- 주인공 이름은 "${childName}"(으)로 하고 본문에 자연스럽게 여러 번 등장시킬 것. 단, 아래 줄거리에 이미 다른 주인공 이름이 명시돼 있으면 그 이름을 우선하고 "${childName}"을(를) 강제하지 말 것` : ""}
 - ${childAge || "4~6"}세 아이가 이해할 수 있는 쉬운 어휘만 사용
-- 부모가 제시한 줄거리: ${plotStr || (prev ? "(비워둠 — 전편에 자연스럽게 이어서 새 이야기를 상상해 주세요)" : "")}${prev ? `\n- 이 이야기는 "${prev.title}"의 후속편입니다. 전편의 등장인물·설정·말투를 그대로 유지하고, 전편 줄거리를 요약하며 시작하지 말고 자연스럽게 이어서 시작하세요.\n- 전편 전문(참고용):\n${prev.content}` : ""}
+- 부모가 제시한 줄거리: ${plotStr || (prev ? "(비워둠 — 전편에 자연스럽게 이어서 새 이야기를 상상해 주세요)" : "")}${prev ? `\n- 이 이야기는 "${prev.title}"의 후속편입니다. 전편의 등장인물·설정·말투를 그대로 유지하고, 전편 줄거리를 요약하며 시작하지 말고 자연스럽게 이어서 시작하세요.\n- 전편 전문(참고용):\n${prev.content}` : ""}${seriesKo}
 - 분량: ${lenKo}
 - 줄거리가 짧아도 장면을 스스로 상상해 분량을 충분히 채우되, 억지로 늘리지 말 것
 - 동화의 중심은 사건보다 등장인물의 감정입니다. 아이가 기뻐하고, 궁금해하고, 실수하고, 놀라고, 용기 내는 감정의 변화를 충분히 표현하세요
@@ -324,6 +379,7 @@ ${childName ? `- 주인공 이름은 "${childName}"(으)로 하고 본문에 자
 - 매번 완전히 새로운 동화를 쓴다고 생각하고, 자주 쓰이는 소재·배경·전개·결말·표현을 반복하지 마세요
 - 제목은 등장인물과 핵심 사건을 담아 구체적으로 지으세요 (좋은 예: "재인이와 사라진 파란 공", "하늘을 닮은 연", "노란 우산을 찾은 오후" / 나쁜 예: "특별한 하루", "행복한 모험", "소중한 친구")
 - morals_keywords(1~2단어 키워드, 최대 3개)와 moral_summary(한 문장)는 억지로 만들지 말고, 이야기에서 자연스럽게 느껴지는 감정·메시지로 작성하세요
+- episode_summary: 이 편의 줄거리를 세 문장 이내로 요약하세요 (다음 편을 이어 쓸 때 참고). new_facts: 이 편에서 새로 생긴 사실(얻은 것·사귄 친구·배운 것·다녀온 곳)을 짧은 구로 최대 다섯 개 적으세요 (예: "파란 공을 잃어버림", "반딧불이 친구를 사귐", "개울가에 다녀옴"). 다음 편이 앞뒤가 맞도록 정확히 적으세요.
 
 ${ttsKo}
 
@@ -333,6 +389,8 @@ ${ttsKo}
   "content": "동화 본문 (문단 사이 \\n\\n으로 구분)",
   "morals_keywords": ["우정", "용기"],
   "moral_summary": "작은 용기가 서툰 하루를 바꿔놓아요",
+  "episode_summary": "이 편의 줄거리를 세 문장 이내로",
+  "new_facts": ["파란 공을 잃어버림", "반딧불이 친구를 사귐"],
   "ageMin": 시작연령(숫자),
   "ageMax": 끝연령(숫자)
 }`;

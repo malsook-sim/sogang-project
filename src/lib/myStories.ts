@@ -9,6 +9,8 @@ export interface GeneratedStory {
   moralSummary?: string;
   ageMin: number;
   ageMax: number;
+  episodeSummary?: string | null; // 후속편 문맥용 요약(생성 시 함께 받음)
+  newFacts?: string[]; // 이 편에서 새로 생긴 사실
 }
 
 export interface MyStory extends Story {
@@ -61,14 +63,24 @@ export function useMyStories(): MyStory[] {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+// 같은 시리즈의 편들을 편 번호 순으로 (단독 동화면 빈 배열)
+export function seriesEpisodes(all: MyStory[], seriesId?: string | null): MyStory[] {
+  if (!seriesId) return [];
+  return all
+    .filter((s) => s.seriesId === seriesId)
+    .sort((a, b) => (a.episodeNo ?? 1) - (b.episodeNo ?? 1));
+}
+
 export async function saveMyStory(
-  input: GeneratedStory
+  input: GeneratedStory,
+  // 이어 만들기: 직전 편 id("my-N") — 시리즈 필드는 서버에서 계산
+  parentStoryId?: string | null
 ): Promise<MyStory | null> {
   try {
     const res = await fetch("/api/my-stories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+      body: JSON.stringify({ ...input, parentStoryId: parentStoryId ?? null }),
     });
     if (!res.ok) return null;
     const data = await res.json();

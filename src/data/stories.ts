@@ -12,6 +12,13 @@ export interface Story {
   category: string;
   durationMin: number;
   playCount?: number;
+  // 시리즈(이어 만들기) — 사용자 생성 동화(my-)에만. 단독 동화는 모두 undefined.
+  seriesId?: string | null; // 같은 시리즈면 동일 값 (= 1편 id, "my-" 접두)
+  seriesTitle?: string | null; // 시리즈 표시명 (= 1편 제목)
+  episodeNo?: number; // 편 번호 (1부터)
+  parentStoryId?: string | null; // 직전 편 id ("my-" 접두)
+  episodeSummary?: string | null; // 이 편 줄거리 요약(3문장 이내) — 후속편 문맥용
+  newFacts?: string[]; // 이 편에서 새로 생긴 사실(얻은 것/사귄 친구/배운 것/간 곳)
 }
 
 export const categories = [

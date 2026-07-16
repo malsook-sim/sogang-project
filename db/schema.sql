@@ -59,9 +59,17 @@ CREATE TABLE IF NOT EXISTS user_stories (
   age_min      TINYINT UNSIGNED  NOT NULL,
   age_max      TINYINT UNSIGNED  NOT NULL,
   duration_min SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  -- 시리즈(이어 만들기): series_id = 1편의 id(자기참조 그룹). 단독 생성 시 NULL.
+  series_id       BIGINT UNSIGNED NULL,
+  series_title    VARCHAR(200)    NULL,          -- 시리즈 표시명 = 1편 제목
+  episode_no      INT UNSIGNED    NOT NULL DEFAULT 1,
+  parent_story_id BIGINT UNSIGNED NULL,          -- 직전 편 id (연속성 추적)
+  episode_summary TEXT            NULL,          -- 이 편 줄거리 요약(3문장 이내) — 후속편 문맥용
+  new_facts       JSON            NULL,          -- 이 편에서 새로 생긴 사실(얻은 것/사귄 친구/배운 것/간 곳)
   created_at   TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_user_stories_user (user_id),
+  KEY idx_user_stories_series (user_id, series_id, episode_no),
   CONSTRAINT fk_user_stories_user FOREIGN KEY (user_id)
     REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -85,9 +85,13 @@ function CreateStoryContent() {
   const searchParams = useSearchParams();
   const sequelId = searchParams.get("sequel");
   const [sequelOf, setSequelOf] = useState<{
-    id: string;
+    id: string; // 직전 편 id (parentStoryId)
     title: string;
     content: string;
+    seriesTitle: string; // 시리즈명 (= 1편 제목)
+    episodeNo: number; // 이번에 만들 편 번호
+    // 지금까지의 편(제목 + 줄거리 요약 + 새로 생긴 사실) — 문맥용
+    episodes: { title: string; episodeSummary?: string; newFacts?: string[] }[];
   } | null>(null);
 
   const [plot, setPlot] = useState("");
@@ -126,20 +130,61 @@ function CreateStoryContent() {
     setMood(h >= 18 || h < 7 ? "bedtime" : "day");
   }, []);
 
-  // 후속편 모드: 원작 불러오기
+  // 후속편 모드: 직전 편 + 시리즈 문맥(이전 편 제목·요약) 불러오기
   useEffect(() => {
     if (!sequelId) return;
-    fetch(`/api/stories/${sequelId}`)
-      .then((r) => (r.ok ? r.json() : { story: null }))
-      .then((d) => {
-        if (d.story)
-          setSequelOf({
-            id: d.story.id,
-            title: d.story.title,
-            content: d.story.content,
-          });
-      })
-      .catch(() => {});
+    let alive = true;
+    (async () => {
+      const pd = await fetch(`/api/stories/${sequelId}`)
+        .then((r) => (r.ok ? r.json() : { story: null }))
+        .catch(() => ({ story: null }));
+      const parent = pd.story;
+      if (!parent || !alive) return;
+
+      // 시리즈에 속하면 형제 편들을 모아 문맥 구성, 아니면 이 편이 1편이 됨
+      type Ep = { title: string; episodeSummary?: string; newFacts?: string[] };
+      let episodes: Ep[] = [];
+      let seriesTitle: string = parent.title;
+      if (parent.seriesId) {
+        const md = await fetch("/api/my-stories")
+          .then((r) => (r.ok ? r.json() : { stories: [] }))
+          .catch(() => ({ stories: [] }));
+        const sibs = (md.stories || [])
+          .filter((s: { seriesId?: string | null }) => s.seriesId === parent.seriesId)
+          .sort(
+            (a: { episodeNo?: number }, b: { episodeNo?: number }) =>
+              (a.episodeNo ?? 1) - (b.episodeNo ?? 1)
+          );
+        episodes = sibs.map(
+          (s: { title: string; episodeSummary?: string; newFacts?: string[] }) => ({
+            title: s.title,
+            episodeSummary: s.episodeSummary ?? undefined,
+            newFacts: s.newFacts,
+          })
+        );
+        seriesTitle = parent.seriesTitle || parent.title;
+      } else {
+        episodes = [
+          {
+            title: parent.title,
+            episodeSummary: parent.episodeSummary ?? undefined,
+            newFacts: parent.newFacts,
+          },
+        ];
+      }
+      if (!alive) return;
+      setSequelOf({
+        id: parent.id,
+        title: parent.title,
+        content: parent.content,
+        seriesTitle,
+        episodeNo: (parent.episodeNo ?? 1) + 1,
+        episodes,
+      });
+    })();
+    return () => {
+      alive = false;
+    };
   }, [sequelId]);
 
   // 생성 중 페이지 이탈 방지
@@ -184,8 +229,17 @@ function CreateStoryContent() {
           language,
           length: storyLength,
           mood,
+          // 직전 편 전문(마지막 편) — 4000자까지 문맥으로 사용
           previousStory: sequelOf
             ? { title: sequelOf.title, content: sequelOf.content }
+            : undefined,
+          // 시리즈 문맥 — 전편 제목·요약 목록 + 이번 편 번호(제목은 AI가 새로 지음)
+          series: sequelOf
+            ? {
+                title: sequelOf.seriesTitle,
+                episodeNo: sequelOf.episodeNo,
+                episodes: sequelOf.episodes,
+              }
             : undefined,
         }),
       });
@@ -193,9 +247,9 @@ function CreateStoryContent() {
       if (!data.story) {
         throw new Error(data.error || "동화 생성에 실패했어요.");
       }
-      // 후속편이면 제목 기본값을 "원작 2"로
-      if (sequelOf) data.story.title = `${sequelOf.title} 2`;
-      const saved = await saveMyStory(data.story);
+      // 제목은 AI가 지은 고유 제목 그대로 사용 (" 2" 붙이지 않음).
+      // 시리즈 연결은 parentStoryId로 서버가 처리.
+      const saved = await saveMyStory(data.story, sequelOf?.id ?? null);
       if (!saved) throw new Error("동화를 저장하지 못했어요.");
       // 완성되면 상세 화면으로 (목소리는 거기서 고름)
       router.push(`/stories/${saved.id}`);

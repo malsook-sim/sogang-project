@@ -15,6 +15,26 @@ export function parseMorals(value: unknown): string[] {
   return [];
 }
 
+// new_facts(JSON 배열) → 문자열 배열. 문자열 항목만, 최대 8개.
+export function parseFacts(value: unknown): string[] {
+  const arr = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+    ? (() => {
+        try {
+          const p = JSON.parse(value);
+          return Array.isArray(p) ? p : [];
+        } catch {
+          return [];
+        }
+      })()
+    : [];
+  return arr
+    .filter((f): f is string => typeof f === "string" && f.trim().length > 0)
+    .map((f) => f.trim())
+    .slice(0, 8);
+}
+
 export function rowToCatalogStory(r: RowDataPacket): Story {
   return {
     id: r.id,
@@ -46,6 +66,12 @@ export function rowToMyStory(r: RowDataPacket): Story & { createdAt: number } {
     isPremium: false,
     category: "custom",
     durationMin: estimateDuration(r.content),
+    seriesId: r.series_id != null ? `my-${r.series_id}` : null,
+    seriesTitle: r.series_title ?? null,
+    episodeNo: r.episode_no ?? 1,
+    parentStoryId: r.parent_story_id != null ? `my-${r.parent_story_id}` : null,
+    episodeSummary: r.episode_summary ?? null,
+    newFacts: parseFacts(r.new_facts),
     createdAt: Number(r.created_at) * 1000,
   };
 }

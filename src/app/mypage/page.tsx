@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import ListenCalendar from "@/components/ListenCalendar";
@@ -21,7 +21,12 @@ import { VoiceCard } from "@/components/VoiceCard";
 import { useMyVoices } from "@/lib/useMyVoices";
 import { useCurrentUser, displayName } from "@/lib/useCurrentUser";
 import { useBookmarks, toggleBookmark } from "@/lib/bookmarks";
-import { useMyStories, removeMyStory, renameMyStory } from "@/lib/myStories";
+import {
+  useMyStories,
+  removeMyStory,
+  renameMyStory,
+  type MyStory,
+} from "@/lib/myStories";
 import { type Story } from "@/data/stories";
 import { useCatalog } from "@/lib/useCatalog";
 
@@ -31,6 +36,37 @@ export default function MyPage() {
   const myStories = useMyStories();
   const catalog = useCatalog();
   const [showAllVoices, setShowAllVoices] = useState(false);
+  const [openSeriesId, setOpenSeriesId] = useState<string | null>(null);
+
+  // 내가 만든 동화를 시리즈 단위로 묶음 (시리즈는 카드 1개 = 1편 대표 + N편 배지)
+  type MyEntry =
+    | { kind: "single"; story: MyStory }
+    | { kind: "series"; seriesId: string; title: string; episodes: MyStory[] };
+  const myEntries = useMemo<MyEntry[]>(() => {
+    const seen = new Set<string>();
+    const out: MyEntry[] = [];
+    for (const s of myStories) {
+      if (s.seriesId) {
+        if (seen.has(s.seriesId)) continue;
+        seen.add(s.seriesId);
+        const eps = myStories
+          .filter((x) => x.seriesId === s.seriesId)
+          .sort((a, b) => (a.episodeNo ?? 1) - (b.episodeNo ?? 1));
+        out.push({
+          kind: "series",
+          seriesId: s.seriesId,
+          title: eps[0]?.seriesTitle || eps[0]?.title || "시리즈",
+          episodes: eps,
+        });
+      } else {
+        out.push({ kind: "single", story: s });
+      }
+    }
+    return out;
+  }, [myStories]);
+  const openSeries = myEntries.find(
+    (e) => e.kind === "series" && e.seriesId === openSeriesId
+  ) as Extract<MyEntry, { kind: "series" }> | undefined;
 
   // 우리 아이 정보 인라인 편집
   const [childOpen, setChildOpen] = useState(false);
@@ -369,7 +405,38 @@ export default function MyPage() {
 
           {myStories.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(180px,1fr))] gap-3">
-              {myStories.map((story) => (
+              {myEntries.map((entry) => {
+                // 시리즈 — 1편 대표 카드 + N편 배지, 탭하면 편 목록 시트
+                if (entry.kind === "series") {
+                  const rep = entry.episodes[0];
+                  return (
+                    <button
+                      key={`series-${entry.seriesId}`}
+                      onClick={() => setOpenSeriesId(entry.seriesId)}
+                      className="relative text-left card card-interactive overflow-hidden group"
+                    >
+                      <div className="aspect-square bg-surface-soft overflow-hidden">
+                        <StoryCover
+                          story={rep}
+                          className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="p-2.5">
+                        <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
+                          {entry.title}
+                        </p>
+                        <p className="text-[10px] text-muted mt-0.5">
+                          시리즈 · {rep.ageMin}~{rep.ageMax}세
+                        </p>
+                      </div>
+                      <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary text-white shadow-sm">
+                        {entry.episodes.length}편
+                      </span>
+                    </button>
+                  );
+                }
+                const story = entry.story;
+                return (
                 <div key={story.id} className="relative">
                   <Link
                     href={`/stories/${story.id}`}
@@ -405,7 +472,8 @@ export default function MyPage() {
                     <Trash size={15} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
 
               {/* 만들기 카드 — 그리드 마지막에 추가 */}
               <Link
@@ -597,6 +665,58 @@ export default function MyPage() {
         </div>
       </div>
 
+      {/* 시리즈 편 목록 시트 */}
+      {openSeries && (
+        <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-[rgba(44,42,69,0.5)]"
+            onClick={() => setOpenSeriesId(null)}
+          />
+          <div className="relative z-10 w-full md:max-w-[440px] bg-surface rounded-t-2xl md:rounded-2xl shadow-xl max-h-[75vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-primary">
+                  시리즈 · {openSeries.episodes.length}편
+                </p>
+                <p className="font-bold text-[15px] truncate">
+                  {openSeries.title}
+                </p>
+              </div>
+              <button
+                onClick={() => setOpenSeriesId(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:bg-surface-soft transition text-lg shrink-0"
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-2.5 flex flex-col gap-1.5">
+              {openSeries.episodes.map((ep) => (
+                <Link
+                  key={ep.id}
+                  href={`/stories/${ep.id}`}
+                  onClick={() => setOpenSeriesId(null)}
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-soft transition"
+                >
+                  <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
+                    <StoryCover story={ep} className="w-full h-full" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold text-primary">
+                      {ep.episodeNo}편
+                    </p>
+                    <p className="text-sm font-bold truncate">{ep.title}</p>
+                    <p className="text-[11px] text-muted tabular-nums">
+                      {ep.durationMin}분
+                    </p>
+                  </div>
+                  <ChevronRight size={16} className="text-muted shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -20,7 +20,8 @@ export async function GET(
 
     const [rows] = await db.query<RowDataPacket[]>(
       `SELECT id, title, content, content_ko, morals, moral_summary, age_min, age_max,
-              duration_min, UNIX_TIMESTAMP(created_at) AS created_at
+              duration_min, series_id, series_title, episode_no, parent_story_id,
+              episode_summary, new_facts, UNIX_TIMESTAMP(created_at) AS created_at
        FROM user_stories WHERE id = ? AND user_id = ? LIMIT 1`,
       [dbId, user.id]
     );

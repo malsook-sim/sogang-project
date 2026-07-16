@@ -32,6 +32,7 @@ import {
   type ListenRecord,
 } from "@/lib/listenLog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { narrationAudio, stopNarration } from "@/lib/narrationAudio";
 
 export default function PlayerPage() {
   return (
@@ -217,7 +218,7 @@ function PlayerContent() {
   const generateAndPlay = async () => {
     if (!story) return;
     const req = ++playReqRef.current; // 이 재생 요청 토큰
-    audioRef.current?.pause(); // 진행 중이던 오디오 정지 (겹쳐 재생 방지)
+    stopNarration(); // 진행 중이던 오디오 완전 정리 (겹쳐 재생 방지 — 싱글톤)
     setFinished(false);
     setLoading(true);
 
@@ -241,9 +242,12 @@ function PlayerContent() {
       const url = URL.createObjectURL(blob);
       audioUrlRef.current = url;
 
-      const audio = new Audio(url);
+      // 싱글톤 엘리먼트 재사용 — 새 인스턴스를 만들지 않아 동시 재생 구조적 차단
+      const audio = narrationAudio();
+      audio.src = url;
       audioRef.current = audio;
       audio.playbackRate = speed;
+      audio.volume = 1;
 
       audio.onloadedmetadata = () => {
         setDuration(audio.duration);
@@ -323,15 +327,24 @@ function PlayerContent() {
     }
   };
 
-  // "한 편 더 듣기" — 홈으로 가지 않고 바로 다음 편 재생(목소리 유지, 최근 들은 것 제외)
+  // from(원점) 파라미터 — 뒤로가기/나가기 목적지, 플레이어→플레이어 이동 시 유지
+  const fromParam = searchParams.get("from");
+  const exitTo = fromParam || "/"; // 플레이어를 벗어날 곳 (원점 상세 or 홈)
+  const playerUrl = (sid: string, extra = "") =>
+    `/player/${sid}?voiceId=${encodeURIComponent(voiceId)}${
+      fromParam ? `&from=${encodeURIComponent(fromParam)}` : ""
+    }${extra}`;
+
+  // "한 편 더 듣기" — 홈으로 가지 않고 바로 다음 편 재생(목소리 유지, 최근 들은 것 제외).
+  // 플레이어→플레이어는 replace로 이동해 히스토리에 쌓이지 않게 함(뒤로가기 버그 방지).
   const playNext = () => {
     if (!story) return;
     const next = pickNextStory(catalog, story, getListenedStoryIds());
-    audioRef.current?.pause();
+    stopNarration();
     if (next) {
-      router.push(`/player/${next.id}?voiceId=${voiceId}&autoplay=1`);
+      router.replace(playerUrl(next.id, "&autoplay=1"));
     } else {
-      router.push("/");
+      router.replace(exitTo);
     }
   };
 
@@ -398,7 +411,7 @@ function PlayerContent() {
       // 무시
     }
     playReqRef.current++; // 진행 중이던 합성/재생 요청 즉시 무효화
-    audioRef.current?.pause();
+    stopNarration(); // 이전 목소리 오디오 완전 정리
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current = null;
@@ -526,7 +539,7 @@ function PlayerContent() {
   // 다음 편으로 전환(idParam 변경) 시 재생 상태 완전 초기화 — 같은 컴포넌트가 유지되므로 수동 리셋
   useEffect(() => {
     playReqRef.current++;
-    audioRef.current?.pause();
+    stopNarration(); // 이전 동화 오디오 완전 정리 (겹침 방지)
     audioRef.current = null;
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
@@ -628,9 +641,18 @@ function PlayerContent() {
   useEffect(() => {
     return () => {
       saveProgress();
-      audioRef.current?.pause();
-      bgmRef.current?.pause();
-      previewAudioRef.current?.pause();
+      stopNarration(); // 언마운트 시 내레이션 오디오 완전 정리 (겹침 방지 핵심)
+      audioRef.current = null;
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+        bgmRef.current.src = "";
+        bgmRef.current.load();
+        bgmRef.current = null;
+      }
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
@@ -870,8 +892,10 @@ function PlayerContent() {
         <BackButton
           night={nightMode}
           onClick={() => {
-            audioRef.current?.pause();
-            router.back();
+            // 브라우저 히스토리에 의존하지 않고 명시적으로 원점(상세)/홈으로 replace
+            // (플레이어→플레이어가 쌓이지 않으므로 뒤로가기 연타로도 플레이어 재등장 안 함)
+            stopNarration();
+            router.replace(exitTo);
           }}
         />
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center max-w-[58%] pointer-events-none">
@@ -1000,7 +1024,7 @@ function PlayerContent() {
               한 편 더 듣기
             </button>
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.replace(exitTo)}
               className={`flex-1 py-3.5 rounded-2xl text-sm font-semibold border transition ${
                 nightMode
                   ? "border-white/15 text-[#C9C3E8] hover:bg-white/5"
@@ -1115,7 +1139,7 @@ function PlayerContent() {
               </p>
               <div className="flex items-center gap-2 mt-6 w-full max-w-[300px]">
                 <button
-                  onClick={() => router.push("/")}
+                  onClick={() => router.replace(exitTo)}
                   className="flex-1 bg-primary text-white py-3 rounded-2xl text-sm font-bold hover:bg-primary-dark transition"
                 >
                   한 편 더 듣기
