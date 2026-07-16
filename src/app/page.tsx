@@ -167,8 +167,16 @@ export default function HomePage() {
         .slice(0, 6)
     : [];
 
-  // 오늘의 추천 — 선택된 연령(기본=아이 연령) 범위 내에서 날짜 기준으로 매일 바뀜
-  const featPool = catalog.filter(inAge);
+  // 오늘의 추천 — 연령 범위 + 시간대 적합도로 고른 뒤 날짜 기준으로 매일 바뀜.
+  // 밤(21~5시)엔 잠자리동화를 우선 추천하고, 낮에는 잠자리동화를 제외
+  // (아침에 "졸음이 솔솔" 같은 수면 동화가 추천되지 않도록)
+  const featBase = catalog.filter(inAge);
+  const nightHour = hour ?? 20;
+  const isNighttime = nightHour >= 21 || nightHour < 5;
+  const timePool = isNighttime
+    ? featBase.filter((s) => s.category === "bedtime")
+    : featBase.filter((s) => s.category !== "bedtime");
+  const featPool = timePool.length > 0 ? timePool : featBase;
   const featured =
     isCuration && featPool.length > 0
       ? featPool[dayIndex % featPool.length]
