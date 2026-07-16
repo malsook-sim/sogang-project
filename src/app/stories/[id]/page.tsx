@@ -412,7 +412,7 @@ export default function StoryDetailPage() {
 
       {/* 본문 스크롤 진행바 (헤더 하단, 2px) */}
       {!editing && (
-        <div className="sticky top-[76px] z-40 h-0.5 bg-transparent pointer-events-none">
+        <div className="sticky top-[56px] z-40 h-0.5 bg-transparent pointer-events-none">
           <div
             className="h-full bg-primary"
             style={{ width: `${scrollPct}%` }}
