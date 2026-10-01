@@ -500,18 +500,7 @@ export default function LandingPage() {
 
         <div className="mx-auto my-6 h-px w-10 bg-border" />
 
-        <p className="text-[11px] font-semibold text-muted tracking-wide">
-          서강대학교 · 생성형 AI의 이해와 활용 9조
-        </p>
-        <div className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-muted/70">
-          <span>김현정</span>
-          <span aria-hidden className="text-muted/40">·</span>
-          <span>김국희</span>
-          <span aria-hidden className="text-muted/40">·</span>
-          <span>최지은</span>
-        </div>
-
-        <p className="text-[10px] text-muted/50 tracking-wide mt-6">
+        <p className="text-[10px] text-muted/50 tracking-wide">
           © 2026 MyVoiceStory for kids
         </p>
       </footer>
